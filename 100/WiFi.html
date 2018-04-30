@@ -1,0 +1,2907 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!-- saved from url=(0028)http://192.168.0.1/WiFi.html -->
+<html xmlns="http://www.w3c.org/1999/xhtml" xml:lang="zh_TW" lang="zh_TW"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>D-LINK</title>
+<meta http-equiv="X-UA-Compatible" content="IE=9">
+
+<meta http-equiv="Content-Type" content="text/css">
+<link rel="stylesheet" type="text/css" href="resources/jquery.selectbox.css">
+<script type="text/javascript" charset="utf-8" src="resources/initialJS.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/comm.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/hmac_md5.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/libajax.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/hnap.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/i18n.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/pagetool.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/menu.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/DetectRouterConnection.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/checkTimeout.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/includeLang.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/AES.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/DeviceConfig.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/initialCSS.js"></script>
+<link rel="stylesheet" type="text/css" href="resources/style_pages.css" media="all">
+<script type="text/javascript" charset="utf-8" src="resources/initialJQ.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/jquery-1.8.2.min.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/jquery.selectbox-0.2_new.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/jquery.stringify.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/initialValidate1.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/jquery.validate1.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/DeviceConfig(1).js"></script>
+
+<script type="text/javascript">
+
+	var HNAP = new HNAP_XML();
+
+	var _ReciprocalNumber = 30;
+
+	/* Global variable */
+	/* Support 802.11 mode*/
+	var supportmode_24 = new Array();
+	var supportmode_5 = new Array();
+	var supportmode_5hi = new Array();
+	var supportmode_count_24 = 0;
+	var supportmode_count_5 = 0;
+	var supportmode_count_5hi = 0;
+
+	/* Save current option list status*/
+	var currentmode = new Array(3);
+	var currentbw = new Array(3);
+	var initoptionlist = new Array(false,false,false);
+
+	/* variables for AP Client */
+	var selected_wlmode;
+	var selected_ssid;
+	var selected_security;
+	var ssid_list = new Array();
+	var ssid_num;
+
+	/* Recognize support wireless mode by "Layout" and "Feature" */
+	var xml_GetDeviceFeature = HNAP.GetXML("GetDeviceFeatureAlpha");
+	var xml_GetOperationMode = HNAP.GetXML("GetOperationMode");
+
+	var WifiVerify = false;
+	var feature_dualband = xml_GetDeviceFeature.Get("GetDeviceFeatureAlphaResponse/FeatureDualBand");
+	var feature_guestzone = xml_GetDeviceFeature.Get("GetDeviceFeatureAlphaResponse/FeatureGuestZone");
+	var feature_apclient = xml_GetDeviceFeature.Get("GetDeviceFeatureAlphaResponse/FeatureAPClient");
+	var feature_repeater = xml_GetDeviceFeature.Get("GetDeviceFeatureAlphaResponse/FeatureRepeater");
+
+	var device_layout = xml_GetOperationMode.Get("GetOperationModeResponse/OperationModeList/CurrentOPMode");
+	var support_apclient = false;
+	var support_repeater = false;
+
+	if(feature_dualband=="true")
+		feature_dualband = true;
+	else
+		feature_dualband = false;
+
+	if(feature_guestzone=="true")
+		feature_guestzone = true;
+	else
+		feature_guestzone = false;
+
+	if(feature_apclient=="true" && device_layout=="WirelessBridge")
+		support_apclient = true;
+	else
+		support_apclient = false;
+
+	if(feature_repeater=="true" && device_layout=="WirelessBridge")
+		support_repeater = true;
+	else
+		support_repeater = false;
+
+	function BandToIndex(Band)
+	{
+		if(Band=="24")	return 0;
+		else if(Band=="5")	return 1;
+		else if(Band=="5hi")	return 2;
+		else return "Error Band";
+	}
+
+	function Load_HTML()
+	{
+		$("#header").load("header.html");
+	}
+
+	function Initial()
+	{
+		initialMenu();
+		initialDetectRouterConnection();
+	}
+
+	function AddSelectOpt(id, value, text)
+	{
+		$(id).append('<option value="'+value+'">'+text+'</option>');
+	}
+
+	function SupportMode(id, mode)
+	{
+		var valid=0;
+		for( var i=0; i<supportmode_count_24; i++)
+		{
+			if (mode == supportmode_24[i])	{valid=1;}
+		}
+		for( var i=0; i<supportmode_count_5; i++)
+		{
+			if (mode == supportmode_5[i])	{valid=1;}
+		}
+		if (valid!=1) return;
+
+		switch(mode)
+		{
+			case "802.11a":
+				AddSelectOpt(id, mode, "802.11a only");
+				break;
+			case "802.11b":
+				AddSelectOpt(id, mode, "802.11b only");
+				break;
+			case "802.11g":
+				AddSelectOpt(id, mode, "802.11g only");
+				break;
+			case "802.11n":
+				AddSelectOpt(id, mode, "802.11n only");
+				break;
+			case "802.11bg":
+				AddSelectOpt(id, mode, "Mixed 802.11b/g");
+				break;
+			case "802.11gn":
+				AddSelectOpt(id, mode, "Mixed 802.11g/n");
+				break;
+			case "802.11bgn":
+				AddSelectOpt(id, mode, "Mixed 802.11b/g/n");
+				break;
+			case "802.11an":
+				AddSelectOpt(id, mode, "Mixed 802.11a/n");
+				break;
+			case "802.11ac":
+				AddSelectOpt(id, mode, "802.11ac only");
+				break;
+			case "802.11nac":
+				AddSelectOpt(id, mode, "Mixed 802.11n/ac");
+				break;
+			case "802.11anac":
+				AddSelectOpt(id, mode, "Mixed 802.11a/n/ac");
+				break;
+		}
+	}
+
+	function GetRadioInfo()
+	{
+		var ChannelList_24GHz = document.getElementById("channel_24");
+		var ChannelList_5GHz = document.getElementById("channel_5");
+		var ChannelList_5GHz_hi = document.getElementById("channel_5hi");
+
+		var security_24 = document.getElementById("security_24");
+		var security_5 = document.getElementById("security_5");
+		var security_5hi = document.getElementById("security_5hi");
+
+		var schedule_24 = document.getElementById("schedule_24");
+		var schedule_5 = document.getElementById("schedule_5");
+		var schedule_5hi = document.getElementById("schedule_5hi");
+
+		var xml_GetWLanRadios = HNAP.GetXML("GetWLanRadios_Alpha");
+		var radios_cnt = xml_GetWLanRadios.Get("GetWLanRadiosResponse/RadioInfos/RadioInfo#");
+
+		for (var i=1; i<=radios_cnt; i++)
+		{
+			var radio_id = xml_GetWLanRadios.Get("GetWLanRadiosResponse/RadioInfos/RadioInfo:"+i+"/RadioID");
+			var supportmode_cnt = xml_GetWLanRadios.Get("GetWLanRadiosResponse/RadioInfos/RadioInfo:"+i+"/SupportedModes/string#");
+
+			/*Get Support Mode*/
+			for (var j=1; j<=supportmode_cnt; j++)
+			{
+				var supportmode = xml_GetWLanRadios.Get("GetWLanRadiosResponse/RadioInfos/RadioInfo:"+i+"/SupportedModes/string:"+j);
+				if(radio_id=="2.4GHZ")
+				{
+					supportmode_24[supportmode_count_24] = supportmode;
+					supportmode_count_24++;
+				}
+				else if (radio_id=="5GHZ")
+				{
+					supportmode_5[supportmode_count_5] = supportmode;
+					supportmode_count_5++;
+				}
+				else if (radio_id=="RADIO_5GHz_2")
+				{
+					supportmode_5hi[supportmode_count_5hi] = supportmode;
+					supportmode_count_5hi++;
+				}
+			}
+
+			/*Get Support Channel*/
+			var channel_cnt = xml_GetWLanRadios.Get("GetWLanRadiosResponse/RadioInfos/RadioInfo:"+i+"/Channels/int#");
+			for (var j=1; j<=channel_cnt; j++)
+			{
+				var channel = xml_GetWLanRadios.Get("GetWLanRadiosResponse/RadioInfos/RadioInfo:"+i+"/Channels/int:"+j);
+				if(radio_id=="2.4GHZ")
+					ChannelList_24GHz.options.add(new Option(channel, channel));
+				else if(radio_id=="5GHZ")
+					ChannelList_5GHz.options.add(new Option(channel, channel));
+				else if(radio_id=="RADIO_5GHz_2")
+					ChannelList_5GHz_hi.options.add(new Option(channel, channel));
+			}
+
+			/*Get Support Security*/
+			var security_cnt = xml_GetWLanRadios.Get("GetWLanRadiosResponse/RadioInfos/RadioInfo:"+i+"/SupportedSecurity/SecurityInfo#");
+			for (var j=1; j<=security_cnt; j++)
+			{
+				var security = xml_GetWLanRadios.Get("GetWLanRadiosResponse/RadioInfos/RadioInfo:"+i+"/SupportedSecurity/SecurityInfo:"+j+"/SecurityType");
+				if(security=="WPA-Personal") security = "WPA/WPA2-Personal";
+				if(radio_id=="2.4GHZ")
+					security_24.options.add(new Option(security, security));
+				else if(radio_id=="5GHZ")
+					security_5.options.add(new Option(security, security));
+				else if(radio_id=="RADIO_5GHz_2")
+					security_5hi.options.add(new Option(security, security));
+			}
+
+			/*Get Schedule Option*/
+			var xml_GetScheduleSettings = HNAP.GetXML("GetScheduleSettings");
+			var schedule_cnt = xml_GetScheduleSettings.Get("GetScheduleSettingsResponse/ScheduleInfoLists#");
+			for (var j=1; j<=schedule_cnt; j++)
+			{
+				var schedule = xml_GetScheduleSettings.Get("GetScheduleSettingsResponse/ScheduleInfoLists:"+j+"/ScheduleName");
+				if(radio_id=="2.4GHZ")
+					schedule_24.options.add(new Option(schedule, schedule));
+				else if(radio_id=="5GHZ")
+					schedule_5.options.add(new Option(schedule, schedule));
+				else if(radio_id=="RADIO_5GHz_2")
+					schedule_5hi.options.add(new Option(schedule, schedule));
+			}
+		}
+
+		/*+++Init WPS Setting+++*/
+		var xml_GetWPSSetting = HNAP.GetXML("GetWiFiVerifyAlpha");
+		var wps_enable = xml_GetWPSSetting.Get("GetWiFiVerifyAlphaResponse/WPS/Enable");
+		var wps_configured = xml_GetWPSSetting.Get("GetWiFiVerifyAlphaResponse/WPS/Configured");
+		if(xml_GetWPSSetting.Get("GetWiFiVerifyAlphaResponse/Wifiverify")==1)
+		{
+			WifiVerify = true;
+			document.getElementById("wpspage").style.display = "block";
+		}
+		if(wps_enable=="Disable")
+		{
+			document.getElementById("pbc_button").disabled = true;
+			document.getElementById("pin_button").disabled = true;
+			document.getElementById("pin_num").disabled = true;
+		}
+		else
+		{
+			document.getElementById("pbc_button").disabled = false;
+			document.getElementById("pin_button").disabled = false;
+			document.getElementById("pin_num").disabled = false;
+		}
+		if(wps_configured=="Unconfigured")
+			document.getElementById("ResetWPS").disabled = true;
+		else
+			document.getElementById("ResetWPS").disabled = false;
+		document.getElementById("dev_pin").value = xml_GetWPSSetting.Get("GetWiFiVerifyAlphaResponse/WPS/PIN");
+		document.getElementById("wps_status").innerHTML = wps_enable+"/"+wps_configured;
+		/*---Init WPS Setting---*/
+	}
+
+	function InitWLanValue(id, band)
+	{
+		/* init wlan radio settings */
+		var xml_GetWLanRadioSettings = HNAP.GetXML("GetWLanRadioSettings", new Array("RadioID", id));
+
+		var ssid = xml_GetWLanRadioSettings.Get("GetWLanRadioSettingsResponse/SSID");
+		document.getElementById("wifiName_"+band).value = ssid;
+
+		var channel = xml_GetWLanRadioSettings.Get("GetWLanRadioSettingsResponse/Channel");
+		var obj_channel = document.getElementById("channel_"+band);
+		COMM_SetSelectValue(obj_channel, channel);
+
+		var visible_status = xml_GetWLanRadioSettings.Get("GetWLanRadioSettingsResponse/SSIDBroadcast");
+		var obj_visible_status = document.getElementById("visibilityStatus_"+band);
+		COMM_SetSelectValue(obj_visible_status, visible_status);
+
+		var txpower = xml_GetWLanRadioSettings.Get("GetWLanRadioSettingsResponse/TXPower");
+		var obj_txpower = document.getElementById("transmissionPower_"+band);
+		COMM_SetSelectValue(obj_txpower, txpower);
+
+		var schedule = xml_GetWLanRadioSettings.Get("GetWLanRadioSettingsResponse/Schedule");
+		var obj_schedule = document.getElementById("schedule_"+band);
+		COMM_SetSelectValue(obj_schedule, schedule);
+
+		/* init wlan radio security */
+		var xml_GetWLanRadioSecurity = HNAP.GetXML("GetWLanRadioSecurity", new Array("RadioID", id));
+		var enable = xml_GetWLanRadioSecurity.Get("GetWLanRadioSecurityResponse/Enabled");
+		var type = xml_GetWLanRadioSecurity.Get("GetWLanRadioSecurityResponse/Type");
+		var encryption = xml_GetWLanRadioSecurity.Get("GetWLanRadioSecurityResponse/Encryption");
+		var security = "";
+		var obj_security = document.getElementById("security_"+band);
+
+		if(enable!="false")
+		{
+			var password = xml_GetWLanRadioSecurity.Get("GetWLanRadioSecurityResponse/Key");
+
+			var selectbox=0;
+			for(var i=0;i<obj_security.options.length;i++)
+			{
+				if(obj_security.options[i].value=="WPA/WPA2-Personal" || obj_security.options[i].value=="WEP")
+					selectbox=1;
+			}
+
+			//For Dlink UI
+			if(selectbox)
+			{
+				if(type == "WPA-PSK" || type == "WPA2-PSK" || type == "WPAORWPA2-PSK")
+					security = "WPA/WPA2-Personal";
+				else
+					security = "WEP";
+			}
+			/*For Wifi Logo*/
+			else
+			{
+				security=type;
+
+				if(type == "WPA-PSK")	{security = "WPA";}
+				else if(type == "WPA2-PSK")	{security = "WPA2";}
+				else if(type == "WPAORWPA2-PSK")	{security = "WPA+WPA2";}
+
+				if(encryption == "TKIP")	{security = security+"-TKIP";}
+				else if(encryption == "AES")	{security = security+"-AES";}
+				else if(encryption == "TKIPORAES")	{security = security+"-TKIP+AES";}
+			}
+			document.getElementById("password_"+band).disabled = false;
+			document.getElementById("password_"+band).value = password;
+		}
+		else
+		{
+			security = "None";
+			document.getElementById("password_"+band).disabled = true;
+		}
+		COMM_SetSelectValue(obj_security, security);
+
+		/* Init 80211Mode and Channelwidth option list */
+		var mode = xml_GetWLanRadioSettings.Get("GetWLanRadioSettingsResponse/Mode");
+		var obj_mode = document.getElementById("80211Mode_"+band);
+		currentmode[BandToIndex(band)] = mode;
+
+		var channelwidth = xml_GetWLanRadioSettings.Get("GetWLanRadioSettingsResponse/ChannelWidth");
+		var obj_channelwidth = document.getElementById("channelWidth_"+band);
+		currentbw[BandToIndex(band)] = channelwidth;
+
+		ChangeSupportModeList(security, band);
+		initoptionlist[BandToIndex(band)]=true;
+
+		$("#security_"+band).selectbox();
+		$("#80211Mode_"+band).selectbox('detach');
+		$("#80211Mode_"+band).selectbox();
+		$("#channel_"+band).selectbox();
+		$("#transmissionPower_"+band).selectbox();
+		$("#channelWidth_"+band).selectbox('detach');
+		$("#channelWidth_"+band).selectbox();
+		$("#visibilityStatus_"+band).selectbox();
+		$("#schedule_"+band).selectbox();
+
+		/* init band status */
+		var enable = xml_GetWLanRadioSettings.Get("GetWLanRadioSettingsResponse/Enabled");
+		if(enable=="true")
+		{
+			SetCheckBoxEnable("status_"+band, true, true);
+			DisableSettings(band, false);
+		}
+		else
+		{
+			SetCheckBoxEnable("status_"+band, true, false);
+			DisableSettings(band, true);
+		}
+
+	}
+
+	function InitWIFISTA()
+	{
+		var xml_GetAPClientSettings = HNAP.GetXML("GetAPClientSettings");
+
+		var ssid = xml_GetAPClientSettings.Get("GetAPClientSettingsResponse/SSID");
+		document.getElementById("apclient_ssid").value = ssid;
+
+		var obj_security = document.getElementById("apclient_security");
+		var security = xml_GetAPClientSettings.Get("GetAPClientSettingsResponse/SupportedSecurity/SecurityInfo/SecurityType");
+		var security_val;
+
+		if(security.indexOf("WPA")>=0)
+			security_val = "WPA+2PSK";
+		else if(security.indexOf("WEP")>=0)
+			security_val = "WEP";
+		else
+			security_val = "NONE";
+
+		COMM_SetSelectValue(obj_security, security_val);
+		ChangeSecurity(security_val);
+
+		if(security_val!="NONE")
+		{
+			var key = xml_GetAPClientSettings.Get("GetAPClientSettingsResponse/Key");
+			document.getElementById("apclient_passwd").value = key;
+
+			if(security_val=="WEP")
+			{
+				var weplen = key.length;
+				var obj_weplen = document.getElementById("apclient_wep_passlen");
+				var weplen_val;
+
+				if(key.length==10) weplen_val = "64Hex";
+				else if (key.length==5) weplen_val = "64ASCII";
+				else if (key.length==26) weplen_val = "128Hex";
+				else if (key.length==13) weplen_val = "128ASCII";
+
+				COMM_SetSelectValue(obj_weplen, weplen_val);
+			}
+		}
+		$("#apclient_security").selectbox();
+		$("#apclient_wep_passlen").selectbox();
+	}
+
+	function InitSmartConnectValue()
+	{
+		$("#security_smartconnect").selectbox('detach');
+		$("#transmissionPower_smartconnect").selectbox('detach');
+		$("#schedule_smartconnect").selectbox('detach');
+		
+		//get 2.4G support value for smart connect
+		var xml_GetWLanRadios = HNAP.GetXML("GetWLanRadios_Alpha");
+		var obj_security = document.getElementById("security_smartconnect");
+		var radios_cnt = xml_GetWLanRadios.Get("GetWLanRadiosResponse/RadioInfos/RadioInfo#");
+		
+		for (var i=1; i<=radios_cnt; i++)
+		{
+			var radio_id = xml_GetWLanRadios.Get("GetWLanRadiosResponse/RadioInfos/RadioInfo:"+i+"/RadioID");
+			var security_cnt = xml_GetWLanRadios.Get("GetWLanRadiosResponse/RadioInfos/RadioInfo:"+i+"/SupportedSecurity/SecurityInfo#");
+			if(radio_id=="2.4GHZ")
+			{
+				for (var j=1; j<=security_cnt; j++)
+				{
+					var security = xml_GetWLanRadios.Get("GetWLanRadiosResponse/RadioInfos/RadioInfo:"+i+"/SupportedSecurity/SecurityInfo:"+j+"/SecurityType");
+					if(security=="WPA-Personal") security = "WPA/WPA2-Personal";
+					obj_security.options.add(new Option(security, security));
+				}
+			}
+		}
+		
+		//init 2.4G value for smart connect
+		var xml_GetWLanRadioSecurity = HNAP.GetXML("GetWLanRadioSecurity", new Array("RadioID", "RADIO_2.4GHz"));
+		var xml_GetWLanRadioSettings = HNAP.GetXML("GetWLanRadioSettings", new Array("RadioID", "RADIO_2.4GHz"));
+
+		var ssid = xml_GetWLanRadioSettings.Get("GetWLanRadioSettingsResponse/SSID");
+		document.getElementById("wifiName_smartconnect").value = ssid;
+		
+		var type = xml_GetWLanRadioSecurity.Get("GetWLanRadioSecurityResponse/Type");
+		var encryption = xml_GetWLanRadioSecurity.Get("GetWLanRadioSecurityResponse/Encryption");
+		var security = "";
+		var password = xml_GetWLanRadioSecurity.Get("GetWLanRadioSecurityResponse/Key");
+		
+		var enable = xml_GetWLanRadioSecurity.Get("GetWLanRadioSecurityResponse/Enabled");
+		var type = xml_GetWLanRadioSecurity.Get("GetWLanRadioSecurityResponse/Type");
+		var encryption = xml_GetWLanRadioSecurity.Get("GetWLanRadioSecurityResponse/Encryption");
+		var security = "";
+		var obj_security = document.getElementById("security_smartconnect");
+
+		if(enable!="false")
+		{
+			var password = xml_GetWLanRadioSecurity.Get("GetWLanRadioSecurityResponse/Key");
+			if(type == "WPA-PSK" || type == "WPA2-PSK" || type == "WPAORWPA2-PSK")
+				security = "WPA/WPA2-Personal";
+			else
+				security = "WEP";    
+			
+			document.getElementById("password_smartconnect").disabled = false;
+			document.getElementById("password_smartconnect").value = password;
+		}
+		else
+		{
+			security = "None";
+			document.getElementById("password_smartconnect").disabled = true;
+		}
+		
+		//Get Schedule Option
+		var schedule_smartconnect = document.getElementById("schedule_smartconnect");
+		var xml_GetScheduleSettings = HNAP.GetXML("GetScheduleSettings");
+		var schedule_cnt = xml_GetScheduleSettings.Get("GetScheduleSettingsResponse/ScheduleInfoLists#");
+		for (var j=1; j<=schedule_cnt; j++)
+		{
+			var schedule = xml_GetScheduleSettings.Get("GetScheduleSettingsResponse/ScheduleInfoLists:"+j+"/ScheduleName");
+			schedule_smartconnect.options.add(new Option(schedule, schedule));
+		}
+		
+		var txpower = xml_GetWLanRadioSettings.Get("GetWLanRadioSettingsResponse/TXPower");
+		var obj_txpower = document.getElementById("transmissionPower_smartconnect");
+		COMM_SetSelectValue(obj_txpower, txpower);
+
+		var schedule = xml_GetWLanRadioSettings.Get("GetWLanRadioSettingsResponse/Schedule");
+		var obj_schedule = document.getElementById("schedule_smartconnect");
+		COMM_SetSelectValue(obj_schedule, schedule);
+		
+		COMM_SetSelectValue(obj_security, security);
+		
+		$("#security_smartconnect").selectbox();
+		$("#transmissionPower_smartconnect").selectbox();
+		$("#schedule_smartconnect").selectbox();
+		
+	}
+
+	function InitWLAN()
+	{
+		if(feature_guestzone)
+			document.getElementById("FUNC_Guest").style.display = "block";
+		else
+			document.getElementById("FUNC_Guest").style.display = "none";
+
+		var xml_GetSmartconnectSettings = HNAP.GetXML("GetSmartconnectSettings");
+		var smartconnect_enable = xml_GetSmartconnectSettings.Get("GetSmartconnectSettingsResponse/Enabled");
+		
+		if(support_apclient)
+		{
+			document.getElementById("WIFI_STA").style.display = "block";
+			document.getElementById("SMART_CONNECT").style.display = "none";
+			document.getElementById("separated_line").style.display = "none";
+			document.getElementById("RADIO_2GHz").style.display = "none";
+			document.getElementById("RADIO_5GHz").style.display = "none";
+			document.getElementById("RADIO_5GHz_hi").style.display = "none";
+			document.getElementById("FUNC_Guest").style.display = "none";
+			InitWIFISTA();
+		}
+		else if (support_repeater)
+		{
+			document.getElementById("WIFI_STA").style.display = "block";
+			document.getElementById("SMART_CONNECT").style.display = "none";
+			document.getElementById("separated_line").style.display = "block";
+			document.getElementById("RADIO_2GHz").style.display = "block";
+    
+			InitWIFISTA();
+			InitWLanValue("RADIO_2.4GHz", "24");
+			
+				document.getElementById("RADIO_5GHz").style.display = "block";
+				InitWLanValue("RADIO_5GHz", "5");
+				document.getElementById("RADIO_5GHz_hi").style.display = "block";
+				InitWLanValue("RADIO_5GHz_2", "5hi");
+			
+		}
+		else
+		{
+			if(smartconnect_enable=="false")
+			{
+				document.getElementById("WIFI_STA").style.display = "none";
+				document.getElementById("SMART_CONNECT").style.display = "block";
+				document.getElementById("smartconnect_ssid_tr").style.display = "table-row";
+				document.getElementById("smartconnect_passwd_tr").style.display = "table-row";
+				document.getElementById("smartconnect_line").style.display = "block";
+				document.getElementById("separated_line").style.display = "none";
+				document.getElementById("RADIO_2GHz").style.display = "none";
+				document.getElementById("RADIO_5GHz").style.display = "none";
+				document.getElementById("RADIO_5GHz_hi").style.display = "none";
+				
+				SetCheckBoxEnable("status_smartconnect", true);
+				
+				
+				InitSmartConnectValue();
+			}
+			else
+			{
+				document.getElementById("SMART_CONNECT").style.display = "block";
+				document.getElementById("smartconnect_ssid_tr").style.display = "none";
+				document.getElementById("smartconnect_passwd_tr").style.display = "none";
+				document.getElementById("smartconnect_line").style.display = "none";
+				document.getElementById("separated_line").style.display = "none";
+				
+				SetCheckBoxEnable("status_smartconnect",  false);
+				
+				
+				document.getElementById("WIFI_STA").style.display = "none";
+				document.getElementById("separated_line").style.display = "none";
+				document.getElementById("RADIO_2GHz").style.display = "none";
+				InitWLanValue("RADIO_2.4GHz", "24");
+				
+					document.getElementById("RADIO_5GHz").style.display = "none";
+					InitWLanValue("RADIO_5GHz", "5");
+					document.getElementById("RADIO_5GHz_hi").style.display = "none";
+					InitWLanValue("RADIO_5GHz_2", "5hi");
+				
+			}
+			
+			
+			
+			$("#security_smartconnect").selectbox();
+			$("#transmissionPower_smartconnect").selectbox();
+			$("#schedule_smartconnect").selectbox();
+		}
+	}
+
+	function CheckConnectionStatus()
+	{
+		$.ajax({
+			cache : false,
+			url : "./js/CheckConnection",
+			timeout : 2000,
+			type : "GET",
+			success : function(data) { SaveWLAN(); },
+			error : function() { document.getElementById("DetectRouterConnection").style.display = "inline"; }
+		});
+	}
+
+	function SaveSmartConnectValue(id, band)
+	{
+		/* set wlan radio settings */
+		var xml_SetWLanRadioSettings = HNAP.GetXML("SetWLanRadioSettings");
+		var xml_SetSmartconnectSettings = HNAP.GetXML("SetSmartconnectSettings");
+		xml_SetWLanRadioSettings.Set("SetWLanRadioSettings/RadioID", id);
+
+		var enable = document.getElementById("status_"+band+"_ck").checked;
+		
+		if(enable=="1")
+		{
+			xml_SetWLanRadioSettings.Set("SetWLanRadioSettings/Enabled", "true");
+			xml_SetSmartconnectSettings.Set("SetSmartconnectSettings/Enabled", "true");
+		}
+		else
+		{
+			xml_SetWLanRadioSettings.Set("SetWLanRadioSettings/Enabled", "true");
+			xml_SetSmartconnectSettings.Set("SetSmartconnectSettings/Enabled", "false");
+		}
+
+		var wifi_ssid = document.getElementById("wifiName_"+band).value;
+		xml_SetWLanRadioSettings.Set("SetWLanRadioSettings/SSID", wifi_ssid);
+
+		xml_SetWLanRadioSettings.Set("SetWLanRadioSettings/Mode", "802.11bgn");
+
+		xml_SetWLanRadioSettings.Set("SetWLanRadioSettings/Channel", "Auto");
+
+		var txpower = document.getElementById("transmissionPower_"+band).value;
+		xml_SetWLanRadioSettings.Set("SetWLanRadioSettings/TXPower", txpower);
+
+		xml_SetWLanRadioSettings.Set("SetWLanRadioSettings/ChannelWidth", "0");
+
+		xml_SetWLanRadioSettings.Set("SetWLanRadioSettings/SSIDBroadcast", "true");
+
+		var schedule = document.getElementById("schedule_"+band).value;
+		xml_SetWLanRadioSettings.Set("SetWLanRadioSettings/Schedule", schedule);
+
+		var xml_SetWLanRadioSettingsResult = HNAP.SetXMLAsync("SetWLanRadioSettings", xml_SetWLanRadioSettings);
+
+		/* set wlan radio security */
+		var xml_SetWLanRadioSecurity = HNAP.GetXML("SetWLanRadioSecurity");
+		xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/RadioID", id);
+
+		var security_mode = document.getElementById("security_"+band).value;
+		var password = document.getElementById("password_"+band).value;
+		var weptype;
+		if(password.length == 5 || password.length==10)
+			weptype="WEP-64";
+		else if(password.length == 13 || password.length==26)
+			weptype="WEP-128";
+
+		switch(security_mode)
+		{
+			case "None":
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/Enabled", "false");
+				break;
+			case "WEP":
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/Enabled", "true");
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/Type", "WEP-SHARED");
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/Encryption", weptype);
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/Key", password);
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/KeyRenewal", "3600");
+				break;
+			case "WPA/WPA2-Personal":
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/Enabled", "true");
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/Type", "WPAORWPA2-PSK");
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/Encryption", "TKIPORAES");
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/Key", password);
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/KeyRenewal", "3600");
+				break;
+		}
+		var xml_SetSmartconnectSettingsResult = HNAP.SetXMLAsync("SetSmartconnectSettings", xml_SetSmartconnectSettings);
+		var xml_SetWLanRadioSecurityResult = HNAP.SetXMLAsync("SetWLanRadioSecurity", xml_SetWLanRadioSecurity);
+	}
+
+	function SaveWLanValue(id, band)
+	{
+		/* set wlan radio settings */
+		var xml_SetWLanRadioSettings = HNAP.GetXML("SetWLanRadioSettings");
+		xml_SetWLanRadioSettings.Set("SetWLanRadioSettings/RadioID", id);
+
+		var enable = document.getElementById("status_"+band+"_ck").checked;
+		if(enable=="1")
+			xml_SetWLanRadioSettings.Set("SetWLanRadioSettings/Enabled", "true");
+		else
+			xml_SetWLanRadioSettings.Set("SetWLanRadioSettings/Enabled", "false");
+
+		var wifi_ssid = document.getElementById("wifiName_"+band).value;
+		xml_SetWLanRadioSettings.Set("SetWLanRadioSettings/SSID", wifi_ssid);
+
+		var wifi_mode = document.getElementById("80211Mode_"+band).value;
+		xml_SetWLanRadioSettings.Set("SetWLanRadioSettings/Mode", wifi_mode);
+
+		var channel = document.getElementById("channel_"+band).value;
+		xml_SetWLanRadioSettings.Set("SetWLanRadioSettings/Channel", channel);
+
+		var txpower = document.getElementById("transmissionPower_"+band).value;
+		xml_SetWLanRadioSettings.Set("SetWLanRadioSettings/TXPower", txpower);
+
+		var channelwidth = document.getElementById("channelWidth_"+band).value;
+		xml_SetWLanRadioSettings.Set("SetWLanRadioSettings/ChannelWidth", channelwidth);
+
+		var visible_status = document.getElementById("visibilityStatus_"+band).value;
+		xml_SetWLanRadioSettings.Set("SetWLanRadioSettings/SSIDBroadcast", visible_status);
+
+		var schedule = document.getElementById("schedule_"+band).value;
+		xml_SetWLanRadioSettings.Set("SetWLanRadioSettings/Schedule", schedule);
+
+		var xml_SetWLanRadioSettingsResult = HNAP.SetXMLAsync("SetWLanRadioSettings", xml_SetWLanRadioSettings);
+
+		/* set wlan radio security */
+		var xml_SetWLanRadioSecurity = HNAP.GetXML("SetWLanRadioSecurity");
+		xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/RadioID", id);
+
+		var security_mode = document.getElementById("security_"+band).value;
+		var password = document.getElementById("password_"+band).value;
+		var weptype;
+		if(password.length == 5 || password.length==10)
+			weptype="WEP-64";
+		else if(password.length == 13 || password.length==26)
+			weptype="WEP-128";
+
+		switch(security_mode)
+		{
+			case "None":
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/Enabled", "false");
+				break;
+			//For Dlink UI
+			case "WEP":
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/Enabled", "true");
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/Type", "WEP-SHARED");
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/Encryption", weptype);
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/Key", password);
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/KeyRenewal", "3600");
+				break;
+			case "WPA/WPA2-Personal":
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/Enabled", "true");
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/Type", "WPAORWPA2-PSK");
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/Encryption", "TKIPORAES");
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/Key", password);
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/KeyRenewal", "3600");
+				break;
+			/*For Wifi Logo*/
+			case "WEP-SHARED":
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/Enabled", "true");
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/Type", "WEP-SHARED");
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/Encryption", weptype);
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/Key", password);
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/KeyRenewal", "3600");
+				break;
+			case "WEP-AUTO":
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/Enabled", "true");
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/Type", "WEP-AUTO");
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/Encryption", weptype);
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/Key", password);
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/KeyRenewal", "3600");
+				break;
+			case "WPA-TKIP":
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/Enabled", "true");
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/Type", "WPA-PSK");
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/Encryption", "TKIP");
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/Key", password);
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/KeyRenewal", "3600");
+				break;
+			case "WPA-AES":
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/Enabled", "true");
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/Type", "WPA-PSK");
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/Encryption", "AES");
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/Key", password);
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/KeyRenewal", "3600");
+				break;
+			case "WPA-TKIP+AES":
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/Enabled", "true");
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/Type", "WPA-PSK");
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/Encryption", "TKIPORAES");
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/Key", password);
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/KeyRenewal", "3600");
+				break;
+			case "WPA2-TKIP":
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/Enabled", "true");
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/Type", "WPA2-PSK");
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/Encryption", "TKIP");
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/Key", password);
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/KeyRenewal", "3600");
+				break;
+			case "WPA2-AES":
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/Enabled", "true");
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/Type", "WPA2-PSK");
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/Encryption", "AES");
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/Key", password);
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/KeyRenewal", "3600");
+				break;
+			case "WPA2-TKIP+AES":
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/Enabled", "true");
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/Type", "WPA2-PSK");
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/Encryption", "TKIPORAES");
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/Key", password);
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/KeyRenewal", "3600");
+				break;
+			case "WPA+WPA2-TKIP":
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/Enabled", "true");
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/Type", "WPAORWPA2-PSK");
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/Encryption", "TKIP");
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/Key", password);
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/KeyRenewal", "3600");
+				break;
+			case "WPA+WPA2-AES":
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/Enabled", "true");
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/Type", "WPAORWPA2-PSK");
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/Encryption", "AES");
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/Key", password);
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/KeyRenewal", "3600");
+				break;
+			case "WPA+WPA2-TKIP+AES":
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/Enabled", "true");
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/Type", "WPAORWPA2-PSK");
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/Encryption", "TKIPORAES");
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/Key", password);
+				xml_SetWLanRadioSecurity.Set("SetWLanRadioSecurity/KeyRenewal", "3600");
+				break;
+		}
+		var xml_SetWLanRadioSecurityResult = HNAP.SetXMLAsync("SetWLanRadioSecurity", xml_SetWLanRadioSecurity);
+	}
+
+	function checkwarning(band)
+	{
+		var security = document.getElementById("security_"+band).value;
+		if((band=="5" || band=="5hi") && !feature_dualband)
+			return true;
+		else
+		{
+			var SecWarning=true;
+			//only display message when wifi logo testing
+			if(security=="None" && WifiVerify)
+			{
+				if(band=="24")	band="2.4";
+				SecWarning=confirm("Warning ! By selecting None in Security Mode will make your "+band+"GHz wifi connection vulnerable. Proceed ?");
+			}
+			return SecWarning;
+		}
+	}
+
+	function SaveWLAN()
+	{
+		var smartconnect_block = document.getElementById("SMART_CONNECT").style.display;
+		
+		if(smartconnect_block=="block")
+		{
+			var smartconnect_enable = document.getElementById("status_smartconnect_ck").checked;
+			
+			if( (!checkwarning("24") || !checkwarning("5") || !checkwarning("5hi")) && WifiVerify)
+			{
+				//only display message when wifi logo testing
+				alert("This page won't be saved.");
+				return;
+			}
+			
+			if(smartconnect_enable=="1")
+			{
+				SaveSmartConnectValue("RADIO_2.4GHz", "smartconnect");
+			}
+			else
+			{
+				var xml_SetSmartconnectSettings = HNAP.GetXML("SetSmartconnectSettings");
+				xml_SetSmartconnectSettings.Set("SetSmartconnectSettings/Enabled", "false");
+				var xml_SetSmartconnectSettingsResult = HNAP.SetXMLAsync("SetSmartconnectSettings", xml_SetSmartconnectSettings);
+				
+				SaveWLanValue("RADIO_2.4GHz", "24");
+				if(feature_dualband)
+				{
+					setTimeout('SaveWLanValue("RADIO_5GHz", "5")',1000);
+					setTimeout('SaveWLanValue("RADIO_5GHz_2", "5hi")',2000);
+				}
+			}
+		}
+		else
+		{
+			if(support_apclient)
+			{
+				SaveAPClientValue();
+			}
+			else if(support_repeater)
+			{
+				SaveAPClientValue();
+				SaveWLanValue("RADIO_2.4GHz", "24");
+				if(feature_dualband)
+				{
+					SaveWLanValue("RADIO_5GHz", "5");
+					SaveWLanValue("RADIO_5GHz_2", "5hi");
+				}
+			}
+		}
+		
+		document.getElementById("CreatePopAlertMessage").style.display = "inline";
+		document.getElementById("waitSettingFinish").style.display = "inline";
+		Start_reciprocal_Number_RestoreConfiguration();
+	}
+
+	function CheckSupportN(band)
+	{
+		var supportN;
+		var security = document.getElementById("security_"+band).value;
+		var mode = document.getElementById("80211Mode_"+band).value;
+		if(security=="WEP" || security=="WEP-OPEN" || security=="WEP-SHARED" || security=="WEP-AUTO" ||
+			security=="WPA-TKIP" || security=="WPA2-TKIP" ||security=="WPA+WPA2-TKIP")
+			supportN=false;
+		else if(mode=="802.11a" || mode=="802.11b" || mode=="802.11g")
+			supportN=false;
+		else
+			supportN=true;
+		return supportN;
+	}
+
+	function CheckSupportBW(band,channel)
+	{
+		var supportBW;
+		var security = document.getElementById("security_"+band).value;
+		if(!CheckSupportN(band) || channel==12 || channel==13 || channel==140 || channel==165)
+			supportBW="20";
+		else if(channel==132 || channel==136)
+			supportBW="40";
+		else
+			supportBW="80";
+		return supportBW;
+	}
+	
+	function ChangePasswordInput(value)
+	{
+		if(value=="None")
+			document.getElementById("password_smartconnect").disabled = true;
+		else
+			document.getElementById("password_smartconnect").disabled = false;
+	}
+
+	function ChangeSupportModeList(value, band)
+	{
+		var obj_mode = document.getElementById("80211Mode_"+band);
+		if (initoptionlist[BandToIndex(band)])
+			currentmode[BandToIndex(band)] = obj_mode.value;
+
+		$("#80211Mode_"+band).selectbox('detach');
+		$("#80211Mode_"+band).children().remove();
+
+		if(value=="None")
+			document.getElementById("password_"+band).disabled = true;
+		else
+			document.getElementById("password_"+band).disabled = false;
+
+		switch(band)
+		{
+			case "24":
+				SupportMode("#80211Mode_"+band, "802.11b");
+				SupportMode("#80211Mode_"+band, "802.11g");
+				SupportMode("#80211Mode_"+band, "802.11bg");
+				if(CheckSupportN(band))
+					SupportMode("#80211Mode_"+band, "802.11n");
+
+				SupportMode("#80211Mode_"+band, "802.11gn");
+				SupportMode("#80211Mode_"+band, "802.11bgn");
+				break;
+			case "5":
+			case "5hi":
+				if(CheckSupportN(band))
+				{
+					SupportMode("#80211Mode_"+band, "802.11a");
+					SupportMode("#80211Mode_"+band, "802.11n");
+					SupportMode("#80211Mode_"+band, "802.11an");
+					SupportMode("#80211Mode_"+band, "802.11ac");
+					SupportMode("#80211Mode_"+band, "802.11nac");
+					SupportMode("#80211Mode_"+band, "802.11anac");
+				}
+				else
+				{
+					SupportMode("#80211Mode_"+band, "802.11a");
+					SupportMode("#80211Mode_"+band, "802.11an");
+					SupportMode("#80211Mode_"+band, "802.11anac");
+				}
+				break;
+		}
+		COMM_SetSelectValue(obj_mode, currentmode[BandToIndex(band)]);
+
+		$("#80211Mode_"+band).selectbox('attach');
+
+		ChangeWidthList(band);
+	}
+
+	function ChangeWidthList(band)
+	{
+		var obj_width = document.getElementById("channelWidth_"+band);
+		if (initoptionlist[BandToIndex(band)])
+			currentbw[BandToIndex(band)] = obj_width.value;
+
+		$("#channelWidth_"+band).selectbox('detach');
+		$("#channelWidth_"+band).children().remove();
+
+		var security = document.getElementById("security_"+band).value;
+		var mode = document.getElementById("80211Mode_"+band).value;
+		var channel = document.getElementById("channel_"+band).value;
+
+		if(band=="24" || ((band=="5" || band=="5hi") && CheckSupportBW(band,channel)=="20"))
+			AddSelectOpt("#channelWidth_"+band, "20", "20 MHz");
+
+		if((/ac/.test(mode) || /n/.test(mode)) && (CheckSupportBW(band,channel)!="20"))
+			AddSelectOpt("#channelWidth_"+band, "0", "Auto 20/40 MHz");
+
+		if(/ac/.test(mode) && (CheckSupportBW(band,channel)=="80"))
+			AddSelectOpt("#channelWidth_"+band, "1", "Auto 20/40/80 MHz");
+
+		COMM_SetSelectValue(obj_width, currentbw[BandToIndex(band)]);
+
+		$("#channelWidth_"+band).selectbox('attach');
+	}
+
+	function DisableSettings(band, disable)
+	{
+		document.getElementById("wifiName_"+band).disabled = disable;
+		document.getElementById("password_"+band).disabled = disable;
+
+		var boxstatus;
+		if(disable) boxstatus = "disable";
+		else boxstatus = "enable";
+		
+		if(band!="smartconnect")
+		{
+			$("#80211Mode_"+band).selectbox(boxstatus);
+			$("#channel_"+band).selectbox(boxstatus);
+			$("#channelWidth_"+band).selectbox(boxstatus);
+			$("#visibilityStatus_"+band).selectbox(boxstatus);
+		}
+		
+		$("#security_"+band).selectbox(boxstatus);
+		$("#transmissionPower_"+band).selectbox(boxstatus);
+		$("#schedule_"+band).selectbox(boxstatus);
+	}
+	
+	function ChangeBandStatus(band)
+	{
+		var id = "status_"+band;
+		var checkbox = "status_"+band+"_ck";
+		SetCheckBoxEnable(id);
+
+		var status = document.getElementById("status_"+band+"_ck").checked;
+		
+		console.log('band = '+band);
+		console.log('status = '+status);
+		
+		if(band == "smartconnect")
+		{
+			if(status)
+			{
+				document.getElementById("SMART_CONNECT").style.display = "block";
+				document.getElementById(band+"_ssid_tr").style.display = "table-row";
+				document.getElementById(band+"_passwd_tr").style.display = "table-row";
+				document.getElementById(band+"_line").style.display = "block";
+				document.getElementById("SMART_CONNECT_adv").style.display = "none";
+				
+				document.getElementById("WIFI_STA").style.display = "none";
+				document.getElementById("separated_line").style.display = "none";
+				document.getElementById("RADIO_2GHz").style.display = "none";
+				
+				document.getElementById("RADIO_5GHz").style.display = "none";
+				document.getElementById("RADIO_5GHz_hi").style.display = "none";
+				
+				
+				InitSmartConnectValue();
+				DisableSettings(band, true);
+				
+				var security = document.getElementById("security_"+band).value;
+				if(security=="None")
+					document.getElementById("password_"+band).disabled = false;
+			}
+			else
+			{
+				document.getElementById("SMART_CONNECT").style.display = "block";
+				document.getElementById(band+"_ssid_tr").style.display = "none";
+				document.getElementById(band+"_passwd_tr").style.display = "none";
+				document.getElementById(band+"_line").style.display = "none";
+				document.getElementById("SMART_CONNECT_adv").style.display = "none";
+				
+				document.getElementById("WIFI_STA").style.display = "none";
+				document.getElementById("separated_line").style.display = "none";
+				document.getElementById("RADIO_2GHz").style.display = "block";
+				//InitWLanValue("RADIO_2.4GHz", "24");
+				document.getElementById("RADIO_5GHz").style.display = "block";
+				//InitWLanValue("RADIO_5GHz", "5");
+				document.getElementById("RADIO_5GHz_hi").style.display = "block";
+				//InitWLanValue("RADIO_5GHz_2", "5hi");
+				
+			}
+		}
+		else
+		{
+			if(status)
+				DisableSettings(band, true);
+			else
+				DisableSettings(band, false);
+	
+			var security = document.getElementById("security_"+band).value;
+			if(security=="block")
+				document.getElementById("password_"+band).disabled = false;
+		}
+	}
+
+	/*+++SiteSurvey function+++*/
+	function AddSiteSurveyLists(id)
+	{
+		var xml_GetSiteSurveyList = HNAP.GetXML("GetSiteSurvey", new Array("RadioID", id));
+		var total_lists = xml_GetSiteSurveyList.Get("GetSiteSurveyResponse/APStatInfoLists/APStatInfo#");
+
+		for (var i=1; i<=total_lists; i++)
+		{
+			var hotspot_ssid = xml_GetSiteSurveyList.Get("GetSiteSurveyResponse/APStatInfoLists/APStatInfo:"+i+"/SSID");
+			var hotspot_rssi = xml_GetSiteSurveyList.Get("GetSiteSurveyResponse/APStatInfoLists/APStatInfo:"+i+"/SignalStrength")
+			var hotspot_security = xml_GetSiteSurveyList.Get("GetSiteSurveyResponse/APStatInfoLists/APStatInfo:"+i+"/SupportedSecurity/SecurityInfo/SecurityType");
+			var mac_addr = xml_GetSiteSurveyList.Get("GetSiteSurveyResponse/APStatInfoLists/APStatInfo:"+i+"/MacAddress");
+
+			var security = "";
+			var rssi = "";
+			var wlmode = "";
+
+			if(id=="5GHZ") wlmode="5";
+			else if(id=="2.4GHZ") wlmode="24";
+
+			if(hotspot_security!="NONE")
+				security = '<img src="image/wisp_security.png" width="12" height="21"/>';
+			else
+				security = "";
+
+			if(parseInt(hotspot_rssi)<=35)
+				rssi = '<img src="image/wisp_strength_low.png" width="25" height="20"/>';
+			else if(parseInt(hotspot_rssi)<=70 && parseInt(hotspot_rssi)>35)
+				rssi = '<img src="image/wisp_strength_medium.png" width="25" height="20"/>';
+			else if(parseInt(hotspot_rssi)<=100 && parseInt(hotspot_rssi)>70)
+				rssi = '<img src="image/wisp_strength_high.png" width="25" height="20"/>';
+			
+			//check wireless station profile is not the same
+			if(ssid_num > 0)
+			{
+				for(var j=0; j<=ssid_num-1; j++)
+				{
+					if(hotspot_ssid==ssid_list[j].ssid && mac_addr==ssid_list[j].mac)
+					{
+						return;
+					}
+				}
+			}
+
+			ssid_list[ssid_num] = {
+					ssid: hotspot_ssid,
+					mac: mac_addr,
+					rssi_img: rssi,
+					sec_img: security,
+					sec_type:	hotspot_security,
+					rssi_value: parseInt(hotspot_rssi),
+					wl_mode: wlmode
+			};
+			ssid_num++;
+		}
+	}
+	function SortSiteSurveyList()
+	{
+		function compare(a,b)
+		{
+			if (a.rssi_value < b.rssi_value)
+				return 1;
+			if (a.rssi_value > b.rssi_value)
+				return -1;
+			return 0;
+		}
+		ssid_list.sort(compare);
+	}
+	function ChangeBgcolor(tblID, uid)
+	{
+		var elts = document.getElementById(tblID).getElementsByTagName("tr");
+		for(var i=0;i<elts.length;i++)
+		{
+			var hotspot_id = elts[i].getAttribute("id");
+			if(hotspot_id==uid)
+			  document.getElementById(uid).style.backgroundColor = "#CCC";
+			else
+				document.getElementById(hotspot_id).style.backgroundColor = "#FFF";
+	  }
+	}
+	function InjectTable(tblID, uid, data, type)
+	{
+		var rows = document.getElementById(tblID).getElementsByTagName("tr");
+		var tagTR = null;
+		var tagTD = null;
+		var i;
+		var str;
+		var found = false;
+		selected_wlmode = null;
+		selected_ssid = null;
+		selected_security = null;
+
+		/* Search the rule by UID. */
+		for (i=0; !found && i<rows.length; i++) if (rows[i].id == uid) found = true;
+		if (found)
+		{
+			for (i=0; i<data.length; i++)
+			{
+				tagTD = document.getElementById(uid+"_"+i);
+				switch (type[i])
+				{
+					case "text":
+						str = data[i];
+						if(typeof(tagTD.innerText) !== "undefined")	tagTD.innerText = str;
+						else if(typeof(tagTD.textContent) !== "undefined")	tagTD.textContent = str;
+						else	tagTD.innerHTML = str;
+						break;
+					default:
+						str = data[i];
+						tagTD.innerHTML = str;
+						break;
+				}
+			}
+			return;
+		}
+
+		/* Add a new row for this entry */
+		tagTR = document.getElementById(tblID).insertRow(rows.length);
+		tagTR.id = uid;
+
+		tagTR.onclick = function (evt)
+		{
+			selected_wlmode = data[4];
+			selected_ssid = data[0];
+			if(data[3]=="NONE") selected_security = "NONE";
+			else if(data[3].indexOf("WEP") == 0) selected_security = "WEP";
+			else selected_security = "WPA+2PSK";
+			ChangeBgcolor(tblID, uid);
+		};
+
+		/* save the rule in the table */
+		for (i=0; i<data.length-2; i++)
+		{
+			tagTD = tagTR.insertCell(i);
+			tagTD.id = uid+"_"+i;
+			tagTD.className = "content";
+
+			switch (type[i])
+			{
+				case "text":
+					str = data[i];
+					if(typeof(tagTD.innerText) !== "undefined")	tagTD.innerText = str;
+					else if(typeof(tagTD.textContent) !== "undefined")	tagTD.textContent = str;
+					else	tagTD.innerHTML = str;
+					break;
+				default:
+					str = data[i];
+					tagTD.innerHTML = str;
+					break;
+			}
+		}
+	}
+	function DrawSiteSurveyList()
+	{
+		var random_num = Math.floor((Math.random()*10)+1);
+		SortSiteSurveyList();
+
+		for (var i=0; i<ssid_list.length; i++)
+		{
+			var ssid = ssid_list[i].ssid;
+			var rssi_img = ssid_list[i].rssi_img;
+			var sec_img = ssid_list[i].sec_img;
+			var security = ssid_list[i].sec_type;
+			var wlmode = ssid_list[i].wl_mode;
+
+			var data = [ssid, rssi_img, sec_img, security, wlmode];
+			var type = ["text", "img", "img", "text", "text"];
+			InjectTable("content_tb", "hotspot"+random_num+"-"+i, data, type);
+		}
+		document.getElementById("scan_wifi_list_block").style.display = "block";
+		document.getElementById("scan_waiting").style.display = "none";
+		document.getElementById("scan_list").style.display = "block";
+	}
+	function ShowSiteSurveyLists(res, wtime)
+	{
+		CleanTable("content_tb");
+		ssid_num=0;
+
+		if(res=="OK")
+		{
+			AddSiteSurveyLists("5GHZ");
+			AddSiteSurveyLists("2.4GHZ");
+			DrawSiteSurveyList();
+		}
+		else
+			setTimeout('EventSiteSurvey()', wtime*1000);
+	}
+	function EventSiteSurvey()
+	{
+		var xml_SetTriggerWirelessSiteSurvey = HNAP.GetXML("SetTriggerWirelessSiteSurvey");
+		xml_SetTriggerWirelessSiteSurvey.Set("SetTriggerWirelessSiteSurvey/RadioID", "RADIO_2.4GHz");
+		var xml_SetTriggerWirelessSiteSurveyResult = HNAP.SetXML("SetTriggerWirelessSiteSurvey", xml_SetTriggerWirelessSiteSurvey);
+		var wait_time = xml_SetTriggerWirelessSiteSurveyResult.Get("SetTriggerWirelessSiteSurveyResponse/WaitTime");
+		var sitesurvey_result = xml_SetTriggerWirelessSiteSurveyResult.Get("SetTriggerWirelessSiteSurveyResponse/SetTriggerWirelessSiteSurveyResult");
+
+		setTimeout('ShowSiteSurveyLists("'+sitesurvey_result+'", '+wait_time+')', wait_time*1000);
+	}
+	function TriggerSiteSurvey()
+	{
+		checkTimeout();
+		document.getElementById("scan_wifi_list_block").style.display = "block";
+		document.getElementById("scan_waiting").style.display = "block";
+		document.getElementById("scan_list").style.display = "none";
+
+		EventSiteSurvey();
+	}
+	function OnClickSelect()
+	{
+		if(selected_ssid=="" || selected_ssid==null)
+		{
+			alert(I18N("j","Please select a wireless station."));
+		}
+		else
+		{
+			CloseSiteSurveyList();
+
+			document.getElementById("apclient_ssid").value = selected_ssid;
+
+			var obj_apclient_security = document.getElementById("apclient_security");
+			var apclient_security;
+
+			if(selected_security.indexOf("WPA") >= 0)
+				apclient_security = "WPA+2PSK";
+			else if(selected_security.indexOf("WEP") >= 0)
+				apclient_security = "WEP";
+			else
+				apclient_security = "NONE";
+
+			$("#apclient_security").selectbox('detach');
+			COMM_SetSelectValue(obj_apclient_security, apclient_security);
+			$("#apclient_security").selectbox();
+
+			ChangeSecurity(selected_security);
+		}
+
+	}
+	function CloseSiteSurveyList()
+	{
+		document.getElementById("scan_wifi_list_block").style.display = "none";
+		document.getElementById("scan_waiting").style.display = "none";
+		document.getElementById("scan_list").style.display = "none";
+	}
+	function ChangeSecurity(value)
+	{
+		switch (value)
+		{
+			case "NONE":
+				document.getElementById("apclient_wep_passlen_tr").style.display = "none";
+				document.getElementById("apclient_passwd_tr").style.display = "none";
+				break;
+			case "WEP":
+				document.getElementById("apclient_wep_passlen_tr").style.display = "table-row";
+				document.getElementById("apclient_passwd_tr").style.display = "table-row";
+				break;
+			case "WPA+2PSK":
+				document.getElementById("apclient_wep_passlen_tr").style.display = "none";
+				document.getElementById("apclient_passwd_tr").style.display = "table-row";
+				break;
+		}
+	}
+	function SaveAPClientValue()
+	{
+		var xml_SetAPClientSettings = HNAP.GetXML("SetAPClientSettings");
+
+		if(selected_wlmode=="24")
+			xml_SetAPClientSettings.Set("SetAPClientSettings/RadioID", "RADIO_2.4GHz");
+		else if(selected_wlmode=="5")
+			xml_SetAPClientSettings.Set("SetAPClientSettings/RadioID", "RADIO_5GHz");
+		else /* if user manual change ssid from web UI */
+			xml_SetAPClientSettings.Set("SetAPClientSettings/RadioID", "RADIO_MANUAL");
+
+		if(support_apclient)
+			xml_SetAPClientSettings.Set("SetAPClientSettings/Enabled", "true");
+		else
+			xml_SetAPClientSettings.Set("SetAPClientSettings/Enabled", "false");
+
+		var ssid = document.getElementById("apclient_ssid").value;
+		xml_SetAPClientSettings.Set("SetAPClientSettings/SSID", ssid);
+
+		var security = document.getElementById("apclient_security").value;
+		var key = document.getElementById("apclient_passwd").value;
+		switch(security)
+		{
+			case "NONE":
+				xml_SetAPClientSettings.Set("SetAPClientSettings/SupportedSecurity/SecurityInfo/SecurityType", security);
+				xml_SetAPClientSettings.Set("SetAPClientSettings/SupportedSecurity/SecurityInfo/Encryptions/string", "NONE");
+				break;
+			case "WEP":
+				xml_SetAPClientSettings.Set("SetAPClientSettings/SupportedSecurity/SecurityInfo/SecurityType", security);
+				xml_SetAPClientSettings.Set("SetAPClientSettings/SupportedSecurity/SecurityInfo/Encryptions/string", "WEPAUTO");
+				xml_SetAPClientSettings.Set("SetAPClientSettings/Key", key);
+				break;
+			case "WPA+2PSK":
+				xml_SetAPClientSettings.Set("SetAPClientSettings/SupportedSecurity/SecurityInfo/SecurityType", security);
+				xml_SetAPClientSettings.Set("SetAPClientSettings/SupportedSecurity/SecurityInfo/Encryptions/string", "TKIP+AES");
+				xml_SetAPClientSettings.Set("SetAPClientSettings/Key", key);
+				break;
+		}
+
+		var xml_SetAPClientSettingsResult = HNAP.SetXMLAsync("SetAPClientSettings", xml_SetAPClientSettings);
+	}
+	function AutoWLanMode()
+	{
+		selected_wlmode = "manual";
+	}
+	/*---SiteSurvey function---*/
+
+	function Start_reciprocal_Number_RestoreConfiguration()
+	{
+		if (_ReciprocalNumber >= 0)
+		{
+			document.getElementById("reciprocal_Number").innerHTML = _ReciprocalNumber + " " + I18N("j", "Sec");
+			_ReciprocalNumber --;
+			setTimeout("Start_reciprocal_Number_RestoreConfiguration()", 1000);
+		}
+		else
+		{
+			document.getElementById("waitSettingFinish").style.display = "none";
+			document.getElementById("SuccessSettings").style.display = "inline";
+		}
+	}
+
+	function returnToHome()
+	{
+		window.location.reload();
+	}
+
+	/*+++WPS function+++*/
+	function Regenerate_PIN()
+	{
+		var pin = "";
+		var sum = 0;
+		var check_sum = 0;
+		var r = 0;
+		for(var i=0; i<7; i++)
+		{
+			r = (Math.floor(Math.random()*9));
+			pin += r;
+			sum += parseInt(r, [10]) * (((i%2)==0) ? 3:1);
+		}
+		check_sum = (10-(sum%10))%10;
+		pin += check_sum;
+		document.getElementById("dev_pin").value = pin;
+	}
+	function Save_Dev_Pin()
+	{
+		var xml_SetWiFiVerifyAlpha = HNAP.GetXML("SetWiFiVerifyAlpha");
+		xml_SetWiFiVerifyAlpha.Set("SetWiFiVerifyAlpha/WPS/DEV_PIN",document.getElementById("dev_pin").value);
+		var xml_SetWiFiVerifyAlphaResult = HNAP.SetXML("SetWiFiVerifyAlpha", xml_SetWiFiVerifyAlpha);
+		location.reload();
+	}
+	function CheckPIN(pincode)
+	{
+		if(pincode.length == 4 && /^[0-9]*$/.test(pincode))
+			return pincode;
+		else if( (pincode.length == 9 && /[0-9]{4}(\-|\s)[0-9]{4}/.test(pincode))
+					|| (pincode.length == 8 && /^[0-9]*$/.test(pincode)) )
+		{
+			if(pincode[4] == "\-")
+			{
+				var pincodesplit=pincode.split("\-");
+				pincode=pincodesplit[0]+pincodesplit[1];
+			}
+			else if(pincode[4] == " ")
+			{
+				var pincodesplit=pincode.split(" ");
+				pincode=pincodesplit[0]+pincodesplit[1];
+			}
+
+			var sum=0;
+			var pow=3;
+			for(var i=0; i<8;i++)
+			{
+				sum = pow * pincode.charAt(i) + sum;
+				if (pow==3)	pow=1;
+				else	pow=3;
+			}
+			if ((sum%10) == 0)
+				return pincode;
+			else
+				return false;
+		}
+		else
+			return false;
+	}
+	function Conn_PIN_Client()
+	{
+		var pincode = CheckPIN(document.getElementById("pin_num").value);
+		if (pincode)
+		{
+			var xml_SetWiFiVerifyAlpha = HNAP.GetXML("SetWiFiVerifyAlpha");
+			xml_SetWiFiVerifyAlpha.Set("SetWiFiVerifyAlpha/WPS/WPSPIN",pincode);
+			var xml_SetWiFiVerifyAlphaResult = HNAP.SetXML("SetWiFiVerifyAlpha", xml_SetWiFiVerifyAlpha);
+		}
+		else
+			alert("Invalid PIN code!");
+	}
+	function Conn_PBC()
+	{
+		var xml_SetWiFiVerifyAlpha = HNAP.GetXML("SetWiFiVerifyAlpha");
+		xml_SetWiFiVerifyAlpha.Set("SetWiFiVerifyAlpha/WPS/WPSPBC","1");
+		var xml_SetWiFiVerifyAlphaResult = HNAP.SetXML("SetWiFiVerifyAlpha", xml_SetWiFiVerifyAlpha);
+	}
+	function ResetToUnconfigured()
+	{
+		var xml_SetWiFiVerifyAlpha = HNAP.GetXML("SetWiFiVerifyAlpha");
+		xml_SetWiFiVerifyAlpha.Set("SetWiFiVerifyAlpha/WPS/ResetToUnconfigured","1");
+		var xml_SetWiFiVerifyAlphaResult = HNAP.SetXML("SetWiFiVerifyAlpha", xml_SetWiFiVerifyAlpha);
+	}
+	/*---WPS function---*/
+</script>
+<script language="JavaScript">
+	// 2013/08/15 Timmy Add
+	$(function() {
+		$("button").click(function () { save_button_changed(); });
+		$("input, textarea, select").change(function () { save_button_changed(); });
+		$("input, textarea").keypress(function () { save_button_changed(); });
+	});
+</script>
+<style>
+/* The CSS is only for this page. */
+.btn_radius
+{
+	font-family: Arial,Helvetica,sens-serif;
+	border-radius: 5px;
+	border: solid 1px #4394A7;
+	COLOR: #FFFFFF;
+	background-color:#4394A7;
+	width:80px;
+	height:30px;
+	text-align:center;
+}
+.btn_radius2
+{
+	font-family: Arial,Helvetica,sens-serif;
+	border-radius: 5px;
+	background-color:#007086;
+	border: solid 1px #FFF;
+	color: #FFFFFF;
+	width:80px;
+	height:25px;
+	text-align:center;
+}
+.PopAlertBlackBg
+{
+	position: fixed;
+	z-index: 101;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height:100%;
+	background:url(resources/black_bg.png);
+	text-align: center;
+}
+.scanPopBox
+{
+	position: relative;
+	top: 100px;
+	width: 331px;
+	height: auto;
+	margin: 0 auto;
+}
+.waitScanBox
+{
+	position: relative;
+	text-align: center;
+	top: 100px;
+	left: 80px;
+  width: 222px;
+  height: 206px;
+  background: url(resources/wisp_loading.png) left top repeat-y;
+}
+.scanListBox
+{
+	border-radius: 10px;
+	position: relative;
+	top: 100px;
+	background-color:#007086;
+	border: solid 1px #FFF;
+	color: #FFF;
+	padding: 10px;
+	width: 331px;
+	height: auto;
+	text-align: left;
+}
+.list_content_div
+{
+	color: #333333;
+  background-color: #FFF;
+	width: 100%;
+  height: 250px;
+  overflow: auto;
+}
+.content
+{
+	border-bottom: solid 1px #ccc;
+}
+div.emptyline
+{
+	height: 12px;
+}
+</style>
+</head>
+
+<body>
+	<form name="wifi_form" id="wifi_form" method="POST" action="" novalidate="novalidate">
+		<div id="wrapper">
+			<!-------------------- Logo ------------------------->
+			<div id="header"><div>
+	<div style="position:relative; top:37px;">
+		<a href="http://www.dlink.com/" target="_blank">
+			<img id="image_Logo" src="resources/logo_2.png" alt="D-Link" width="102" height="20" border="0">
+		</a>
+	</div>
+	<table id="device_ver" style="position:relative; top:33px; font-size:13px; color:#969696;" border="0">
+		<tbody>
+			<tr>
+				<td style="padding: 0 10px 0 0;"><label id="h_ModelName">DIR-890L</label></td>
+				<td style="padding: 0 10px 0 0;">HW:<label id="h_HWVersion">A1</label></td>
+				<td style="padding: 0 10px 0 0;">FW:<label id="h_FWVersion">1.00</label></td>
+			</tr>
+		</tbody>
+	</table>
+
+</div></div>
+			<!-------------------- Menu ------------------------->
+			<div id="menu"><ul>	<li><a id="menu_Home" href="Home.html">Home</a></li>	<li class="parent" onmouseover="this.className=&quot;parentOn&quot;" onmouseout="this.className=&quot;parent&quot;">
+			<a id="menu_Settings" href="#" style="background: url(resources/navigation_bg5.gif?v=20141117210117) 100% 0% no-repeat;">Settings</a>		
+			
+			<ul>			
+			
+			<li><a href="Wizard_Manual.html" onclick="return confirmExit()">Wizard</a></li>			
+			<li><a href="Internet.html" onclick="return confirmExit();">Internet</a></li>	
+			
+			
+			<li><a href="WiFi.html" onclick="return confirmExit()">Wireless</a></li>
+			<li><a href="Network.html" onclick="return confirmExit()">Network</a></li>	
+			<li><a href="SharePort.html" onclick="return confirmExit()">SharePort</a></li>	
+			<li><a href="Mydlink.html" onclick="return confirmExit()">mydlink</a></li>		
+			
+			
+			</ul>	</li>	
+			
+			
+			<li class="parent" onmouseover="this.className=&quot;parentOn&quot;" onmouseout="this.className=&quot;parent&quot;">
+			<a id="menu_Advanced" href="#">Features</a>		
+			<ul>
+			
+				
+		<li><a href="QoS.html" onclick="return confirmExit()">QoS Engine</a></li>			
+		<li><a href="Firewall.html" onclick="return confirmExit()">Firewall</a></li>			
+		<li><a href="PortForwarding.html" onclick="return confirmExit()">Port Forwarding</a></li>			
+		<li><a href="WebsiteFilter.html" onclick="return confirmExit()">Website Filter</a></li>			
+		<li><a href="StaticRoute.html" onclick="return confirmExit()">Static Route</a></li>			
+		<li><a href="DynamicDNS.html" onclick="return confirmExit()">Dynamic DNS</a></li>			
+		<li><a href="VPN.html" onclick="return confirmExit()">Quick VPN</a></li>
+
+			</ul>	</li>	
+			
+			<li class="parent" onmouseover="this.className=&quot;parentOn&quot;" onmouseout="this.className=&quot;parent&quot;">
+			<a id="menu_Management" href="#">Management</a>		
+			<ul>			
+				<li><a href="Time.html" onclick="return confirmExit()">Time &amp; Schedule</a></li>			
+		<li><a href="SystemLog.html" onclick="return confirmExit()">System Log</a></li>			
+		<li><a href="Admin.html" onclick="return confirmExit()">System Admin</a></li>			
+		<li><a href="UpdateFirmware.html" onclick="return confirmExit()">Upgrade</a></li>			
+		<li><a href="Statistics.html" onclick="return confirmExit()">Statistics</a></li>	
+			
+			</ul>	
+			
+			</li></ul></div>
+			<!-------------------- Content ---------------------->
+			<div id="content">
+				<!-------------------- info ------------------------->
+				<div id="info">
+					<div id="FunctionName">Wireless</div>
+					<div id="wallimage"><img src="resources/wifi_24.png" alt="" width="195" height="119"></div>
+					<div id="directions">
+						Use this section to configure the wireless settings for your D-Link Router. Please make sure that any changes made in this section will need to be updated on your wireless device.
+					</div>
+				</div>
+				<!-------------------- funcBar ---------------------->
+				<div id="funcBar">
+					<div id="pagePath">&nbsp; Settings &gt;&gt; Wireless</div>
+					<ul id="rightFunc">
+						<li style="display:block"><div id="Save_btn" onclick='alert("This feature has been disabled on this emulator.")' style="cursor:pointer; display:none">Save</div></li>
+						<li style="display:block"><div id="Save_Disable_btn">Save</div></li>
+						<input id="sumbit_CheckData" class="submit" type="submit" value="Submit" style="display:none">
+						<li id="FUNC_Guest" style="display: block;"><a href="GuestZone.html" style="text-decoration:none;" onclick="return confirmExit()"><div id="page_btn" class="linkstyle_1">Guest Zone</div></a></li>
+					</ul>
+				</div>
+	     	<!-------------------- main ---------------------->
+	     	<div id="main">
+		     	<!----- start of AP Client Settings ----->
+					<div id="WIFI_STA" style="display: none;">
+						<table class="block">
+							<tbody>
+								<tr>
+									<td><div class="title">Station</div></td>
+									<td></td>
+								</tr>
+								<tr>
+									<th>Wireless Network Name:</th>
+									<td width="220px">
+										<input class="styled-text" type="text" id="apclient_ssid" name="apclient_ssid" size="30" maxlength="32" onchange="AutoWLanMode()">
+									</td>
+									<td>
+										<button id="apclient_scan_btn" type="button" class="btn_radius" onclick="TriggerSiteSurvey()" style="cursor:pointer">Scan
+									</button></td>
+								</tr>
+								<tr>
+									<th>Security:</th>
+									<td>
+										<div class="styled-select">
+											<select id="apclient_security" onchange="ChangeSecurity(this.value)">
+												<option value="NONE">None</option>
+												<option value="WEP">WEP</option>
+												<option value="WPA+2PSK">WPA/WPA2-Personal</option>
+											</select>
+										</div>
+									</td>
+									<td></td>
+								</tr>
+								<tr id="apclient_wep_passlen_tr" style="display:none;">
+									<th>Password Length:</th>
+									<td>
+										<div class="styled-select">
+											<select id="apclient_wep_passlen">
+												<option value="64Hex">64 bit(10 hex digits)</option>
+												<option value="64ASCII">64 bit(5 ascii characters)</option>
+												<option value="128Hex">128 bit(26 hex digits)</option>
+												<option value="128ASCII">128 bit(13 ascii characters)</option>
+											</select>
+										</div>
+									</td>
+									<td></td>
+								</tr>
+								<tr id="apclient_passwd_tr" style="display:none;">
+									<th>Password:</th>
+									<td><input id="apclient_passwd" name="apclient_passwd" class="styled-text" type="text" size="27" autocomplete="off"></td>
+									<td></td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+					<!----- end of AP Client Settings ----->
+					<!----- start of Smart Connect Settings ----->
+					<div id="SMART_CONNECT" style="display: block;">
+						<table class="block" border="0" cellspacing="0" style="margin: 10px 0 0 0;">
+							<tbody>
+								<tr>
+									<td><div class="title">Smart Connect</div></td>
+									<td></td>
+								</tr>
+								<tr>
+									<th>Smart Connect:</th>
+									<td>
+										<div id="status_smartconnect" class="checkbox_off" onclick="ChangeBandStatus(&#39;smartconnect&#39;)"><input type="checkbox" id="status_smartconnect_ck" name="status_smartconnect_ck" checked="">Disabled</div>
+									</td>
+								</tr>
+								<tr id="smartconnect_ssid_tr" style="display: none;">
+									<th>Wi-Fi Name (SSID):</th>
+									<td><input class="styled-text" type="text" name="wifiName_smartconnect" maxlength="32" size="30" id="wifiName_smartconnect" disabled=""></td>
+								</tr>
+								<tr id="smartconnect_passwd_tr" style="display: none;">
+									<th>Password:</th>
+									<td><input class="styled-text" type="text" name="password_smartconnect" size="30" id="password_smartconnect" disabled=""></td>
+								</tr>
+							</tbody>
+						</table>
+						<div id="smartconnect_line" style="display: none;" class="advButton" onclick="showAdv(&#39;SMART_CONNECT_adv&#39;);">Advanced Settings...</div>
+						<hr>
+						<!-------------------- Smart Connect  Adv---------------------->
+						<div id="SMART_CONNECT_adv" style="display:none">
+							<table class="block">
+								<tbody>
+									<tr>
+										<th>Security Mode:</th>
+										<td>
+										
+											<div class="sbHolder" style="width:200px">
+													<a   class="sbToggle"></a>
+													
+													
+													<label class="custom-select">
+												<select style="height:30px; width:200px; border:none; font-size:inherit; padding: 5px;">
+													<option>None</option>
+													
+													
+												</select>
+											</label>
+										<!--
+											<div class="styled-select">
+												<select name="security_smartconnect" id="security_smartconnect" onchange="ChangePasswordInput(this.value)" sb="73671318" style="display: none;">
+												<option value="None">None</option>
+												</select><div id="sbHolder_73671318" class="sbHolder" style="width:200px"><a id="sbToggle_73671318" href="http://192.168.0.1/WiFi.html#" class="sbToggle"></a><a id="sbSelector_73671318" href="http://192.168.0.1/WiFi.html#" class="sbSelector" style="width:170px">None</a><ul id="sbOptions_73671318" class="sbOptions" style="width: 200px; display: none;"><li class="last"><a href="http://192.168.0.1/None" rel="None" class="sbFocus">None</a></li></ul></div>
+												-->
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<th>Transmission Power:</th>
+										<td>
+										
+										<div class="sbHolder" style="width:200px">
+													<a   class="sbToggle"></a>
+													
+													
+													<label class="custom-select">
+												<select style="height:30px; width:200px; border:none; font-size:inherit; padding: 5px;">
+													<option>High</option>
+													<option>Medium</option>
+													<option>Low</option>
+												</select>
+											</label>
+										
+										<!--
+											<div class="styled-select">
+												<select name="transmissionPower_smartconnect" id="transmissionPower_smartconnect" sb="547655" style="display: none;">
+													<option value="100" selected="">High</option>
+													<option value="50">Medium</option>
+													<option value="25">Low</option>
+												</select><div id="sbHolder_547655" class="sbHolder" style="width:200px"><a id="sbToggle_547655" href="http://192.168.0.1/WiFi.html#" class="sbToggle"></a><a id="sbSelector_547655" href="http://192.168.0.1/WiFi.html#" class="sbSelector" style="width:170px">High</a><ul id="sbOptions_547655" class="sbOptions" style="width: 200px; display: none;"><li><a href="http://192.168.0.1/100" rel="100" class="sbFocus">High</a></li><li><a href="http://192.168.0.1/50" rel="50">Medium</a></li><li><a href="http://192.168.0.1/25" rel="25">Low</a></li></ul></div>
+												
+												-->
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<th><a href="Schedule.html">Schedule</a>:</th>
+										<td>
+										
+										<!--
+											<div class="styled-select">
+											<select name="schedule_smartconnect" id="schedule_smartconnect" sb="2435548" style="display: none;">
+											 	<option value="ALWAYS" selected="">Always</option>
+											</select><div id="sbHolder_2435548" class="sbHolder" style="width:200px"><a id="sbToggle_2435548" href="http://192.168.0.1/WiFi.html#" class="sbToggle"></a><a id="sbSelector_2435548" href="http://192.168.0.1/WiFi.html#" class="sbSelector" style="width:170px">Always Enable</a><ul id="sbOptions_2435548" class="sbOptions" style="width: 200px; display: none;"><li class="last"><a href="http://192.168.0.1/ALWAYS" rel="ALWAYS" class="sbFocus">Always Enable</a></li></ul></div>
+											
+											-->
+											<div class="sbHolder" style="width:200px">
+													<a   class="sbToggle"></a>
+													
+													
+													<label class="custom-select">
+												<select style="height:30px; width:200px; border:none; font-size:inherit; padding: 5px;">
+													<option>Always Enable</option>
+													
+												</select>
+											</label>
+											
+											</div>
+										</td>
+									</tr>
+								</tbody>
+							</table>
+							<hr>
+						</div>
+					</div>
+					<!----- end of Smart Connect Settings ----->
+					<div id="separated_line" style="display: none;">
+						<hr>
+					</div>
+					<!-------------------- Wi-Fi RADIO_2.4GHz ---------------------->
+					<div id="RADIO_2GHz" style="display: block;">
+						<!--<p>2.4 GHz</p>-->
+						<table class="block" border="0" cellspacing="0" style="margin: 10px 0 0 0;">
+							<tbody>
+								<tr>
+									<td><div class="title">2.4GHz</div></td>
+									<td></td>
+								</tr>
+								<tr>
+									<th>Status:</th>
+									<td>
+										<div id="status_24" class="checkbox_on" onclick="ChangeBandStatus(&#39;24&#39;)"><input type="checkbox" id="status_24_ck" name="status_24_ck" checked="">Enabled</div>
+									</td>
+								</tr>
+								<tr>
+									<th>Wi-Fi Name (SSID):</th>
+									<td><input class="styled-text" type="text" name="wifiName_24" maxlength="32" size="30" id="wifiName_24"></td>
+								</tr>
+								<tr>
+									<th>Password:</th>
+									<td><input class="styled-text" type="text" name="password_24" size="30" id="password_24"></td>
+								</tr>
+							</tbody>
+						</table>
+						<div class="advButton" onclick="showAdv(&#39;RADIO_2GHz_adv&#39;);">Advanced Settings...</div>
+						<hr>
+						<!-------------------- Wi-Fi RADIO_2.4GHz  Adv---------------------->
+						<div id="RADIO_2GHz_adv" style="display:none">
+							<table class="block">
+								<tbody>
+									<tr>
+										<th>Security Mode:</th>
+										<td>
+										<div class="sbHolder" style="width:200px">
+													<a   class="sbToggle"></a>
+													
+													
+													<label class="custom-select">
+												<select style="height:30px; width:200px; border:none; font-size:inherit; padding: 5px;">
+													<option>None</option>
+													<option>WEP</option>
+													<option>WPA/WPA2-Personal</option>
+												</select>
+											</label>
+										<!--
+											<div class="styled-select">
+												<select name="security_24" id="security_24" onchange="ChangeSupportModeList(this.value, &#39;24&#39;)" sb="52932858" style="display: none;">
+												<option value="None">None</option>
+												<option value="WEP">WEP</option><option value="WPA/WPA2-Personal">WPA/WPA2-Personal</option></select><div id="sbHolder_52932858" class="sbHolder" style="width:200px"><a id="sbToggle_52932858" href="http://192.168.0.1/WiFi.html#" class="sbToggle"></a><a id="sbSelector_52932858" href="http://192.168.0.1/WiFi.html#" class="sbSelector" style="width:170px">WPA/WPA2-Personal</a><ul id="sbOptions_52932858" class="sbOptions" style="width: 200px; display: none;"><li><a href="http://192.168.0.1/None" rel="None">None</a></li><li><a href="http://192.168.0.1/WEP" rel="WEP">WEP</a></li><li><a href="http://192.168.0.1/WPA/WPA2-Personal" rel="WPA/WPA2-Personal" class="sbFocus">WPA/WPA2-Personal</a></li></ul></div>
+												
+												-->
+											</div>
+										</td>
+									</tr>
+									<tr id="show_80211Mode_24G">
+										<th>802.11 Mode:</th>
+										<td>
+										
+										<div class="sbHolder" style="width:200px">
+													<a   class="sbToggle"></a>
+													
+													
+													<label class="custom-select">
+												<select style="height:30px; width:200px; border:none; font-size:inherit; padding: 5px;">
+													<option>802.11n only</option>
+													<option>Mixed 802.11g/n</option>
+													<option>Mixed 802.11b/g/n</option>
+												</select>
+											</label>
+										<!--
+											<div class="styled-select">
+												<select name="80211Mode_24" id="80211Mode_24" onchange="ChangeWidthList(&#39;24&#39;)" sb="61338093" style="display: none;">
+												<option value="802.11n">802.11n only</option>
+												<option value="802.11gn">Mixed 802.11g/n</option>
+												<option value="802.11bgn">Mixed 802.11b/g/n</option>
+												</select><div id="sbHolder_61338093" class="sbHolder" style="width:200px"><a id="sbToggle_61338093" href="http://192.168.0.1/WiFi.html#" class="sbToggle"></a><a id="sbSelector_61338093" href="http://192.168.0.1/WiFi.html#" class="sbSelector" style="width:170px">802.11n only</a><ul id="sbOptions_61338093" class="sbOptions" style="width: 200px; display: none;"><li><a href="http://192.168.0.1/802.11n" rel="802.11n" class="sbFocus">802.11n only</a></li><li><a href="http://192.168.0.1/802.11gn" rel="802.11gn">Mixed 802.11g/n</a></li><li><a href="http://192.168.0.1/802.11bgn" rel="802.11bgn">Mixed 802.11b/g/n</a></li></ul></div>
+												-->
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<th>Wi-Fi Channel:</th>
+										<td>
+										
+											<div class="sbHolder" style="width:200px">
+													<a   class="sbToggle"></a>
+													
+													
+													<label class="custom-select">
+												<select style="height:30px; width:200px; border:none; font-size:inherit; padding: 5px;">
+													<option>1</option>
+													<option>2</option>
+													<option>3</option>
+													<option>4</option>
+													<option>5</option>
+													<option>6</option>
+													<option>7</option>
+													<option>8</option>
+													<option>9</option>
+													<option>10</option>
+													<option>11</option>
+
+												</select>
+											</label>
+										<!--
+											<div class="styled-select">
+												<select name="channel_24" id="channel_24" onchange="ChangeWidthList(&#39;24&#39;)" sb="30881879" style="display: none;">
+													<option value="0">Auto</option>
+												<option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option></select><div id="sbHolder_30881879" class="sbHolder" style="width:200px"><a id="sbToggle_30881879" href="http://192.168.0.1/WiFi.html#" class="sbToggle"></a><a id="sbSelector_30881879" href="http://192.168.0.1/WiFi.html#" class="sbSelector" style="width:170px">6</a><ul id="sbOptions_30881879" class="sbOptions" style="width: 200px; display: none;"><li><a href="http://192.168.0.1/0" rel="0">Auto</a></li><li><a href="http://192.168.0.1/1" rel="1">1</a></li><li><a href="http://192.168.0.1/2" rel="2">2</a></li><li><a href="http://192.168.0.1/3" rel="3">3</a></li><li><a href="http://192.168.0.1/4" rel="4">4</a></li><li><a href="http://192.168.0.1/5" rel="5">5</a></li><li><a href="http://192.168.0.1/6" rel="6" class="sbFocus">6</a></li><li><a href="http://192.168.0.1/7" rel="7">7</a></li><li><a href="http://192.168.0.1/8" rel="8">8</a></li><li><a href="http://192.168.0.1/9" rel="9">9</a></li><li><a href="http://192.168.0.1/10" rel="10">10</a></li><li><a href="http://192.168.0.1/11" rel="11">11</a></li></ul></div>
+												
+												-->
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<th>Transmission Power:</th>
+										<td>
+										
+										
+											<div class="sbHolder" style="width:200px">
+													<a   class="sbToggle"></a>
+													
+													
+													<label class="custom-select">
+												<select style="height:30px; width:200px; border:none; font-size:inherit; padding: 5px;">
+													<option>High</option>
+													<option>Medium</option>
+													<option>Low</option>
+													
+
+												</select>
+											</label>
+										<!--
+											<div class="styled-select">
+												<select name="transmissionPower_24" id="transmissionPower_24" sb="815601" style="display: none;">
+													<option value="100" selected="">High</option>
+													<option value="50">Medium</option>
+													<option value="25">Low</option>
+												</select><div id="sbHolder_815601" class="sbHolder" style="width:200px"><a id="sbToggle_815601" href="http://192.168.0.1/WiFi.html#" class="sbToggle"></a><a id="sbSelector_815601" href="http://192.168.0.1/WiFi.html#" class="sbSelector" style="width:170px">High</a><ul id="sbOptions_815601" class="sbOptions" style="width: 200px; display: none;"><li><a href="http://192.168.0.1/100" rel="100" class="sbFocus">High</a></li><li><a href="http://192.168.0.1/50" rel="50">Medium</a></li><li><a href="http://192.168.0.1/25" rel="25">Low</a></li></ul></div>
+												-->
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<th>Channel Width:</th>
+										<td>
+										
+											<div class="sbHolder" style="width:200px">
+													<a   class="sbToggle"></a>
+													
+													
+													<label class="custom-select">
+												<select style="height:30px; width:200px; border:none; font-size:inherit; padding: 5px;">
+													<option>20 MHz</option>
+													<option>Auto 20/40 MHz</option>
+													
+													
+
+												</select>
+											</label>
+										
+										<!--
+											<div class="styled-select">
+												<select name="channelWidth_24" id="channelWidth_24" sb="97805000" style="display: none;">
+													
+													
+												<option value="20">20 MHz</option>
+												<option value="0">Auto 20/40 MHz</option>
+												</select><div id="sbHolder_97805000" class="sbHolder" style="width:200px"><a id="sbToggle_97805000" href="http://192.168.0.1/WiFi.html#" class="sbToggle"></a><a id="sbSelector_97805000" href="http://192.168.0.1/WiFi.html#" class="sbSelector" style="width:170px">Auto 20/40 MHz</a><ul id="sbOptions_97805000" class="sbOptions" style="width: 200px; display: none;"><li><a href="http://192.168.0.1/20" rel="20">20 MHz</a></li><li><a href="http://192.168.0.1/0" rel="0" class="sbFocus">Auto 20/40 MHz</a></li></ul></div>
+												
+												-->
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<th>Visibility Status:</th>
+										<td>
+										
+											<div class="sbHolder" style="width:200px">
+													<a   class="sbToggle"></a>
+													
+													
+													<label class="custom-select">
+												<select style="height:30px; width:200px; border:none; font-size:inherit; padding: 5px;">
+													<option>Visible</option>
+													<option>Invisible</option>
+													
+													
+
+												</select>
+											</label>
+										<!--
+											<div class="styled-select">
+												<select name="visibilityStatus_24" id="visibilityStatus_24" sb="77474027" style="display: none;">
+													<option value="true">Visible</option>
+													<option value="false">Invisible</option>
+												</select><div id="sbHolder_77474027" class="sbHolder" style="width:200px"><a id="sbToggle_77474027" href="http://192.168.0.1/WiFi.html#" class="sbToggle"></a><a id="sbSelector_77474027" href="http://192.168.0.1/WiFi.html#" class="sbSelector" style="width:170px">Visible</a><ul id="sbOptions_77474027" class="sbOptions" style="width: 200px; display: none;"><li><a href="http://192.168.0.1/true" rel="true" class="sbFocus">Visible</a></li><li><a href="http://192.168.0.1/false" rel="false">Invisible</a></li></ul></div>
+												
+												-->
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<th><a href="Schedule.html">Schedule</a>:</th>
+										<td>
+										
+										
+											<div class="sbHolder" style="width:200px">
+													<a   class="sbToggle"></a>
+													
+													
+													<label class="custom-select">
+												<select style="height:30px; width:200px; border:none; font-size:inherit; padding: 5px;">
+													<option>Always Enable</option>
+													
+													
+
+												</select>
+											</label>
+										
+										<!--
+											<div class="styled-select">
+											<select name="schedule_24" id="schedule_24" sb="99615998" style="display: none;">
+											 	<option value="ALWAYS" selected="">Always</option>
+											</select><div id="sbHolder_99615998" class="sbHolder" style="width:200px"><a id="sbToggle_99615998" href="http://192.168.0.1/WiFi.html#" class="sbToggle"></a><a id="sbSelector_99615998" href="http://192.168.0.1/WiFi.html#" class="sbSelector" style="width:170px">Always Enable</a><ul id="sbOptions_99615998" class="sbOptions" style="width: 200px; display: none;"><li class="last"><a href="http://192.168.0.1/ALWAYS" rel="ALWAYS" class="sbFocus">Always Enable</a></li></ul></div>
+											
+											-->
+											</div>
+										</td>
+									</tr>
+								</tbody>
+							</table>
+							<hr>
+						</div>
+					</div>
+					<!-------------------- Wi-Fi RADIO_5GHz Low Band ---------------------->
+					<div id="RADIO_5GHz" style="display: block;">
+						<table class="block" style="margin: 10px 0 0 0;">
+							<tbody>
+								<tr>
+									<td><div class="title">Primary 5GHz</div></td>
+									<td></td>
+								</tr>
+								<tr>
+									<th>Status:</th>
+									<td>
+										<div id="status_5" class="checkbox_on" onclick="ChangeBandStatus(&#39;5&#39;)"><input type="checkbox" id="status_5_ck" name="status_5_ck" checked="">Enabled</div>
+									</td>
+								</tr>
+								<tr>
+									<th>Wi-Fi Name (SSID):</th>
+									<td><input class="styled-text" type="text" name="wifiName_5" size="30" maxlength="32" id="wifiName_5"></td>
+								</tr>
+								<tr>
+									<th>Password:</th>
+									<td><input class="styled-text" type="text" name="password_5" size="30" id="password_5"></td>
+								</tr>
+							</tbody>
+						</table>
+						<div class="advButton" onclick="showAdv(&#39;RADIO_5GHz_adv&#39;);">Advanced Settings...</div>
+						<hr>
+						<!-------------------- Wi-Fi RADIO_5GHz Low Band adv---------------------->
+						<div id="RADIO_5GHz_adv" style="display:none">
+							<table class="block" border="0">
+								<tbody>
+									<tr>
+										<th>Security Mode:</th>
+										<td>
+										
+										<div class="sbHolder" style="width:200px">
+													<a   class="sbToggle"></a>
+													
+													
+													<label class="custom-select">
+												<select style="height:30px; width:200px; border:none; font-size:inherit; padding: 5px;">
+													<option>None</option>
+													<option>WEP</option>
+													<option>WPA/WPA2-Personal</option>
+													
+
+												</select>
+											</label>
+										<!--
+											<div class="styled-select">
+												<select name="security_5" id="security_5" onchange="ChangeSupportModeList(this.value, &#39;5&#39;)" sb="85408531" style="display: none;">
+													<option value="None">None</option>
+												<option value="WEP">WEP</option><option value="WPA/WPA2-Personal">WPA/WPA2-Personal</option></select><div id="sbHolder_85408531" class="sbHolder" style="width:200px"><a id="sbToggle_85408531" href="http://192.168.0.1/WiFi.html#" class="sbToggle"></a><a id="sbSelector_85408531" href="http://192.168.0.1/WiFi.html#" class="sbSelector" style="width:170px">WPA/WPA2-Personal</a><ul id="sbOptions_85408531" class="sbOptions" style="width: 200px; display: none;"><li><a href="http://192.168.0.1/None" rel="None">None</a></li><li><a href="http://192.168.0.1/WEP" rel="WEP">WEP</a></li><li><a href="http://192.168.0.1/WPA/WPA2-Personal" rel="WPA/WPA2-Personal" class="sbFocus">WPA/WPA2-Personal</a></li></ul></div>
+												
+												-->
+											</div>
+										</td>
+									</tr>
+									<tr id="show_80211Mode_5G">
+										<th>802.11 Mode:</th>
+										<td>
+										
+										<div class="sbHolder" style="width:200px">
+													<a   class="sbToggle"></a>
+													
+													
+													<label class="custom-select">
+												<select style="height:30px; width:200px; border:none; font-size:inherit; padding: 5px;">
+													<option>802.11a only</option>
+													<option>802.11n only</option>
+													<option>Mixed 802.11a/n</option>
+													<option>802.11ac only</option>
+													<option>Mixed 802.11n/ac</option>
+													<option>Mixed 802.11a/n/ac</option>
+
+												</select>
+											</label>
+										<!--
+											<div class="styled-select">
+												<select name="80211Mode_5" id="80211Mode_5" onchange="ChangeWidthList(&#39;5&#39;)" sb="70434548" style="display: none;">
+												<option value="802.11a">802.11a only</option>
+												<option value="802.11n">802.11n only</option>
+												<option value="802.11an">Mixed 802.11a/n</option>
+												<option value="802.11ac">802.11ac only</option>
+												<option value="802.11nac">Mixed 802.11n/ac</option>
+												<option value="802.11anac">Mixed 802.11a/n/ac</option>
+												</select>
+												
+												<div id="sbHolder_70434548" class="sbHolder" style="width:200px"><a id="sbToggle_70434548" href="http://192.168.0.1/WiFi.html#" class="sbToggle"></a><a id="sbSelector_70434548" href="http://192.168.0.1/WiFi.html#" class="sbSelector" style="width:170px">Mixed 802.11n/ac</a><ul id="sbOptions_70434548" class="sbOptions" style="width: 200px; display: none;"><li><a href="http://192.168.0.1/802.11a" rel="802.11a">802.11a only</a></li><li><a href="http://192.168.0.1/802.11n" rel="802.11n">802.11n only</a></li><li><a href="http://192.168.0.1/802.11an" rel="802.11an">Mixed 802.11a/n</a></li><li><a href="http://192.168.0.1/802.11ac" rel="802.11ac">802.11ac only</a></li><li><a href="http://192.168.0.1/802.11nac" rel="802.11nac" class="sbFocus">Mixed 802.11n/ac</a></li><li><a href="http://192.168.0.1/802.11anac" rel="802.11anac">Mixed 802.11a/n/ac</a></li></ul></div>
+												
+												-->
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<th>Wi-Fi Channel:</th>
+										<td>
+										
+										
+										<div class="sbHolder" style="width:200px">
+													<a   class="sbToggle"></a>
+													
+													
+													<label class="custom-select">
+												<select style="height:30px; width:200px; border:none; font-size:inherit; padding: 5px;">
+													<option>0</option>
+													<option>36</option>
+													<option>40</option>
+													<option>44</option>
+													<option>48</option>
+													
+
+												</select>
+											</label>
+										<!--
+											<div class="styled-select">
+												<select name="channel_5" id="channel_5" onchange="ChangeWidthList(&#39;5&#39;)" sb="46834755" style="display: none;">
+												<option value="0">Auto</option>
+												<option value="36">36</option>
+												<option value="40">40</option>
+												<option value="44">44</option>
+												<option value="48">48</option></select>
+												
+												<div id="sbHolder_46834755" class="sbHolder" style="width:200px"><a id="sbToggle_46834755" href="http://192.168.0.1/WiFi.html#" class="sbToggle"></a><a id="sbSelector_46834755" href="http://192.168.0.1/WiFi.html#" class="sbSelector" style="width:170px">Auto</a><ul id="sbOptions_46834755" class="sbOptions" style="width: 200px; display: none;"><li><a href="http://192.168.0.1/0" rel="0" class="sbFocus">Auto</a></li><li><a href="http://192.168.0.1/36" rel="36">36</a></li><li><a href="http://192.168.0.1/40" rel="40">40</a></li><li><a href="http://192.168.0.1/44" rel="44">44</a></li><li><a href="http://192.168.0.1/48" rel="48">48</a></li></ul></div>
+												
+												-->
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<th>Transmission Power:</th>
+										<td>
+										
+										
+										<div class="sbHolder" style="width:200px">
+													<a   class="sbToggle"></a>
+													
+													
+													<label class="custom-select">
+												<select style="height:30px; width:200px; border:none; font-size:inherit; padding: 5px;">
+													<option selected="">High</option>
+													<option>Medium</option>
+													<option>Low</option>
+													
+													
+
+												</select>
+											</label>
+										<!--
+											<div class="styled-select">
+												<select name="transmissionPower_5" id="transmissionPower_5" sb="13689992" style="display: none;">
+													<option value="100" selected="">High</option>
+													<option value="50">Medium</option>
+													<option value="25">Low</option>
+												</select><div id="sbHolder_13689992" class="sbHolder" style="width:200px"><a id="sbToggle_13689992" href="http://192.168.0.1/WiFi.html#" class="sbToggle"></a><a id="sbSelector_13689992" href="http://192.168.0.1/WiFi.html#" class="sbSelector" style="width:170px">High</a><ul id="sbOptions_13689992" class="sbOptions" style="width: 200px; display: none;"><li><a href="http://192.168.0.1/100" rel="100" class="sbFocus">High</a></li><li><a href="http://192.168.0.1/50" rel="50">Medium</a></li><li><a href="http://192.168.0.1/25" rel="25">Low</a></li></ul></div>
+												
+												-->
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<th>Channel Width:</th>
+										<td>
+										
+											
+										<div class="sbHolder" style="width:200px">
+													<a   class="sbToggle"></a>
+													
+													
+													<label class="custom-select">
+												<select style="height:30px; width:200px; border:none; font-size:inherit; padding: 5px;">
+													<option selected="">Auto 20/40 MHz</option>
+													<option>Auto 20/40/80 MHz</option>
+													
+													
+													
+
+												</select>
+											</label>
+										<!--
+											<div class="styled-select">
+												<select name="channelWidth_5" id="channelWidth_5" sb="45937479" style="display: none;">
+													
+													
+												<option value="0">Auto 20/40 MHz</option>
+												<option value="1">Auto 20/40/80 MHz</option></select><div id="sbHolder_45937479" class="sbHolder" style="width:200px"><a id="sbToggle_45937479" href="http://192.168.0.1/WiFi.html#" class="sbToggle"></a><a id="sbSelector_45937479" href="http://192.168.0.1/WiFi.html#" class="sbSelector" style="width:170px">Auto 20/40/80 MHz</a><ul id="sbOptions_45937479" class="sbOptions" style="width: 200px; display: none;"><li><a href="http://192.168.0.1/0" rel="0">Auto 20/40 MHz</a></li><li><a href="http://192.168.0.1/1" rel="1" class="sbFocus">Auto 20/40/80 MHz</a></li></ul></div>
+												
+												-->
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<th>Visibility Status:</th>
+										<td>
+											
+										<div class="sbHolder" style="width:200px">
+													<a   class="sbToggle"></a>
+													
+													
+													<label class="custom-select">
+												<select style="height:30px; width:200px; border:none; font-size:inherit; padding: 5px;">
+													<option selected="">Visible</option>
+													<option>Invisible</option>
+													
+													
+													
+
+												</select>
+											</label>
+										<!--
+											<div class="styled-select">
+												<select name="visibilityStatus_5" id="visibilityStatus_5" sb="3025333" style="display: none;">
+													<option value="true">Visible</option>
+													<option value="false">Invisible</option>
+												</select><div id="sbHolder_3025333" class="sbHolder" style="width:200px"><a id="sbToggle_3025333" href="http://192.168.0.1/WiFi.html#" class="sbToggle"></a><a id="sbSelector_3025333" href="http://192.168.0.1/WiFi.html#" class="sbSelector" style="width:170px">Visible</a><ul id="sbOptions_3025333" class="sbOptions" style="width: 200px; display: none;"><li><a href="http://192.168.0.1/true" rel="true" class="sbFocus">Visible</a></li><li><a href="http://192.168.0.1/false" rel="false">Invisible</a></li></ul></div>
+												
+												-->
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<th><a href="Schedule.html">Schedule</a>:</th>
+										<td>
+										
+											
+										<div class="sbHolder" style="width:200px">
+													<a   class="sbToggle"></a>
+													
+													
+													<label class="custom-select">
+												<select style="height:30px; width:200px; border:none; font-size:inherit; padding: 5px;">
+													<option selected="">Always Enable</option>
+													
+													
+													
+
+												</select>
+										</label>
+										<!--
+											<div class="styled-select">
+											<select name="schedule_5" id="schedule_5" sb="75696904" style="display: none;">
+											 	<option value="ALWAYS" selected="">Always</option>
+											</select><div id="sbHolder_75696904" class="sbHolder" style="width:200px"><a id="sbToggle_75696904" href="http://192.168.0.1/WiFi.html#" class="sbToggle"></a><a id="sbSelector_75696904" href="http://192.168.0.1/WiFi.html#" class="sbSelector" style="width:170px">Always Enable</a><ul id="sbOptions_75696904" class="sbOptions" style="width: 200px; display: none;"><li class="last"><a href="http://192.168.0.1/ALWAYS" rel="ALWAYS" class="sbFocus">Always Enable</a></li></ul></div>
+											
+											-->
+											</div>
+										</td>
+									</tr>
+								</tbody>
+							</table>
+							<hr>
+						</div>
+					</div>
+					<!-------------------- Wi-Fi RADIO_5GHz High Band ---------------------->
+					<div id="RADIO_5GHz_hi" style="display: block;">
+						<table class="block" style="margin: 10px 0 0 0;">
+							<tbody>
+								<tr>
+									<td><div class="title">Secondary 5GHz</div></td>
+									<td></td>
+								</tr>
+								<tr>
+									<th>Status:</th>
+									<td>
+										<div id="status_5hi" class="checkbox_on" onclick="ChangeBandStatus(&#39;5hi&#39;)"><input type="checkbox" id="status_5hi_ck" name="status_5hi_ck" checked="">Enabled</div>
+									</td>
+								</tr>
+								<tr>
+									<th>Wi-Fi Name (SSID):</th>
+									<td><input class="styled-text" type="text" name="wifiName_5hi" size="30" maxlength="32" id="wifiName_5hi"></td>
+								</tr>
+								<tr>
+									<th>Password:</th>
+									<td><input class="styled-text" type="text" name="password_5hi" size="30" id="password_5hi"></td>
+								</tr>
+							</tbody>
+						</table>
+						<div class="advButton" onclick="showAdv(&#39;RADIO_5GHz_hi_adv&#39;);">Advanced Settings...</div>
+						<hr>
+						<!-------------------- Wi-Fi RADIO_5GHz High Band adv---------------------->
+						<div id="RADIO_5GHz_hi_adv" style="display:none">
+							<table class="block" border="0">
+								<tbody>
+									<tr>
+										<th>Security Mode:</th>
+										<td>
+										
+										<div class="sbHolder" style="width:200px">
+													<a   class="sbToggle"></a>
+													
+													
+													<label class="custom-select">
+												<select style="height:30px; width:200px; border:none; font-size:inherit; padding: 5px;">
+													<option selected="">None</option>
+													<option>WEP</option>
+													<option>WPA/WPA2-Personal</option>
+													
+
+												</select>
+										</label>
+										<!--
+											<div class="styled-select">
+												<select name="security_5hi" id="security_5hi" onchange="ChangeSupportModeList(this.value, &#39;5hi&#39;)" sb="64445565" style="display: none;">
+													<option value="None">None</option>
+												<option value="WEP">WEP</option><option value="WPA/WPA2-Personal">WPA/WPA2-Personal</option></select><div id="sbHolder_64445565" class="sbHolder" style="width:200px"><a id="sbToggle_64445565" href="http://192.168.0.1/WiFi.html#" class="sbToggle"></a><a id="sbSelector_64445565" href="http://192.168.0.1/WiFi.html#" class="sbSelector" style="width:170px">WPA/WPA2-Personal</a><ul id="sbOptions_64445565" class="sbOptions" style="width: 200px; display: none;"><li><a href="http://192.168.0.1/None" rel="None">None</a></li><li><a href="http://192.168.0.1/WEP" rel="WEP">WEP</a></li><li><a href="http://192.168.0.1/WPA/WPA2-Personal" rel="WPA/WPA2-Personal" class="sbFocus">WPA/WPA2-Personal</a></li></ul></div>
+												
+												-->
+											</div>
+										</td>
+									</tr>
+									<tr id="show_80211Mode_5G_hi">
+										<th>802.11 Mode:</th>
+										<td>
+										
+										
+										<div class="sbHolder" style="width:200px">
+													<a   class="sbToggle"></a>
+													
+													
+													<label class="custom-select">
+												<select style="height:30px; width:200px; border:none; font-size:inherit; padding: 5px;">
+													<option selected="">802.11a only</option>
+													<option>802.11n only</option>
+													<option>Mixed 802.11a/n</option>
+													<option>802.11ac only</option>
+													<option>Mixed 802.11n/ac</option>
+													<option>Mixed 802.11a/n/ac</option>
+
+												</select>
+										</label>
+										<!--
+											<div class="styled-select">
+												<select name="80211Mode_5hi" id="80211Mode_5hi" onchange="ChangeWidthList(&#39;5hi&#39;)" sb="20270833" style="display: none;">
+												<option value="802.11a">802.11a only</option>
+												<option value="802.11n">802.11n only</option>
+												<option value="802.11an">Mixed 802.11a/n</option>
+												<option value="802.11ac">802.11ac only</option>
+												<option value="802.11nac">Mixed 802.11n/ac</option>
+												<option value="802.11anac">Mixed 802.11a/n/ac</option></select>
+												
+												<div id="sbHolder_20270833" class="sbHolder" style="width:200px"><a id="sbToggle_20270833" href="http://192.168.0.1/WiFi.html#" class="sbToggle"></a><a id="sbSelector_20270833" href="http://192.168.0.1/WiFi.html#" class="sbSelector" style="width:170px">Mixed 802.11n/ac</a><ul id="sbOptions_20270833" class="sbOptions" style="width: 200px; display: none;"><li><a href="http://192.168.0.1/802.11a" rel="802.11a">802.11a only</a></li><li><a href="http://192.168.0.1/802.11n" rel="802.11n">802.11n only</a></li><li><a href="http://192.168.0.1/802.11an" rel="802.11an">Mixed 802.11a/n</a></li><li><a href="http://192.168.0.1/802.11ac" rel="802.11ac">802.11ac only</a></li><li><a href="http://192.168.0.1/802.11nac" rel="802.11nac" class="sbFocus">Mixed 802.11n/ac</a></li><li><a href="http://192.168.0.1/802.11anac" rel="802.11anac">Mixed 802.11a/n/ac</a></li></ul></div>
+												
+												-->
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<th>Wi-Fi Channel:</th>
+										<td>
+											
+										
+										<div class="sbHolder" style="width:200px">
+													<a   class="sbToggle"></a>
+													
+													
+													<label class="custom-select">
+												<select style="height:30px; width:200px; border:none; font-size:inherit; padding: 5px;">
+													<option selected="">149</option>
+													<option>153</option>
+													<option>157</option>
+													<option>161</option>
+													<option>165</option>
+													
+
+												</select>
+										</label>
+										<!--
+											<div class="styled-select">
+												<select name="channel_5hi" id="channel_5hi" onchange="ChangeWidthList(&#39;5hi&#39;)" sb="7575688" style="display: none;">
+													<option value="0">Auto</option>
+												<option value="149">149</option>
+												<option value="153">153</option>
+												<option value="157">157</option>
+												<option value="161">161</option>
+												<option value="165">165</option></select>
+												
+												<div id="sbHolder_7575688" class="sbHolder" style="width:200px"><a id="sbToggle_7575688" href="http://192.168.0.1/WiFi.html#" class="sbToggle"></a><a id="sbSelector_7575688" href="http://192.168.0.1/WiFi.html#" class="sbSelector" style="width:170px">Auto</a><ul id="sbOptions_7575688" class="sbOptions" style="width: 200px; display: none;"><li><a href="http://192.168.0.1/0" rel="0" class="sbFocus">Auto</a></li><li><a href="http://192.168.0.1/149" rel="149">149</a></li><li><a href="http://192.168.0.1/153" rel="153">153</a></li><li><a href="http://192.168.0.1/157" rel="157">157</a></li><li><a href="http://192.168.0.1/161" rel="161">161</a></li><li><a href="http://192.168.0.1/165" rel="165">165</a></li></ul></div>
+												
+												-->
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<th>Transmission Power:</th>
+										<td>
+										<div class="sbHolder" style="width:200px">
+													<a   class="sbToggle"></a>
+													
+													
+													<label class="custom-select">
+												<select style="height:30px; width:200px; border:none; font-size:inherit; padding: 5px;">
+													<option selected="">High</option>
+													<option>Medium</option>
+													<option>Low</option>
+													
+													
+
+												</select>
+										</label>
+										<!--
+											<div class="styled-select">
+												<select name="transmissionPower_5hi" id="transmissionPower_5hi" sb="13812312" style="display: none;">
+													<option value="100" selected="">High</option>
+													<option value="50">Medium</option>
+													<option value="25">Low</option>
+												</select><div id="sbHolder_13812312" class="sbHolder" style="width:200px"><a id="sbToggle_13812312" href="http://192.168.0.1/WiFi.html#" class="sbToggle"></a><a id="sbSelector_13812312" href="http://192.168.0.1/WiFi.html#" class="sbSelector" style="width:170px">High</a><ul id="sbOptions_13812312" class="sbOptions" style="width: 200px; display: none;"><li><a href="http://192.168.0.1/100" rel="100" class="sbFocus">High</a></li><li><a href="http://192.168.0.1/50" rel="50">Medium</a></li><li><a href="http://192.168.0.1/25" rel="25">Low</a></li></ul></div>
+												
+												-->
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<th>Channel Width:</th>
+										<td>
+										<div class="sbHolder" style="width:200px">
+													<a   class="sbToggle"></a>
+													
+													
+													<label class="custom-select">
+												<select style="height:30px; width:200px; border:none; font-size:inherit; padding: 5px;">
+													<option selected="">Auto 20/40 MHz</option>
+													<option>Auto 20/40/80 MHz</option>
+													
+													
+
+												</select>
+										</label>
+										<!--
+											<div class="styled-select">
+												<select name="channelWidth_5hi" id="channelWidth_5hi" sb="93463901" style="display: none;">
+													
+													
+												<option value="0">Auto 20/40 MHz</option>
+												<option value="1">Auto 20/40/80 MHz</option>
+												</select>
+												<div id="sbHolder_93463901" class="sbHolder" style="width:200px"><a id="sbToggle_93463901" href="http://192.168.0.1/WiFi.html#" class="sbToggle"></a><a id="sbSelector_93463901" href="http://192.168.0.1/WiFi.html#" class="sbSelector" style="width:170px">Auto 20/40/80 MHz</a><ul id="sbOptions_93463901" class="sbOptions" style="width: 200px; display: none;"><li><a href="http://192.168.0.1/0" rel="0">Auto 20/40 MHz</a></li><li><a href="http://192.168.0.1/1" rel="1" class="sbFocus">Auto 20/40/80 MHz</a></li></ul></div>
+												
+												-->
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<th>Visibility Status:</th>
+										<td>
+										
+										<div class="sbHolder" style="width:200px">
+													<a   class="sbToggle"></a>
+													
+													
+													<label class="custom-select">
+												<select style="height:30px; width:200px; border:none; font-size:inherit; padding: 5px;">
+													<option selected="">Visible</option>
+													<option>Invisible</option>
+													
+													
+
+												</select>
+										</label>
+										<!--
+											<div class="styled-select">
+												<select name="visibilityStatus_5hi" id="visibilityStatus_5hi" sb="55711846" style="display: none;">
+													<option value="true">Visible</option>
+													<option value="false">Invisible</option>
+												</select><div id="sbHolder_55711846" class="sbHolder" style="width:200px"><a id="sbToggle_55711846" href="http://192.168.0.1/WiFi.html#" class="sbToggle"></a><a id="sbSelector_55711846" href="http://192.168.0.1/WiFi.html#" class="sbSelector" style="width:170px">Visible</a><ul id="sbOptions_55711846" class="sbOptions" style="width: 200px; display: none;"><li><a href="http://192.168.0.1/true" rel="true" class="sbFocus">Visible</a></li><li><a href="http://192.168.0.1/false" rel="false">Invisible</a></li></ul></div>
+												
+												-->
+											</div>
+										</td>
+									</tr>
+									<tr>
+										<th><a href="Schedule.html">Schedule</a>:</th>
+										<td>
+										<div class="sbHolder" style="width:200px">
+													<a   class="sbToggle"></a>
+													
+													
+													<label class="custom-select">
+												<select style="height:30px; width:200px; border:none; font-size:inherit; padding: 5px;">
+													<option selected="">Always Enable</option>
+													
+													
+													
+
+												</select>
+										</label>
+										<!--
+											<div class="styled-select">
+											<select name="schedule_5hi" id="schedule_5hi" sb="39828129" style="display: none;">
+											 	<option value="ALWAYS" selected="">Always</option>
+											</select><div id="sbHolder_39828129" class="sbHolder" style="width:200px"><a id="sbToggle_39828129" href="http://192.168.0.1/WiFi.html#" class="sbToggle"></a><a id="sbSelector_39828129" href="http://192.168.0.1/WiFi.html#" class="sbSelector" style="width:170px">Always Enable</a><ul id="sbOptions_39828129" class="sbOptions" style="width: 200px; display: none;"><li class="last"><a href="http://192.168.0.1/ALWAYS" rel="ALWAYS" class="sbFocus">Always Enable</a></li></ul></div>
+											
+											-->
+											</div>
+										</td>
+									</tr>
+								</tbody>
+							</table>
+							<hr>
+						</div>
+					</div>
+					<!-------------------- WPS ---------------------->
+					<div id="wpspage" style="display:none">
+						<table class="block" border="0">
+							<tbody>
+								<tr>
+									<td><div class="title">WI-FI PROTECTED SETUP</div></td>
+								</tr>
+								<tr>
+									<th>WPS status:</th>
+									<td><span name="wps_status" id="wps_status">Enable/Configured</span></td>
+								</tr>
+								<tr>
+									<th>Device PIN:</th>
+									<td>
+										<input class="styled-text" type="text" name="dev_pin" size="15" maxlength="16" id="dev_pin" disabled="1">
+										<button type="button" class="button_pin" onclick="Regenerate_PIN()" style="cursor:pointer">Generate New PIN
+									</button></td>
+								</tr>
+								<tr>
+									<th></th>
+									<td>
+										<button type="button" class="button_pin" onclick="Save_Dev_Pin()" style="cursor:pointer">Save Device PIN
+										</button><button type="button" class="button_pin" id="ResetWPS" onclick="ResetToUnconfigured()" style="cursor:pointer">Reset to Unconfigured
+									</button></td>
+								</tr>
+							</tbody>
+						</table>
+						<hr>
+						<table class="block" style="margin: 10px 0 0 0;">
+							<tbody>
+								<tr>
+									<th>Connet to Device</th>
+								</tr>
+								<tr>
+									<th>PBC:</th>
+									<td><button type="button" class="button_pbc" id="pbc_button" onclick="Conn_PBC()" style="cursor:pointer">PBC Start</button></td>
+								</tr>
+								<tr>
+									<th>PIN:</th>
+									<td>
+										<input class="styled-text" type="text" name="pin_num" size="30" maxlength="32" id="pin_num">
+										<button type="button" class="button_pin" id="pin_button" onclick="Conn_PIN_Client()" style="cursor:pointer">PIN Start
+									</button></td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+					<!-------------------- WPS ---------------------->
+					<div id="CreatePopAlertMessage" style="display:none">
+						<div id="AlertPopRect">
+							<div id="AlertPopBody">
+								<table class="myAlertPop_table_b" id="waitSettingFinish" border="0" cellspacing="0" style="display:none">
+								   <tbody>
+										 <tr>
+										 	<td>
+												<center><div id="Loading_pop_image2"></div></center>
+											</td>
+										 </tr>
+										 <tr>
+										 	<td><center><label id="reciprocal_Number">10</label></center></td>
+										 </tr>
+										 <tr>
+										 	<td id="dialog_msg_black2">Your changes are being saved.</td>
+										 </tr>
+								   </tbody>
+								</table>
+								<table class="myAlertPop_table_b" id="SuccessSettings" border="0" cellspacing="0" style="display:none">
+								   <tbody>
+										 <tr>
+										 	<td>
+												<center><div id="Information_pop_image"></div></center>
+											</td>
+										 </tr>
+										 <tr>
+											 <td>
+											 	<div id="dialog_msg_black">The new settings have been saved.</div>
+											 </td>
+										 </tr>
+										 <tr>
+											 <td>
+											 	<center><div id="Confirm_btn" onclick="returnToHome()" style="cursor:pointer">OK</div></center>
+											 </td>
+										 </tr>
+								   </tbody>
+								</table>
+							</div>
+						</div>
+					</div>
+					<!--- start of scan wifi list --->
+					<div id="scan_wifi_list_block" class="PopAlertBlackBg" style="display:none">
+						<div class="scanPopBox">
+							<div id="scan_waiting" class="waitScanBox" style="display:none">
+								<br>
+								<br>
+								<br>
+								<center><img src="resources/loading.gif" border="0"></center>
+								<div><span>Scanning...</span></div>
+								<br>
+							</div>
+							<div id="scan_list" class="scanListBox" style="display:none">
+								<div id="scan_list_title">
+									<table width="100%" cellspacing="0" cellpadding="0" border="0">
+										<tbody>
+											<tr>
+												<td><b>Available hotspot networks</b></td>
+												<td style="text-align: right;">
+													<a href="javascript:TriggerSiteSurvey()"><img src="resources/wisp_reload.gif" border="0"></a>
+													<a href="javascript:CloseSiteSurveyList()"><img src="resources/wisp_close.gif" width="24" height="25" border="0"></a>
+												</td>
+											</tr>
+										</tbody>
+									</table>
+								</div>
+								<div class="emptyline"></div>
+								<div id="scan_list_content">
+									<div class="list_content_div">
+										<table id="content_tb" width="100%" cellspacing="0" cellpadding="5" border="0" style="cursor:pointer">
+										</table>
+									</div>
+								</div>
+								<div class="emptyline"></div>
+								<div id="scan_list_slb">
+									<center>
+										<div id="apclient_select_btn" onclick="OnClickSelect()" class="btn_radius2" style="cursor:pointer">
+											Select
+										</div>
+									</center>
+								</div>
+								<div class="emptyline"></div>
+							</div>
+						</div>
+					</div>
+	     	</div>
+				<!-- Detect Router Connection, Timmy Add 2013/08/15 -->
+				<div id="DetectRouterConnection" style="display:none"><div class="dialogBox" style="width:616px"><table class="myCreatePop_table" border="0" cellspacing="0" id="RouterConnectionTable"><tbody><tr><td colspan="3"><div class="popTitle">Router Not Found</div></td></tr><tr><td id="save_td" colspan="4"><center><div id="Save_edit_pop_btn" style="cursor:pointer" tabindex="12" onclick="CheckHTMLStatus(&#39;&#39;);">Retry</div></center></td></tr></tbody></table></div></div>
+				<div id="footer">
+					<div id="copyright">COPYRIGHT © 2014 D-Link</div>
+				</div>
+			</div>
+		</div>
+	</form>
+<script type="text/javascript" charset="utf-8">
+	$(document).ready( function() {
+		//$.validator.setDefaults( { submitHandler: function(form) { form.submit(); } } );
+
+		$.validator.addMethod("checkSetValues", function( value, element ) {
+			var elem_id = element.id;
+			var error_msg = "";
+
+			/* check wifi ssid */
+			if(elem_id.indexOf("wifiName")>=0 || elem_id=="apclient_ssid")
+			{
+				if (value=="" || value==null)
+					error_msg = I18N("j","Please enter a Wi-Fi Name(SSID).");
+			}
+
+			/* check wifi password */
+			if(elem_id.indexOf("password")>=0)
+			{
+				var tmp = elem_id.split("_");
+				var band = tmp[1];
+				var security_type = document.getElementById("security_"+band).value;
+
+				if(security_type!="None")
+				{
+					if(security_type.match("WEP")=="WEP")
+					{
+						//for Dlink spec
+						if(security_type=="WEP")
+						{
+							if(value.length != 13)
+									error_msg = I18N("j","Your password must be 13 characters length");
+						}
+						//for WIFI Logo
+						else
+						{
+							if(value.length == 10 || value.length == 26)
+							{
+								if( !(/^[0-9a-fA-F]*$/.test(value)) )
+									error_msg = I18N("j","WEP password length is 10 or 26, password type must be Hexadecimal.");
+							}
+							else if(value.length != 5 && value.length != 13)
+							{
+								error_msg = I18N("j","Your password must be 5 or 10 or 13 or 26 length.");
+							}
+						}
+					}
+					else if(security_type.match("WPA")=="WPA")
+					{
+						//for Dlink spec
+						if(security_type=="WPA/WPA2-Personal")
+						{
+							if(value.length > 63 || value.length < 8)
+									error_msg = I18N("j","Your password must be between 8-63 characters length");
+						}
+						//for WIFI Logo
+						else
+						{
+							if(value.length == 64)
+							{
+								if( !(/^[0-9a-fA-F]*$/.test(value)) )
+									error_msg = I18N("j","WPA password length is 64, password type must be Hexadecimal.");
+							}
+							else if(value.length > 64 || value.length < 8)
+									error_msg = I18N("j","Your password must be between 8-63 characters length");
+						}
+					}
+
+					if (value=="" || value==null)
+						error_msg = I18N("j","Please enter a password.");
+				}
+			}
+			
+			if(elem_id=="apclient_passwd")
+			{
+				var WEP64_H = /^[a-f0-9]{10}$/;
+				var WEP128_H = /^[a-f0-9]{26}$/;
+				var security_type = document.getElementById("apclient_security").value;
+				var wep_maxlength = document.getElementById("apclient_wep_passlen").value;
+				
+				if(security_type!="NONE")
+				{
+					if(security_type=="WEP")
+					{
+						if ((wep_maxlength == "64Hex" && !WEP64_H.test(value))
+						  ||(wep_maxlength == "128Hex" && !WEP128_H.test(value)))
+						{
+							error_msg = I18N("j","Please enter a value between 0 and FF.");
+						}
+						else
+						{
+							if ( (wep_maxlength=="64Hex" && value.length != 10)
+							   ||(wep_maxlength=="64ASCII" && value.length != 5))
+							{
+								error_msg = I18N("j","Your password must be 5 or 10 characters length.");
+							}
+							else if ( (wep_maxlength=="128Hex" && value.length != 26)
+								      ||(wep_maxlength=="128ASCII" && value.length != 13))
+							{
+								error_msg = I18N("j","Your password must be 13 or 26 characters length.");
+							}
+						}
+					}
+					else if(security_type=="WPA+2PSK")
+					{
+						var WPA_H = /^[0-9a-fA-F]{64}$/;
+						if (value.length > 64 || value.length < 8)
+							error_msg = I18N("j","Your password must be between 8-64 characters length.");
+						else if (value.length == 64 && !WPA_H.test(value))
+							error_msg = I18N("j","WPA password length is 64, password type must be Hexadecimal.");
+					}
+					
+					if (value=="" || value==null)
+					 error_msg = I18N("j","Please enter a password.");
+				}
+			}
+
+			return error_msg;
+		}, "");
+
+		$('#wifi_form').validate({
+			submitHandler: function(form) {
+				CheckConnectionStatus();
+			}
+		});
+
+		var elements = $("#wifiName_24, #password_24, #wifiName_5, #password_5, #wifiName_5hi, #password_5hi, #wifiName_smartconnect, #password_smartconnect, #apclient_ssid, #apclient_passwd");
+		$.each(elements, function(i, element) {
+			$(this).rules("add", { checkSetValues: true });
+		});
+
+	});
+</script>
+<!--
+<script type="text/javascript">
+	Load_HTML();
+	Initial();
+	setMenu("menu_Settings");
+	GetRadioInfo();
+	InitWLAN();
+	checkTimeout();
+</script>
+-->
+</body></html>

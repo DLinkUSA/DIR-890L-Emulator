@@ -1,0 +1,1045 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!-- saved from url=(0028)http://192.168.0.1/Time.html -->
+<html xmlns="http://www.w3c.org/1999/xhtml" xml:lang="zh_TW" lang="zh_TW"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>D-LINK</title>
+<meta http-equiv="X-UA-Compatible" content="IE=9">
+
+<meta http-equiv="Content-Type" content="text/css">
+<link rel="stylesheet" type="text/css" href="resources/jquery.selectbox.css">
+<script type="text/javascript" charset="utf-8" src="resources/initialJS.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/comm.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/hmac_md5.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/libajax.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/hnap.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/i18n.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/pagetool.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/menu.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/DetectRouterConnection.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/checkTimeout.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/includeLang.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/AES.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/DeviceConfig.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/initialCSS.js"></script>
+<link rel="stylesheet" type="text/css" href="resources/style_pages.css" media="all">
+<script type="text/javascript" charset="utf-8" src="resources/initialJQ.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/jquery-1.8.2.min.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/jquery.selectbox-0.2_new.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/jquery.stringify.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/initialValidate.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/jquery.validate.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/timeZone.js"></script>
+
+
+<script>
+$(document).ready(function(){
+	presetCheckBox("enableDaylightSaving", true);
+	presetCheckBox("ntpServer", true);
+	//jquery
+	$("div.checkbox_on" || "div.checkbox_off").click(function(e) {
+	 var checkboxId =  e.target.id +'_ck';	 
+		if(e.target.getAttribute("class") == "checkbox_on") {
+			var disable = I18N("j","Disabled");
+			e.target.setAttribute("class", "checkbox_off");
+			e.target.setAttribute("className", "checkbox_off");
+			document.getElementById(e.target.id).innerHTML='<input type="checkbox" name=' + e.target.id + ' id=' + checkboxId + ' checked>'+disable;
+			document.getElementById(checkboxId).checked=false;
+			if (checkboxId == "ntpServer_ck")
+			{
+				document.getElementById("selectNTPServer").disabled = true;
+				$("#selectNTPServer").selectbox("disable");
+				document.getElementById("show_NTPServer").style.display = "none";
+				document.getElementById("manual_Time").style.display = "inline";
+			}
+			changeFlag = true;
+			save_button_changed();
+		}
+		else {
+			var enable = I18N("j","Enabled");
+			e.target.setAttribute("class", "checkbox_on");
+			e.target.setAttribute("className", "checkbox_on");
+			document.getElementById(e.target.id).innerHTML='<input type="checkbox" name=' + e.target.id + ' id=' + checkboxId + ' checked="">'+enable;
+			document.getElementById(checkboxId).checked=true;
+			if (checkboxId == "ntpServer_ck")
+			{
+				document.getElementById("selectNTPServer").disabled = false;
+				$("#selectNTPServer").selectbox("enable");
+				document.getElementById("show_NTPServer").style.display = "table-row";
+				document.getElementById("manual_Time").style.display = "none";
+			}
+			changeFlag = true;
+			save_button_changed();
+		}
+	});
+	GetXML();
+});
+</script>
+
+<script language="JavaScript">
+	var thisTime = new Date();
+	var nowDate = thisTime.getDate();
+	var nowMonth = thisTime.getMonth() + 1;
+	var nowYear = thisTime.getFullYear();
+	var nowHours = thisTime.getHours();
+	var nowMinutes = thisTime.getMinutes();
+	
+	// Show current time
+	function startTime()
+	{
+		var Set_Year = document.getElementById("year");
+		var Set_Month = document.getElementById("month");
+		var Set_Date = document.getElementById("day");
+		var Set_Hour = document.getElementById("hour");
+		var Set_Minute = document.getElementById("minute");
+		
+		$("#year").selectbox('detach');
+		$("#month").selectbox('detach');
+		$("#day").selectbox('detach');
+		$("#hour").selectbox('detach');
+		$("#minute").selectbox('detach');
+		
+		// set time list
+		for (var i = -5; i <= 5; i ++)
+			{
+			Set_Year.options.add(new Option(nowYear + i, nowYear + i));
+			}
+		for (var i = 1; i <= 12; i ++)
+			{
+			if (i < 10)	{	Set_Month.options.add(new Option("0" + i, i));	}
+			else		{	Set_Month.options.add(new Option(i, i));			}
+			}
+		for (var i = 1; i <= 31; i ++)
+				{
+					if (i < 10)	{	Set_Date.options.add(new Option("0" + i, i));	}
+					else		{	Set_Date.options.add(new Option(i, i));			}
+				}
+		for (var i = 0; i <= 23; i ++)
+		{
+			if (i < 10)	{	Set_Hour.options.add(new Option("0" + i, i));	}
+			else		{	Set_Hour.options.add(new Option(i, i));			}
+		}
+		for (var i = 0; i <= 59; i ++)
+		{
+			if (i < 10)	{	Set_Minute.options.add(new Option("0" + i, i));	}
+			else		{	Set_Minute.options.add(new Option(i, i));		}
+		}
+		
+		Set_Year.value = nowYear;
+		Set_Month.value = nowMonth;
+		Set_Date.value = nowDate;
+		Set_Hour.value = nowHours;
+		Set_Minute.value = nowMinutes;
+		
+		changeDate(false);
+
+		$("#year").selectbox({width:100});
+		$("#year").selectbox('attach');
+		$("#month").selectbox({width:100});
+		$("#month").selectbox('attach');
+		$("#day").selectbox({width:100});
+		$("#day").selectbox('attach');	
+		$("#hour").selectbox({width:100});
+		$("#hour").selectbox('attach');
+		$("#minute").selectbox({width:100});
+		$("#minute").selectbox('attach');
+	}
+	
+	function changeDate(initFlag)
+				{
+		var year = document.getElementById("year").value;
+		var month = document.getElementById("month").value;
+		var count = document.getElementById("day").length; 
+		
+		//count : calculate and control days of month
+			if (month == "4" || month == "6" || month == "9" || month == "11")
+			{
+			if(count<29) 
+			{
+				$('#day').append( new Option(29,29) );
+				}
+			if(count<30)
+			{
+				 $('#day').append( new Option(30,30) );
+				}
+			if(count>30)
+			{
+				$("#day option[value='31']").remove();
+				}
+			}
+		else if(month == "1" || month == "3" || month == "5" || month == "7" || month == "8" || month == "10" || month == "12")
+			{
+			if(count<29) 
+					{
+				$('#day').append( new Option(29,29) );
+				}
+			if(count<30)
+					{
+				$('#day').append( new Option(30,30) ); 
+	}
+			if(count<31)
+	{
+				$('#day').append( new Option(31,31) ); 
+				}
+			}
+		else if(month == "2")
+			{
+			if(count>28)
+				{
+				$("#day option[value='31']").remove();
+				$("#day option[value='30']").remove();
+			}
+			
+			if(year% 4 != 0)
+			{
+				if(count>28)
+				{
+					$("#day option[value='29']").remove();
+				}
+			}
+			else
+			{
+				if(count==28)
+				{
+					$('#day').append( new Option(29,29) );
+			}
+				}
+			}
+		if(initFlag)
+			{
+			$("#day").selectbox('detach');
+		$("#day").selectbox({width:100});
+		$("#day").selectbox('attach');
+	}
+	}
+</script>
+
+<script type="text/javascript">
+	var HNAP = new HNAP_XML();
+	var _ReciprocalNumber = 25;
+	var Time_GetRouterTime;
+	var current_Date = "";
+	var current_Time = "";
+	var TimeCycle = 0;
+	var current_Zone = "";
+	var daylightsaving;
+	
+	function Load_HTML()	{	$("#header").load("header.html");	}
+	function Initial()
+	{
+		initialMenu();
+		initialDetectRouterConnection();
+	}
+	function CheckConnectionStatus2()
+	{
+		$.ajax({
+			cache : false,
+			url : "./js/CheckConnection",
+			timeout : 2000,
+			type : "GET",
+			success : function(data) { GetRouterTime(); },
+			error : function() {	document.getElementById("nowDateTimeSpan").innerHTML = I18N("j","Not Available");	Time_GetRouterTime = window.clearInterval(Time_GetRouterTime);	}
+		});
+	}
+	function GetRouterTime()
+	{
+		HNAP.GetXMLAsync("GetTimeSettings", null, "GetValue", function(xml)	{	GetResult_2nd(xml)	});	
+	}
+	
+	function GetResult_2nd(result_xml)
+	{
+		var GetResult_2nd = result_xml.Get("GetTimeSettingsResponse/GetTimeSettingsResult");
+		if (GetResult_2nd == "OK")
+		{
+			current_Date = result_xml.Get("GetTimeSettingsResponse/CurrentDate");
+			current_Time = result_xml.Get("GetTimeSettingsResponse/CurrentTime");
+			current_Zone = result_xml.Get("GetTimeSettingsResponse/TimeZone");
+		
+			var split_Time = current_Time.split(/[\s:]+/);
+			var Time_Seconds = split_Time[split_Time.length - 1];
+			var Time_Minutes = split_Time[split_Time.length - 2];
+			var Time_Hours = split_Time[split_Time.length - 3];
+			TimeCycle = Time_Hours * 3600 + Time_Minutes * 60 + Time_Seconds * 1;
+			Time_GetRouterTime = self.setInterval("AutoCalcTimeCycle()",1000);
+		}
+		else	{	if (DebugMode == 1)	{	alert("[!!GetXML Error!!] Function: GetResult_2nd");	}	}
+	}
+	
+	function AutoCalcTimeCycle()
+	{
+		var sec_num = parseInt(TimeCycle, 10);
+		var hours	= Math.floor(sec_num / 3600);
+		var minutes = Math.floor((sec_num - (hours * 3600)) / 60);
+		var seconds = sec_num - (hours * 3600) - (minutes * 60);
+		
+		var get_Date = current_Date;
+		var split_Date = get_Date.split(/[\s\/]+/);
+		var days = split_Date[split_Date.length - 1];
+		var months = parseInt(split_Date[split_Date.length - 2], 10) -1;
+		var years = split_Date[split_Date.length - 3];
+		var ms = Date.UTC(years,months,days,hours,minutes,seconds);
+		
+		var get_Zone = current_Zone;
+		var get_ms = ms + (zoneArray[get_Zone]*60*60*1000);
+
+		var utc = new Date();
+		utc.setTime(get_ms);
+		var utcSec = utc.getUTCSeconds();
+		var utcMin = utc.getUTCMinutes();
+		var utcHr = utc.getUTCHours();
+		var utcDate = utc.getUTCDate();
+		var utcMonth = utc.getUTCMonth() + 1;
+		var utcYear = utc.getUTCFullYear();
+		var utcUnit = "";
+		
+		if (daylightsaving == "true")
+			utcHr = utcHr + 1;
+		
+		if (utcMonth < 10){
+			utcMonth = "0" + utcMonth;
+		}
+		if (utcDate < 10){
+			utcDate = "0" + utcDate;
+		}
+		if (utcHr < 10){
+			utcHr = "0" + utcHr;
+		}
+	    if (utcMin < 10){
+			utcMin = "0" + utcMin;
+		}
+		if (utcSec < 10){
+			utcSec = "0" + utcSec;
+		}
+	    if (utcHr < 12){
+			utcUnit = "AM";
+		}else{
+			utcUnit = "PM";
+			utcHr = utcHr - 12;
+				if (utcHr < 10){
+					utcHr = "0" + utcHr;
+				}
+		}
+
+		document.getElementById("nowDateTimeSpan").innerHTML = utcYear + "/" + utcMonth + "/" + utcDate + " " + utcHr + ":" + utcMin + ":" + utcSec + " " + utcUnit;
+	    
+	    TimeCycle ++;
+	    if (TimeCycle > 86399)
+	    {
+	    	TimeCycle = 0;
+	    	Time_GetRouterTime = window.clearInterval(Time_GetRouterTime);
+	    	CheckConnectionStatus2();
+	    }
+	}
+	
+	function GetXML()	{	HNAP.GetXMLAsync("GetTimeSettings", null, "GetValue", function(xml)	{	GetResult_1st(xml)	});	}
+	
+	function GetResult_1st(result_xml)
+	{
+		var GetResult_1st = result_xml.Get("GetTimeSettingsResponse/GetTimeSettingsResult");
+		if (GetResult_1st == "OK")
+		{
+			var gettimezone = result_xml.Get("GetTimeSettingsResponse/TimeZone");
+			document.getElementById("timeZone").value = gettimezone;
+			// Daylight Saving
+			daylightsaving = result_xml.Get("GetTimeSettingsResponse/DaylightSaving");
+			if (daylightsaving == "true")	{	presetCheckBox("enableDaylightSaving", true);	}
+			else							{	presetCheckBox("enableDaylightSaving", false);	}
+			// NTP Server
+			var ntp_Enabled = result_xml.Get("GetTimeSettingsResponse/NTP");
+			if (ntp_Enabled == "true")
+			{
+				var ntp_Server = result_xml.Get("GetTimeSettingsResponse/NTPServer");
+				presetCheckBox("ntpServer", true);
+				$("#selectNTPServer").selectbox("disable");
+				if (ntp_Server == "ntp1.dlink.com")
+				{
+					document.getElementById("selectNTPServer").options[0].selected = true;
+					document.getElementById("NTPServer_Address").value = "D-Link NTP Server";
+					document.getElementById("NTPServer_Address").disabled = true;
+				}
+				else
+				{
+					document.getElementById("selectNTPServer").options[1].selected = true;
+					document.getElementById("NTPServer_Address").value = ntp_Server;
+				}
+				
+				document.getElementById("manual_Time").style.display = "none";
+			}
+			else
+			{
+				presetCheckBox("ntpServer", false);
+				document.getElementById("selectNTPServer").disabled = true;
+				document.getElementById("NTPServer_Address").value = "D-Link NTP Server";
+				document.getElementById("NTPServer_Address").disabled = true;
+				$("#selectNTPServer").selectbox("enable");
+				document.getElementById("show_NTPServer").style.display = "none";
+				document.getElementById("manual_Time").style.display = "inline";
+			}
+			current_Date = result_xml.Get("GetTimeSettingsResponse/CurrentDate");
+			current_Time = result_xml.Get("GetTimeSettingsResponse/CurrentTime");
+			current_Zone = result_xml.Get("GetTimeSettingsResponse/TimeZone");
+			
+			var split_Time = current_Time.split(/[\s:]+/);
+			var Time_Seconds = split_Time[split_Time.length - 1];
+			var Time_Minutes = split_Time[split_Time.length - 2];
+			var Time_Hours = split_Time[split_Time.length - 3];
+			TimeCycle = Time_Hours * 3600 + Time_Minutes * 60 + Time_Seconds * 1;
+			Time_GetRouterTime = self.setInterval("AutoCalcTimeCycle()",1000);
+			
+			$("#timeZone").selectbox({width:450});
+			$("#selectNTPServer").selectbox({width:210});
+			$("#year").selectbox({width:100});
+			$("#month").selectbox({width:100});
+			$("#day").selectbox({width:100});
+			$("#hour").selectbox({width:100});
+			$("#minute").selectbox({width:100});
+			if (document.getElementById("ntpServer_ck").checked != "1")	{	$("#selectNTPServer").selectbox("disable");	}
+			CheckNetworkStatus();
+			document.getElementById("main").style.display = "inline";
+		}
+		else	{	if (DebugMode == 1)	{	alert("[!!GetXML Error!!] Function: GetResult_1st");	}	}
+	}
+	function CheckConnectionStatus()
+	{
+		$.ajax({
+			cache : false,
+			url : "./js/CheckConnection",
+			timeout : 5000,
+			type : "GET",
+			success : function(data) { SetXML(); },
+			error : function() { document.getElementById("DetectRouterConnection").style.display = "inline"; }
+		});
+	}
+	function SetXML()
+	{
+		document.getElementById("CreatePopAlertMessage").style.display = "inline";
+		HNAP.GetXMLAsync("SetTimeSettings", null, "GetXML", function(xml)	{	SetResult_1st(xml)	});
+	}
+	function SetResult_1st(result_xml)
+	{
+		if (result_xml != null)
+		{
+			var timeZone = document.getElementById("timeZone").value;
+			result_xml.Set("SetTimeSettings/TimeZone", timeZone);
+			if (document.getElementById("enableDaylightSaving_ck").checked == "1")
+			{
+				result_xml.Set("SetTimeSettings/DaylightSaving", "true");
+				result_xml.Set("SetTimeSettings/DSTStartMonth", "1");
+				result_xml.Set("SetTimeSettings/DSTStartWeek", "1");
+				result_xml.Set("SetTimeSettings/DSTStartDayOfWeek", "0");
+				result_xml.Set("SetTimeSettings/DSTStartTime", "12:00AM");
+				result_xml.Set("SetTimeSettings/DSTEndMonth", "12");
+				result_xml.Set("SetTimeSettings/DSTEndWeek", "5");
+				result_xml.Set("SetTimeSettings/DSTEndDayOfWeek", "6");
+				result_xml.Set("SetTimeSettings/DSTEndTime", "12:00AM");
+			}
+			else	{	result_xml.Set("SetTimeSettings/DaylightSaving", "false");	}
+			if (document.getElementById("ntpServer_ck").checked == "1")
+			{
+				result_xml.Set("SetTimeSettings/NTP", "true");
+				if (document.getElementById("selectNTPServer").value == "0")	{	result_xml.Set("SetTimeSettings/NTPServer", "ntp1.dlink.com");										}
+				else 															{	result_xml.Set("SetTimeSettings/NTPServer", document.getElementById("NTPServer_Address").value);	}
+			}
+			else
+			{
+				var setYear = document.getElementById("year").value;
+				var setMonth = parseInt(document.getElementById("month").value)-1;
+				var setDay = document.getElementById("day").value;
+				var setHour = document.getElementById("hour").value;
+				var setMinute = document.getElementById("minute").value;
+				var ms = Date.UTC(setYear,setMonth,setDay,setHour,setMinute,0);
+				var get_ms = ms - (zoneArray[timeZone]*60*60*1000);
+
+				var utc = new Date();
+				utc.setTime(get_ms);
+				var utcMin = utc.getUTCMinutes();
+				var utcHr = utc.getUTCHours();
+				var utcDate = utc.getUTCDate();
+				var utcMonth = utc.getUTCMonth() +1;
+				var utcYear = utc.getUTCFullYear();
+				
+				if (utcMonth < 10){
+					utcMonth = "0" + utcMonth;
+				}
+				if (utcDate < 10){
+					utcDate = "0" + utcDate;
+				}
+				if (utcHr < 10){
+					utcHr = "0" + utcHr;
+				}
+				if (utcMin < 10){
+					utcMin = "0" + utcMin;
+				}
+				var setCurrentDate = utcYear + "/" + utcMonth + "/" + utcDate;
+				var setCurrentTime = utcHr + ":" + utcMin + ":00";
+				
+				result_xml.Set("SetTimeSettings/NTP", "false");
+				result_xml.Set("SetTimeSettings/CurrentDate", setCurrentDate);
+				result_xml.Set("SetTimeSettings/CurrentTime", setCurrentTime);
+			}
+			// Send HNAP to DUT
+			HNAP.SetXMLAsync("SetTimeSettings", result_xml, function(xml)	{	SetResult_2nd(xml);	});
+		}
+		else	{	if (DebugMode == 1)	{	alert("[!!SetXML Error!!] Function: SetResult_1st");	}	window.location.reload();	}
+	}
+	function SetResult_2nd(result_xml)
+	{
+		var SetResult_2nd = result_xml.Get("SetTimeSettingsResponse/SetTimeSettingsResult");
+		if (SetResult_2nd == "OK")		{	Start_reciprocal_Number_RestoreConfiguration();	}
+		if (SetResult_2nd == "ERROR")	{	if (DebugMode == 1)	{	alert("[!!SetXML Error!!] Function: SetResult_2nd");	}	window.location.reload();	}
+	}
+	function Start_reciprocal_Number_RestoreConfiguration()
+	{
+		if (_ReciprocalNumber >= 0)
+		{
+			document.getElementById("reciprocal_Number").innerHTML = _ReciprocalNumber + " " + I18N("j", "Sec");
+			_ReciprocalNumber --;
+			setTimeout("Start_reciprocal_Number_RestoreConfiguration()", 1000);
+		}
+		else	{	waitSettingFinished();	}
+	}
+	function waitSettingFinished()	{	window.location.reload();	}
+	function changeNTPServer(element, value)
+	{
+		var get_Selection = element.options[value].text;
+		if (value != "0")
+		{
+			document.getElementById("NTPServer_Address").value = "";
+			document.getElementById("NTPServer_Address").disabled = false;
+		}
+		else
+		{
+			document.getElementById("NTPServer_Address").value = get_Selection;
+			document.getElementById("NTPServer_Address").disabled = true;
+		}
+	}
+	function CheckNetworkStatus()
+	{
+		var status = sessionStorage.getItem('networkStatus');
+		if ((status == 1)&&(currentDevice.helpVer != ""))
+		{
+			document.getElementById("Get_Help").style.display = "inline";
+		}
+		else
+		{
+			document.getElementById("Get_Help").style.display = "none";
+		}
+	}
+</script>
+<script language="JavaScript">
+	// 2013/09/23 Timmy Modify
+	$(function() {
+		$("select").change(function () {	save_button_changed();	});
+		$("input").keydown(function () {	save_button_changed();	});
+	});
+	function save_button_changed()
+	{
+		document.getElementById("Save_Disable_btn").style.display = "none";
+		document.getElementById("Save_btn").style.display = "block";
+		changeFlag = true;
+		checkFlag = true;
+		GetClickTime();
+	}
+</script>
+</head>
+
+<body onload="startTime();">
+	<form name="Time_form" id="Time_form" method="POST" action="" novalidate="novalidate">
+	<div id="wrapper">
+		<!-------------------- Logo ------------------------->
+		<div id="header"><div>
+	<div style="position:relative; top:37px;">
+		<a href="http://www.dlink.com/" target="_blank">
+			<img id="image_Logo" src="resources/logo_2.png" alt="D-Link" width="102" height="20" border="0">
+		</a>
+	</div>
+	<table id="device_ver" style="position:relative; top:33px; font-size:13px; color:#969696;" border="0">
+		<tbody>
+			<tr>
+				<td style="padding: 0 10px 0 0;"><label id="h_ModelName">DIR-890L</label></td>
+				<td style="padding: 0 10px 0 0;">HW:<label id="h_HWVersion">A1</label></td>
+				<td style="padding: 0 10px 0 0;">FW:<label id="h_FWVersion">1.00</label></td>
+			</tr>
+		</tbody>
+	</table>
+
+</div></div>
+		<!-------------------- Menu ------------------------->
+		<div id="menu"><ul>	<li><a id="menu_Home" href="Home.html">Home</a></li>	
+		
+		<li class="parent" onmouseover="this.className=&quot;parentOn&quot;" onmouseout="this.className=&quot;parent&quot;"><a id="menu_Settings" href="#">Settings</a>		
+		
+		<ul>			
+		
+		<li><a href="Wizard_Manual.html" onclick="return confirmExit()">Wizard</a></li>			
+		<li><a href="Internet.html" onclick="return confirmExit();">Internet</a></li>			
+		<li><a href="WiFi.html" onclick="return confirmExit()">Wireless</a></li>					
+		<li><a href="Network.html" onclick="return confirmExit()">Network</a></li>	
+		<li><a href="SharePort.html" onclick="return confirmExit()">SharePort</a></li>	
+		<li><a href="Mydlink.html" onclick="return confirmExit()">mydlink</a></li>	
+		
+		
+		</ul>	</li>	
+		
+		
+		<li class="parent" onmouseover="this.className=&quot;parentOn&quot;" onmouseout="this.className=&quot;parent&quot;"><a id="menu_Advanced" href="#">Features</a>		
+		
+		<ul>			
+		
+		<li><a href="QoS.html" onclick="return confirmExit()">QoS Engine</a></li>			
+		<li><a href="Firewall.html" onclick="return confirmExit()">Firewall</a></li>			
+		<li><a href="PortForwarding.html" onclick="return confirmExit()">Port Forwarding</a></li>			
+		<li><a href="WebsiteFilter.html" onclick="return confirmExit()">Website Filter</a></li>			
+		<li><a href="StaticRoute.html" onclick="return confirmExit()">Static Route</a></li>			
+		<li><a href="DynamicDNS.html" onclick="return confirmExit()">Dynamic DNS</a></li>			
+		<li><a href="VPN.html" onclick="return confirmExit()">Quick VPN</a></li>		
+		
+		</ul>	</li>	
+		
+		<li class="parent" onmouseover="this.className=&quot;parentOn&quot;" onmouseout="this.className=&quot;parent&quot;"><a id="menu_Management" href="#" style="background: url(resources/navigation_bg5.gif?v=20141117210117) 100% 0% no-repeat;">Management</a>		
+		
+		<ul>			
+		
+		<li><a href="Time.html" onclick="return confirmExit()">Time &amp; Schedule</a></li>			
+		<li><a href="SystemLog.html" onclick="return confirmExit()">System Log</a></li>			
+		<li><a href="Admin.html" onclick="return confirmExit()">System Admin</a></li>			
+		<li><a href="UpdateFirmware.html" onclick="return confirmExit()">Upgrade</a></li>			
+		<li><a href="Statistics.html" onclick="return confirmExit()">Statistics</a></li>		
+				
+		
+		</ul>	</li></ul></div>
+		<div id="menu_edge"></div>
+		<!-------------------- Content ---------------------->
+		<div id="content">
+			<!-------------------- info ---------------------->	
+	  		<div id="info">
+			  	<div id="FunctionName">Time</div>
+				<div id="wallimage"><img src="resources/page_TimeZone.png" alt="" width="195" height="119"></div>
+			    <div id="directions">
+					Your router's internal clock is used for data logging and schedules for features. The date and time can be synchronized with a public time server on the Internet, or set manually.
+					<label id="Get_Help" onclick="window.open('http://support.dlink.com')" style="cursor: pointer; display: inline; text-decoration: underline;">Click here for help.</label>
+				</div>
+			</div>
+			<!-------------------- funcBar ---------------------->
+			<div id="funcBar">
+				<div id="pagePath">&nbsp; Management &gt;&gt; System Time</div>
+				<ul id="rightFunc">
+					<li style="display:block"><div id="Save_btn" onclick='alert("This feature has been disabled on this emulator.")' style="cursor:pointer; display:none">Save</div></li> 
+					<li style="display:block"><div id="Save_Disable_btn">Save</div></li>
+					<input id="sumbit_CheckData" class="submit" type="submit" value="Submit" style="display:none">
+					<li style="display:block"><a href="Schedule.html" style="text-decoration:none;" onclick="return confirmExit()"><div id="page_btn" class="linkstyle_1">Schedule</div></a></li>
+				</ul>
+			</div>
+	    	<!-------------------- main ------------------------->
+	     	<div id="main" style="display: inline;">
+ 		   		<!-------------------- general ---------------------->
+				<table class="block" border="0" cellspacing="0" ondragstart="return false" onselectstart="return false" style="margin: 10px 0 0 0;">
+				<tbody>
+					<tr>
+						<td><div class="title">Time Configuration</div></td>
+					</tr>
+					<tr>
+						<th>Time Zone:</th>
+						<td>
+							<div class="styled-select">
+							<select name="timeZone" id="timeZone" sb="33718505" style="display: none;">
+							
+								<option value="1">(GMT-12:00) International Date Line West</option>
+								<option value="2">(GMT-11:00) Midway Island</option>
+								<option value="3">(GMT-10:00) Hawaii</option>
+								<option value="4">(GMT-09:00) Alaska</option>
+								<option value="5">(GMT-08:00) Pacific Time (US &amp; Canada), Tijuana</option>
+								<option value="6">(GMT-07:00) Arizona</option>
+								<option value="7">(GMT-07:00) Chihuahua, La Paz, Mazatlan</option>
+								<option value="8">(GMT-07:00) Mountain Time (US &amp; Canada)</option>
+								<option value="9">(GMT-06:00) Central America</option>
+								<option value="10">(GMT-06:00) Central Time (US &amp; Canada)</option>
+								<option value="11">(GMT-06:00) Guadalajara, Mexico City, Monterrey</option>
+								<option value="12">(GMT-06:00) Saskatchewan</option>
+								<option value="13">(GMT-05:00) Bogota, Lima, Quito, Indiana (East)</option>
+								<option value="14">(GMT-05:00) Eastern Time (US &amp; Canada)</option>
+								<option value="15">(GMT-04:30) Caracas</option>
+								<option value="16">(GMT-04:00) Georgetown, La Paz</option>
+								<option value="17">(GMT-04:00) Atlantic Time (Canada)</option>
+								<option value="18">(GMT-04:00) Santiago</option>
+								<option value="19">(GMT-03:30) Newfoundland</option>
+								<option value="20">(GMT-03:00) Brasilia</option>
+								<option value="21">(GMT-03:00) Buenos Aires</option>
+								<option value="22">(GMT-03:00) Greenland</option>
+								<option value="23">(GMT-02:00) Mid-Atlantic</option>
+								<option value="24">(GMT-01:00) Azores</option>
+								<option value="25">(GMT-01:00) Cape Verde Is.</option>
+								<option value="26">(GMT) Casablanca, Monrovia</option>
+								<option value="27">(GMT) Greenwich Mean Time : Dublin, Edinburgh, Lisbon, London</option>
+								<option value="28">(GMT+01:00) Amsterdam, Berlin, Bern, Rome, Stockholm, Vienna</option>
+								<option value="29">(GMT+01:00) Belgrade, Bratislava, Budapest, Ljubljana, Prague</option>
+								<option value="30">(GMT+01:00) Brussels, Copenhagen, Madrid, Paris</option>
+								<option value="31">(GMT+01:00) Sarajevo, Skopje, Warsaw, Zagreb</option>
+								<option value="32">(GMT+01:00) West Central Africa</option>
+								<option value="33">(GMT+02:00) Athens, Istanbul, Minsk</option>
+								<option value="34">(GMT+02:00) Bucharest</option>
+								<option value="35">(GMT+02:00) Cairo</option>
+								<option value="36">(GMT+02:00) Harare, Pretoria</option>
+								<option value="37">(GMT+02:00) Helsinki, Kyiv, Riga, Sofia, Tallinn, Vilnius</option>
+								<option value="38">(GMT+02:00) Jerusalem</option>
+								<option value="39">(GMT+03:00) Baghdad</option>
+								<option value="40">(GMT+03:00) Kuwait, Riyadh</option>
+								<option value="41">(GMT+03:00) Nairobi</option>
+								<option value="42">(GMT+03:30) Tehran</option>
+								<option value="43">(GMT+04:00) Abu Dhabi, Muscat</option>
+								<option value="44">(GMT+04:00) Baku, Tbilisi, Yerevan</option>
+								<option value="45">(GMT+04:00) Moscow, St. Petersburg, Volgograd</option>
+								<option value="46">(GMT+04:30) Kabul</option>
+								<option value="47">(GMT+05:00) Islamabad, Karachi, Tashkent</option>
+								<option value="48">(GMT+05:30) Chennai, Kolkata, Mumbai, New Delhi</option>
+								<option value="49">(GMT+05:30) Sri Jayawardenepura</option>
+								<option value="50">(GMT+05:45) Kathmandu</option>
+								<option value="51">(GMT+06:00) Astana, Dhaka</option>
+								<option value="52">(GMT+06:00) Ekaterinburg</option>
+								<option value="53">(GMT+06:30) Rangoon</option>
+								<option value="54">(GMT+07:00) Almaty, Novosibirsk</option>
+								<option value="55">(GMT+07:00) Bangkok, Hanoi, Jakarta</option>
+								<option value="56">(GMT+08:00) Krasnoyarsk</option>
+								<option value="57">(GMT+08:00) Beijing, Chongqing, Hong Kong, Urumqi</option>
+								<option value="58">(GMT+08:00) Kuala Lumpur, Singapore</option>
+								<option value="59">(GMT+08:00) Perth</option>
+								<option value="60">(GMT+08:00) Taipei</option>
+								<option value="61">(GMT+08:00) Ulaan Bataar</option>
+								<option value="62">(GMT+09:00) Irkutsk</option>
+								<option value="63">(GMT+09:00) Osaka, Sapporo, Tokyo</option>
+								<option value="64">(GMT+09:00) Seoul</option>
+								<option value="65">(GMT+09:30) Adelaide</option>
+								<option value="66">(GMT+09:30) Darwin</option>
+								<option value="67">(GMT+10:00) Brisbane</option>
+								<option value="68">(GMT+10:00) Canberra, Melbourne, Sydney</option>
+								<option value="69">(GMT+10:00) Guam, Port Moresby</option>
+								<option value="70">(GMT+10:00) Hobart</option>
+								<option value="71">(GMT+10:00) Yakutsk</option>
+								<option value="72">(GMT+11:00) Solomon Is., New Caledonia</option>
+								<option value="73">(GMT+11:00) Vladivostok</option>
+								<option value="74">(GMT+12:00) Magadan</option>
+								<option value="75">(GMT+12:00) Auckland, Wellington</option>
+								<option value="76">(GMT+12:00) Fiji, Kamchatka, Marshall Is.</option>
+								<option value="77">(GMT+13:00) Nuku'alofa</option>
+								<option value="78">(GMT+13:00) Samoa</option>
+							</select>
+							
+							
+							
+<div id="sbHolder_9626873" class="sbHolder" style="width:450px">
+	
+	<a id="sbToggle_9626873" href="#" class="sbToggle"></a>
+													
+			<label class="custom-select">
+				<select style="height:30px; width:450px; border:none; font-size:inherit; padding: 5px;">
+					<option>(GMT-12:00) International Date Line West</option>
+					<option>(GMT-11:00) Midway Island</option>
+					<option>(GMT-10:00) Hawaii</option>
+					<option>(GMT-09:00) Alaska</option>
+					<option>(GMT-08:00) Pacific Time (US &amp; Canada), Tijuana</option>
+					<option>(GMT-07:00) Arizona</option>
+					<option>(GMT-07:00) Chihuahua, La Paz, Mazatlan</option>
+					<option>(GMT-07:00) Mountain Time (US &amp; Canada)</option>
+					<option>(GMT-06:00) Central America</option>
+					<option>(GMT-06:00) Central Time (US &amp; Canada)</option>
+					<option>(GMT-06:00) Guadalajara, Mexico City, Monterrey</option>	
+					<option>(GMT-06:00) Saskatchewan</option>
+					<option>(GMT-05:00) Bogota, Lima, Quito, Indiana (East)</option>
+					<option>(GMT-05:00) Eastern Time (US &amp; Canada)</option>
+					<option>(GMT-04:30) Caracas</option>
+					<option>(GMT-04:00) Georgetown, La Paz</option>
+					<option>(GMT-04:00) Atlantic Time (Canada)</option>
+					<option>(GMT-04:00) Santiago</option>
+					<option>(GMT-03:30) Newfoundland</option>
+					<option>(GMT-03:00) Brasilia</option>
+					<option>(GMT-03:00) Buenos Aires</option>
+					<option>(GMT-03:00) Greenland</option>	
+					<option>(GMT-02:00) Mid-Atlantic</option>
+					<option>(GMT-01:00) Azores</option>
+					<option>(GMT-01:00) Cape Verde Is.</option>
+					<option>(GMT) Casablanca, Monrovia</option>
+					<option>(GMT) Greenwich Mean Time : Dublin, Edinburgh, Lisbon, London</option>
+					<option>(GMT+01:00) Amsterdam, Berlin, Bern, Rome, Stockholm, Vienna</option>
+					<option>(GMT+01:00) Belgrade, Bratislava, Budapest, Ljubljana, Prague</option>
+					<option>(GMT+01:00) Brussels, Copenhagen, Madrid, Paris</option>
+					<option>(GMT+01:00) Sarajevo, Skopje, Warsaw, Zagreb</option>
+					<option>(GMT+01:00) West Central Africa</option>
+					<option>(GMT+02:00) Athens, Istanbul, Minsk</option>	
+					<option>(GMT+02:00) Bucharest</option>
+					<option>(GMT+02:00) Cairo</option>
+					<option>(GMT+02:00) Harare, Pretoria</option>
+					<option>(GMT+02:00) Helsinki, Kyiv, Riga, Sofia, Tallinn, Vilnius</option>
+					<option>(GMT+02:00) Jerusalem</option>
+					<option>(GMT+03:00) Baghdad</option>
+					<option>(GMT+03:00) Kuwait, Riyadh</option>
+					<option>(GMT+03:00) Nairobi</option>
+					<option>(GMT+03:30) Tehran</option>
+					<option>(GMT+04:00) Abu Dhabi, Muscat</option>
+					<option>(GMT+04:00) Baku, Tbilisi, Yerevan</option>	
+					<option>(GMT+04:00) Moscow, St. Petersburg, Volgograd</option>
+					<option>(GMT+04:30) Kabul</option>
+					<option>(GMT+05:00) Islamabad, Karachi, Tashkent</option>
+					<option>(GMT+05:30) Chennai, Kolkata, Mumbai, New Delhi</option>
+					<option>(GMT+05:30) Sri Jayawardenepura</option>
+					<option>(GMT+05:45) Kathmandu</option>
+					<option>(GMT+06:00) Astana, Dhaka</option>
+					<option>(GMT+06:00) Ekaterinburg</option>
+					<option>(GMT+06:30) Rangoon</option>
+					<option>(GMT+07:00) Almaty, Novosibirsk</option>
+					<option>(GMT+07:00) Bangkok, Hanoi, Jakarta</option>	
+					<option>(GMT+08:00) Krasnoyarsk</option>
+					<option>(GMT+08:00) Beijing, Chongqing, Hong Kong, Urumqi</option>
+					<option>(GMT+08:00) Kuala Lumpur, Singapore</option>
+					<option>(GMT+08:00) Perth</option>
+					<option>(GMT+08:00) Taipei</option>
+					<option>(GMT+08:00) Ulaan Bataar</option>
+					<option>(GMT+09:00) Irkutsk</option>
+					<option>(GMT+09:00) Osaka, Sapporo, Tokyo</option>
+					<option>(GMT+09:00) Seoul</option>
+					<option>(GMT+09:30) Adelaide</option>
+					<option>(GMT+09:30) Darwin</option>	
+					<option>(GMT+10:00) Brisbane</option>
+					<option>(GMT+10:00) Canberra, Melbourne, Sydney</option>
+					<option>(GMT+10:00) Guam, Port Moresby</option>
+					<option>(GMT+10:00) Hobart</option>
+					<option>(GMT+10:00) Yakutsk</option>
+					<option>(GMT+11:00) Solomon Is., New Caledonia</option>
+					<option>(GMT+11:00) Vladivostok</option>
+					<option>(GMT+12:00) Magadan</option>
+					<option>(GMT+12:00) Auckland, Wellington</option>
+					<option>(GMT+12:00) Fiji, Kamchatka, Marshall Is.</option>
+					<option>(GMT+13:00) Nuku'alofa</option>
+					<option>(GMT+13:00) Samoa</option>
+					
+				</select>
+			</label>
+			</div>
+							
+							<!--
+							<div id="sbHolder_33718505" class="sbHolder" style="width:450px">
+							<a id="sbToggle_33718505" href="#" class="sbToggle"></a>
+							<a id="sbSelector_33718505" href="#" class="sbSelector" style="width:420px">(GMT-08:00) Pacific Time (US &amp; Canada), Tijuana</a>
+							<ul id="sbOptions_33718505" class="sbOptions" style="width: 450px; display: none;"><li><a href="1" rel="1">(GMT-12:00) International Date Line West</a></li><li><a href="2" rel="2">(GMT-11:00) Midway Island</a></li><li><a href="3" rel="3">(GMT-10:00) Hawaii</a></li><li><a href="http://192.168.0.1/4" rel="4">(GMT-09:00) Alaska</a></li><li><a href="http://192.168.0.1/5" rel="5" class="sbFocus">(GMT-08:00) Pacific Time (US &amp; Canada), Tijuana</a></li><li><a href="http://192.168.0.1/6" rel="6">(GMT-07:00) Arizona</a></li><li><a href="http://192.168.0.1/7" rel="7">(GMT-07:00) Chihuahua, La Paz, Mazatlan</a></li><li><a href="http://192.168.0.1/8" rel="8">(GMT-07:00) Mountain Time (US &amp; Canada)</a></li><li><a href="http://192.168.0.1/9" rel="9">(GMT-06:00) Central America</a></li><li><a href="http://192.168.0.1/10" rel="10">(GMT-06:00) Central Time (US &amp; Canada)</a></li><li><a href="http://192.168.0.1/11" rel="11">(GMT-06:00) Guadalajara, Mexico City, Monterrey</a></li><li><a href="http://192.168.0.1/12" rel="12">(GMT-06:00) Saskatchewan</a></li><li><a href="http://192.168.0.1/13" rel="13">(GMT-05:00) Bogota, Lima, Quito, Indiana (East)</a></li><li><a href="http://192.168.0.1/14" rel="14">(GMT-05:00) Eastern Time (US &amp; Canada)</a></li><li><a href="http://192.168.0.1/15" rel="15">(GMT-04:30) Caracas</a></li><li><a href="http://192.168.0.1/16" rel="16">(GMT-04:00) Georgetown, La Paz</a></li><li><a href="http://192.168.0.1/17" rel="17">(GMT-04:00) Atlantic Time (Canada)</a></li><li><a href="http://192.168.0.1/18" rel="18">(GMT-04:00) Santiago</a></li><li><a href="http://192.168.0.1/19" rel="19">(GMT-03:30) Newfoundland</a></li><li><a href="http://192.168.0.1/20" rel="20">(GMT-03:00) Brasilia</a></li><li><a href="http://192.168.0.1/21" rel="21">(GMT-03:00) Buenos Aires</a></li><li><a href="http://192.168.0.1/22" rel="22">(GMT-03:00) Greenland</a></li><li><a href="http://192.168.0.1/23" rel="23">(GMT-02:00) Mid-Atlantic</a></li><li><a href="http://192.168.0.1/24" rel="24">(GMT-01:00) Azores</a></li><li><a href="http://192.168.0.1/25" rel="25">(GMT-01:00) Cape Verde Is.</a></li><li><a href="http://192.168.0.1/26" rel="26">(GMT) Casablanca, Monrovia</a></li><li><a href="http://192.168.0.1/27" rel="27">(GMT) Greenwich Mean Time : Dublin, Edinburgh, Lisbon, London</a></li><li><a href="http://192.168.0.1/28" rel="28">(GMT+01:00) Amsterdam, Berlin, Bern, Rome, Stockholm, Vienna</a></li><li><a href="http://192.168.0.1/29" rel="29">(GMT+01:00) Belgrade, Bratislava, Budapest, Ljubljana, Prague</a></li><li><a href="http://192.168.0.1/30" rel="30">(GMT+01:00) Brussels, Copenhagen, Madrid, Paris</a></li><li><a href="http://192.168.0.1/31" rel="31">(GMT+01:00) Sarajevo, Skopje, Warsaw, Zagreb</a></li><li><a href="http://192.168.0.1/32" rel="32">(GMT+01:00) West Central Africa</a></li><li><a href="http://192.168.0.1/33" rel="33">(GMT+02:00) Athens, Istanbul, Minsk</a></li><li><a href="http://192.168.0.1/34" rel="34">(GMT+02:00) Bucharest</a></li><li><a href="http://192.168.0.1/35" rel="35">(GMT+02:00) Cairo</a></li><li><a href="http://192.168.0.1/36" rel="36">(GMT+02:00) Harare, Pretoria</a></li><li><a href="http://192.168.0.1/37" rel="37">(GMT+02:00) Helsinki, Kyiv, Riga, Sofia, Tallinn, Vilnius</a></li><li><a href="http://192.168.0.1/38" rel="38">(GMT+02:00) Jerusalem</a></li><li><a href="http://192.168.0.1/39" rel="39">(GMT+03:00) Baghdad</a></li><li><a href="http://192.168.0.1/40" rel="40">(GMT+03:00) Kuwait, Riyadh</a></li><li><a href="http://192.168.0.1/41" rel="41">(GMT+03:00) Nairobi</a></li><li><a href="http://192.168.0.1/42" rel="42">(GMT+03:30) Tehran</a></li><li><a href="http://192.168.0.1/43" rel="43">(GMT+04:00) Abu Dhabi, Muscat</a></li><li><a href="http://192.168.0.1/44" rel="44">(GMT+04:00) Baku, Tbilisi, Yerevan</a></li><li><a href="http://192.168.0.1/45" rel="45">(GMT+04:00) Moscow, St. Petersburg, Volgograd</a></li><li><a href="http://192.168.0.1/46" rel="46">(GMT+04:30) Kabul</a></li><li><a href="http://192.168.0.1/47" rel="47">(GMT+05:00) Islamabad, Karachi, Tashkent</a></li><li><a href="http://192.168.0.1/48" rel="48">(GMT+05:30) Chennai, Kolkata, Mumbai, New Delhi</a></li><li><a href="http://192.168.0.1/49" rel="49">(GMT+05:30) Sri Jayawardenepura</a></li><li><a href="http://192.168.0.1/50" rel="50">(GMT+05:45) Kathmandu</a></li><li><a href="http://192.168.0.1/51" rel="51">(GMT+06:00) Astana, Dhaka</a></li><li><a href="http://192.168.0.1/52" rel="52">(GMT+06:00) Ekaterinburg</a></li><li><a href="http://192.168.0.1/53" rel="53">(GMT+06:30) Rangoon</a></li><li><a href="http://192.168.0.1/54" rel="54">(GMT+07:00) Almaty, Novosibirsk</a></li><li><a href="http://192.168.0.1/55" rel="55">(GMT+07:00) Bangkok, Hanoi, Jakarta</a></li><li><a href="http://192.168.0.1/56" rel="56">(GMT+08:00) Krasnoyarsk</a></li><li><a href="http://192.168.0.1/57" rel="57">(GMT+08:00) Beijing, Chongqing, Hong Kong, Urumqi</a></li><li><a href="http://192.168.0.1/58" rel="58">(GMT+08:00) Kuala Lumpur, Singapore</a></li><li><a href="http://192.168.0.1/59" rel="59">(GMT+08:00) Perth</a></li><li><a href="http://192.168.0.1/60" rel="60">(GMT+08:00) Taipei</a></li><li><a href="http://192.168.0.1/61" rel="61">(GMT+08:00) Ulaan Bataar</a></li><li><a href="http://192.168.0.1/62" rel="62">(GMT+09:00) Irkutsk</a></li><li><a href="http://192.168.0.1/63" rel="63">(GMT+09:00) Osaka, Sapporo, Tokyo</a></li><li><a href="http://192.168.0.1/64" rel="64">(GMT+09:00) Seoul</a></li><li><a href="http://192.168.0.1/65" rel="65">(GMT+09:30) Adelaide</a></li><li><a href="http://192.168.0.1/66" rel="66">(GMT+09:30) Darwin</a></li><li><a href="http://192.168.0.1/67" rel="67">(GMT+10:00) Brisbane</a></li><li><a href="http://192.168.0.1/68" rel="68">(GMT+10:00) Canberra, Melbourne, Sydney</a></li><li><a href="http://192.168.0.1/69" rel="69">(GMT+10:00) Guam, Port Moresby</a></li><li><a href="http://192.168.0.1/70" rel="70">(GMT+10:00) Hobart</a></li><li><a href="http://192.168.0.1/71" rel="71">(GMT+10:00) Yakutsk</a></li><li><a href="http://192.168.0.1/72" rel="72">(GMT+11:00) Solomon Is., New Caledonia</a></li><li><a href="http://192.168.0.1/73" rel="73">(GMT+11:00) Vladivostok</a></li><li><a href="http://192.168.0.1/74" rel="74">(GMT+12:00) Magadan</a></li><li><a href="http://192.168.0.1/75" rel="75">(GMT+12:00) Auckland, Wellington</a></li><li><a href="http://192.168.0.1/76" rel="76">(GMT+12:00) Fiji, Kamchatka, Marshall Is.</a></li><li><a href="http://192.168.0.1/77" rel="77">(GMT+13:00) Nuku'alofa</a></li><li><a href="http://192.168.0.1/78" rel="78">(GMT+13:00) Samoa</a></li></ul></div>
+							
+							-->
+							</div>
+						</td>
+					</tr>
+					<tr>
+						<th>Time:</th>
+						<td><span id="nowDateTimeSpan">2014/11/19 08:50:47 AM</span></td>
+					</tr>
+					<tr>
+						<th>Enable Daylight Saving:</th>
+						<td><div id="enableDaylightSaving" class="checkbox_off"><input type="checkbox" name="enableDaylightSaving" id="enableDaylightSaving_ck" checked="">Disabled</div></td>
+					</tr>
+				</tbody>
+			    </table>
+				<hr>
+				<table class="block" ondragstart="return false" onselectstart="return false" style="margin: 10px 0 0 0;">
+				<tbody>
+					<tr>
+						<td><div class="title">Automatic Time Configuration</div></td>
+					</tr>
+					<tr>
+						<th>Update Time Using an NTP Server:</th>
+						<td><div id="ntpServer" class="checkbox_on"><input type="checkbox" name="ntpServer" id="ntpServer_ck" checked="">Enabled</div></td>
+					</tr>
+					<tr id="show_NTPServer">
+						<th>NTP Server:</th>
+						<td width="20px"><input class="styled-text" type="text" name="NTPServer_Address" id="NTPServer_Address" disabled=""></td>
+						<td valign="top">
+							<div class="styled-select">
+							<select name="selectNTPServer" id="selectNTPServer" onchange="changeNTPServer(this, this.value)" sb="28532868" style="display: none;">
+								<option value="0">D-Link NTP Server</option>
+								<option value="1">Manual</option>
+							</select>
+						<div id="sbHolder_15896377" class="sbHolder" style="width:210px">
+
+	<a id="sbToggle_15896377" href="#" class="sbToggle"></a>
+													
+			<label class="custom-select">
+				<select style="height:30px; width:210px; border:none; font-size:inherit; padding: 5px;">
+					<option>D-Link NTP Server</option>
+					<option>Manual</option>
+					
+				
+				</select>
+			</label>
+
+							<!--
+							<div id="sbHolder_28532868" class="sbHolder" style="width:210px"><a id="sbToggle_28532868" href="http://192.168.0.1/Time.html#" class="sbToggle"></a><a id="sbSelector_28532868" href="http://192.168.0.1/Time.html#" class="sbSelector" style="width:180px">D-Link NTP Server</a><ul id="sbOptions_28532868" class="sbOptions" style="width: 210px; display: none;"><li><a href="http://192.168.0.1/0" rel="0" class="sbFocus">D-Link NTP Server</a></li><li><a href="http://192.168.0.1/1" rel="1">Manual</a></li></ul>
+							
+							-->
+							</div>
+							
+							
+							</div>
+						</td>
+					</tr>
+				</tbody>
+			    </table>
+			    <div id="manual_Time" style="display: none;">
+					<hr>
+					<table class="block" ondragstart="return false" onselectstart="return false" border="0" style="margin: 10px 0 0 0;">
+					<tbody>
+						<tr>
+							<td><div class="title">Manual Time Configuration</div></td>
+						</tr>
+						<tr>
+							<th>Date:</th>
+							<td width="20px">
+								<div class="styled-select">
+									<select name="year" id="year" onchange="changeDate(true)" sb="66945820" style="display: none;">
+									
+									<!--
+									<option value="2009">2009</option>
+									<option value="2010">2010</option>
+									<option value="2011">2011</option>
+									<option value="2012">2012</option>
+									<option value="2013">2013</option>
+									<option value="2014">2014</option>
+									<option value="2015">2015</option>
+									<option value="2016">2016</option>
+									<option value="2017">2017</option>
+									<option value="2018">2018</option>
+									<option value="2019">2019</option>
+									</select>
+									<!--
+									<div id="sbHolder_66945820" class="sbHolder" style="width:100px">
+									<a id="sbToggle_66945820" href="http://192.168.0.1/Time.html#" class="sbToggle"></a>
+									<a id="sbSelector_66945820" href="http://192.168.0.1/Time.html#" class="sbSelector" style="width:70px">2014</a>
+									<ul id="sbOptions_66945820" class="sbOptions" style="width: 100px; display: none;"><li>
+									<a href="http://192.168.0.1/2009" rel="2009">2009</a></li><li>
+									<a href="http://192.168.0.1/2010" rel="2010">2010</a></li><li>
+									<a href="http://192.168.0.1/2011" rel="2011">2011</a></li><li>
+									<a href="http://192.168.0.1/2012" rel="2012">2012</a></li><li>
+									<a href="http://192.168.0.1/2013" rel="2013">2013</a></li><li>
+									<a href="http://192.168.0.1/2014" rel="2014" class="sbFocus">2014</a></li>
+									<li>
+									<a href="http://192.168.0.1/2015" rel="2015">2015</a></li><li>
+									<a href="http://192.168.0.1/2016" rel="2016">2016</a></li><li>
+									<a href="http://192.168.0.1/2017" rel="2017">2017</a></li><li>
+									<a href="http://192.168.0.1/2018" rel="2018">2018</a></li><li>
+									<a href="http://192.168.0.1/2019" rel="2019">2019</a></li>
+									
+									</ul></div>
+									-->
+									
+								</div>
+							</td>
+							<td width="20px">
+								<div class="styled-select">
+									<select name="month" id="month" onchange="changeDate(true)" sb="93090880" style="display: none;">
+									
+									<!--
+									<option value="1">01</option>
+									<option value="2">02</option>
+									<option value="3">03</option>
+									<option value="4">04</option><option value="5">05</option><option value="6">06</option><option value="7">07</option><option value="8">08</option><option value="9">09</option><option value="10">10</option><option value="11">11</option><option value="12">12</option></select>
+									
+									<!--
+									<div id="sbHolder_93090880" class="sbHolder" style="width:100px"><a id="sbToggle_93090880" href="http://192.168.0.1/Time.html#" class="sbToggle"></a><a id="sbSelector_93090880" href="http://192.168.0.1/Time.html#" class="sbSelector" style="width:70px">11</a><ul id="sbOptions_93090880" class="sbOptions" style="width: 100px; display: none;"><li><a href="http://192.168.0.1/1" rel="1">01</a></li><li><a href="http://192.168.0.1/2" rel="2">02</a></li><li><a href="http://192.168.0.1/3" rel="3">03</a></li><li><a href="http://192.168.0.1/4" rel="4">04</a></li><li><a href="http://192.168.0.1/5" rel="5">05</a></li><li><a href="http://192.168.0.1/6" rel="6">06</a></li><li><a href="http://192.168.0.1/7" rel="7">07</a></li><li><a href="http://192.168.0.1/8" rel="8">08</a></li><li><a href="http://192.168.0.1/9" rel="9">09</a></li><li><a href="http://192.168.0.1/10" rel="10">10</a></li><li><a href="http://192.168.0.1/11" rel="11" class="sbFocus">11</a></li><li><a href="http://192.168.0.1/12" rel="12">12</a></li></ul></div>
+									-->
+									
+								</div>
+							</td>
+							<td width="20px">
+								<div class="styled-select">
+									<select name="day" id="day" sb="67224333" style="display: none;">
+									
+									<!--
+									<option value="1">01</option><option value="2">02</option><option value="3">03</option><option value="4">04</option><option value="5">05</option><option value="6">06</option><option value="7">07</option><option value="8">08</option><option value="9">09</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24">24</option><option value="25">25</option><option value="26">26</option><option value="27">27</option><option value="28">28</option><option value="29">29</option><option value="30">30</option></select>
+									
+									<!--
+									<div id="sbHolder_67224333" class="sbHolder" style="width:100px"><a id="sbToggle_67224333" href="http://192.168.0.1/Time.html#" class="sbToggle"></a><a id="sbSelector_67224333" href="http://192.168.0.1/Time.html#" class="sbSelector" style="width:70px">19</a><ul id="sbOptions_67224333" class="sbOptions" style="width: 100px; display: none;"><li><a href="http://192.168.0.1/1" rel="1">01</a></li><li><a href="http://192.168.0.1/2" rel="2">02</a></li><li><a href="http://192.168.0.1/3" rel="3">03</a></li><li><a href="http://192.168.0.1/4" rel="4">04</a></li><li><a href="http://192.168.0.1/5" rel="5">05</a></li><li><a href="http://192.168.0.1/6" rel="6">06</a></li><li><a href="http://192.168.0.1/7" rel="7">07</a></li><li><a href="http://192.168.0.1/8" rel="8">08</a></li><li><a href="http://192.168.0.1/9" rel="9">09</a></li><li><a href="http://192.168.0.1/10" rel="10">10</a></li><li><a href="http://192.168.0.1/11" rel="11">11</a></li><li><a href="http://192.168.0.1/12" rel="12">12</a></li><li><a href="http://192.168.0.1/13" rel="13">13</a></li><li><a href="http://192.168.0.1/14" rel="14">14</a></li><li><a href="http://192.168.0.1/15" rel="15">15</a></li><li><a href="http://192.168.0.1/16" rel="16">16</a></li><li><a href="http://192.168.0.1/17" rel="17">17</a></li><li><a href="http://192.168.0.1/18" rel="18">18</a></li><li><a href="http://192.168.0.1/19" rel="19" class="sbFocus">19</a></li><li><a href="http://192.168.0.1/20" rel="20">20</a></li><li><a href="http://192.168.0.1/21" rel="21">21</a></li><li><a href="http://192.168.0.1/22" rel="22">22</a></li><li><a href="http://192.168.0.1/23" rel="23">23</a></li><li><a href="http://192.168.0.1/24" rel="24">24</a></li><li><a href="http://192.168.0.1/25" rel="25">25</a></li><li><a href="http://192.168.0.1/26" rel="26">26</a></li><li><a href="http://192.168.0.1/27" rel="27">27</a></li><li><a href="http://192.168.0.1/28" rel="28">28</a></li><li><a href="http://192.168.0.1/29" rel="29">29</a></li><li><a href="http://192.168.0.1/30" rel="30">30</a></li></ul></div>
+									-->
+									
+								</div>
+							</td>
+							<td align="left">(Year/ Month/ Day)</td>
+						</tr>
+						<tr>
+							<th>Time:</th>
+							<td width="20px">
+								<div class="styled-select">
+									<select name="hour" id="hour" sb="12320171" style="display: none;">
+									
+									<!--
+									<option value="0">00</option><option value="1">01</option><option value="2">02</option><option value="3">03</option><option value="4">04</option><option value="5">05</option><option value="6">06</option><option value="7">07</option><option value="8">08</option><option value="9">09</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option></select><div id="sbHolder_12320171" class="sbHolder" style="width:100px"><a id="sbToggle_12320171" href="http://192.168.0.1/Time.html#" class="sbToggle"></a><a id="sbSelector_12320171" href="http://192.168.0.1/Time.html#" class="sbSelector" style="width:70px">08</a><ul id="sbOptions_12320171" class="sbOptions" style="width: 100px; display: none;"><li><a href="http://192.168.0.1/0" rel="0">00</a></li><li><a href="http://192.168.0.1/1" rel="1">01</a></li><li><a href="http://192.168.0.1/2" rel="2">02</a></li><li><a href="http://192.168.0.1/3" rel="3">03</a></li><li><a href="http://192.168.0.1/4" rel="4">04</a></li><li><a href="http://192.168.0.1/5" rel="5">05</a></li><li><a href="http://192.168.0.1/6" rel="6">06</a></li><li><a href="http://192.168.0.1/7" rel="7">07</a></li><li><a href="http://192.168.0.1/8" rel="8" class="sbFocus">08</a></li><li><a href="http://192.168.0.1/9" rel="9">09</a></li><li><a href="http://192.168.0.1/10" rel="10">10</a></li><li><a href="http://192.168.0.1/11" rel="11">11</a></li><li><a href="http://192.168.0.1/12" rel="12">12</a></li><li><a href="http://192.168.0.1/13" rel="13">13</a></li><li><a href="http://192.168.0.1/14" rel="14">14</a></li><li><a href="http://192.168.0.1/15" rel="15">15</a></li><li><a href="http://192.168.0.1/16" rel="16">16</a></li><li><a href="http://192.168.0.1/17" rel="17">17</a></li><li><a href="http://192.168.0.1/18" rel="18">18</a></li><li><a href="http://192.168.0.1/19" rel="19">19</a></li><li><a href="http://192.168.0.1/20" rel="20">20</a></li><li><a href="http://192.168.0.1/21" rel="21">21</a></li><li><a href="http://192.168.0.1/22" rel="22">22</a></li><li><a href="http://192.168.0.1/23" rel="23">23</a></li></ul></div>
+									
+									-->
+								</div>
+							</td>
+							<td width="20px">
+								<div class="styled-select">
+									<select name="minute" id="minute" sb="41123372" style="display: none;">
+									
+									<!--
+									<option value="0">00</option><option value="1">01</option><option value="2">02</option><option value="3">03</option><option value="4">04</option><option value="5">05</option><option value="6">06</option><option value="7">07</option><option value="8">08</option><option value="9">09</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24">24</option><option value="25">25</option><option value="26">26</option><option value="27">27</option><option value="28">28</option><option value="29">29</option><option value="30">30</option><option value="31">31</option><option value="32">32</option><option value="33">33</option><option value="34">34</option><option value="35">35</option><option value="36">36</option><option value="37">37</option><option value="38">38</option><option value="39">39</option><option value="40">40</option><option value="41">41</option><option value="42">42</option><option value="43">43</option><option value="44">44</option><option value="45">45</option><option value="46">46</option><option value="47">47</option><option value="48">48</option><option value="49">49</option><option value="50">50</option><option value="51">51</option><option value="52">52</option><option value="53">53</option><option value="54">54</option><option value="55">55</option><option value="56">56</option><option value="57">57</option><option value="58">58</option><option value="59">59</option></select>
+									
+									<!--
+									<div id="sbHolder_41123372" class="sbHolder" style="width:100px"><a id="sbToggle_41123372" href="http://192.168.0.1/Time.html#" class="sbToggle"></a><a id="sbSelector_41123372" href="http://192.168.0.1/Time.html#" class="sbSelector" style="width:70px">50</a><ul id="sbOptions_41123372" class="sbOptions" style="width: 100px; display: none;"><li><a href="http://192.168.0.1/0" rel="0">00</a></li><li><a href="http://192.168.0.1/1" rel="1">01</a></li><li><a href="http://192.168.0.1/2" rel="2">02</a></li><li><a href="http://192.168.0.1/3" rel="3">03</a></li><li><a href="http://192.168.0.1/4" rel="4">04</a></li><li><a href="http://192.168.0.1/5" rel="5">05</a></li><li><a href="http://192.168.0.1/6" rel="6">06</a></li><li><a href="http://192.168.0.1/7" rel="7">07</a></li><li><a href="http://192.168.0.1/8" rel="8">08</a></li><li><a href="http://192.168.0.1/9" rel="9">09</a></li><li><a href="http://192.168.0.1/10" rel="10">10</a></li><li><a href="http://192.168.0.1/11" rel="11">11</a></li><li><a href="http://192.168.0.1/12" rel="12">12</a></li><li><a href="http://192.168.0.1/13" rel="13">13</a></li><li><a href="http://192.168.0.1/14" rel="14">14</a></li><li><a href="http://192.168.0.1/15" rel="15">15</a></li><li><a href="http://192.168.0.1/16" rel="16">16</a></li><li><a href="http://192.168.0.1/17" rel="17">17</a></li><li><a href="http://192.168.0.1/18" rel="18">18</a></li><li><a href="http://192.168.0.1/19" rel="19">19</a></li><li><a href="http://192.168.0.1/20" rel="20">20</a></li><li><a href="http://192.168.0.1/21" rel="21">21</a></li><li><a href="http://192.168.0.1/22" rel="22">22</a></li><li><a href="http://192.168.0.1/23" rel="23">23</a></li><li><a href="http://192.168.0.1/24" rel="24">24</a></li><li><a href="http://192.168.0.1/25" rel="25">25</a></li><li><a href="http://192.168.0.1/26" rel="26">26</a></li><li><a href="http://192.168.0.1/27" rel="27">27</a></li><li><a href="http://192.168.0.1/28" rel="28">28</a></li><li><a href="http://192.168.0.1/29" rel="29">29</a></li><li><a href="http://192.168.0.1/30" rel="30">30</a></li><li><a href="http://192.168.0.1/31" rel="31">31</a></li><li><a href="http://192.168.0.1/32" rel="32">32</a></li><li><a href="http://192.168.0.1/33" rel="33">33</a></li><li><a href="http://192.168.0.1/34" rel="34">34</a></li><li><a href="http://192.168.0.1/35" rel="35">35</a></li><li><a href="http://192.168.0.1/36" rel="36">36</a></li><li><a href="http://192.168.0.1/37" rel="37">37</a></li><li><a href="http://192.168.0.1/38" rel="38">38</a></li><li><a href="http://192.168.0.1/39" rel="39">39</a></li><li><a href="http://192.168.0.1/40" rel="40">40</a></li><li><a href="http://192.168.0.1/41" rel="41">41</a></li><li><a href="http://192.168.0.1/42" rel="42">42</a></li><li><a href="http://192.168.0.1/43" rel="43">43</a></li><li><a href="http://192.168.0.1/44" rel="44">44</a></li><li><a href="http://192.168.0.1/45" rel="45">45</a></li><li><a href="http://192.168.0.1/46" rel="46">46</a></li><li><a href="http://192.168.0.1/47" rel="47">47</a></li><li><a href="http://192.168.0.1/48" rel="48">48</a></li><li><a href="http://192.168.0.1/49" rel="49">49</a></li><li><a href="http://192.168.0.1/50" rel="50" class="sbFocus">50</a></li><li><a href="http://192.168.0.1/51" rel="51">51</a></li><li><a href="http://192.168.0.1/52" rel="52">52</a></li><li><a href="http://192.168.0.1/53" rel="53">53</a></li><li><a href="http://192.168.0.1/54" rel="54">54</a></li><li><a href="http://192.168.0.1/55" rel="55">55</a></li><li><a href="http://192.168.0.1/56" rel="56">56</a></li><li><a href="http://192.168.0.1/57" rel="57">57</a></li><li><a href="http://192.168.0.1/58" rel="58">58</a></li><li><a href="http://192.168.0.1/59" rel="59">59</a></li></ul></div>
+									
+									-->
+								</div>
+							</td>
+							<td align="left" colspan="2">(Hour/ Minute)</td>
+						</tr>
+					</tbody>
+				    </table>
+				</div>
+		    </div>
+		    <div id="CreatePopAlertMessage" style="display:none">
+				<div id="AlertPopRect">
+				<div id="AlertPopBody">
+					<table class="myAlertPop_table_b" id="waitSettingFinish" border="0" cellspacing="0">
+					   <tbody>
+							 <tr>
+							 	<td>
+									<center><div id="Loading_pop_image2"></div></center>
+								</td>
+							 </tr>
+							 <tr>
+							 	<td label="" id="reciprocal_Number"></td>
+							 </tr>
+							 <tr>
+							 	<td id="dialog_msg_black2">Your changes are being saved.</td>
+							 </tr>
+					   </tbody>
+					</table>
+				</div>
+				</div>
+			</div>
+		</div>
+		<!-- Detect Router Connection, Timmy Add 2013/08/15 -->
+		<div id="DetectRouterConnection" style="display:none"><div class="dialogBox" style="width:616px"><table class="myCreatePop_table" border="0" cellspacing="0" id="RouterConnectionTable"><tbody><tr><td colspan="3"><div class="popTitle">Router Not Found</div></td></tr><tr><td id="save_td" colspan="4"><center><div id="Save_edit_pop_btn" style="cursor:pointer" tabindex="12" onclick="CheckHTMLStatus(&#39;&#39;);">Retry</div></center></td></tr></tbody></table></div></div>
+		<div id="footer">
+			<div id="copyright">COPYRIGHT © 2014 D-Link</div>
+		</div>
+		<br><br><br><br><br>
+	</div>
+	</form>
+	<script type="text/javascript" charset="utf-8">
+		$(document).ready( function() {
+			$('#Time_form').validate({
+				rules: {
+					NTPServer_Address:	{	required: true }
+				},
+				messages: {
+					NTPServer_Address:	{	required: jQuery.validator.messages.required	}
+				},
+				submitHandler: function(form) {
+					CheckConnectionStatus();
+				},
+			});
+		});
+	</script>
+<!--
+<script type="text/javascript">
+	Load_HTML();
+	Initial();
+	setMenu("menu_Management");
+	checkTimeout();
+</script>
+
+-->
+</body></html>

@@ -1,0 +1,582 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!-- saved from url=(0027)http://192.168.0.1/VPN.html -->
+<html xmlns="http://www.w3c.org/1999/xhtml" xml:lang="zh_TW" lang="zh_TW"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>D-LINK</title>
+<meta http-equiv="X-UA-Compatible" content="IE=9">
+
+<meta http-equiv="Content-Type" content="text/css">
+<link href="resources/jquery.selectbox.css" type="text/css" rel="stylesheet">
+<script type="text/javascript" charset="utf-8" src="resources/initialJS.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/comm.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/hmac_md5.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/libajax.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/hnap.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/i18n.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/pagetool.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/menu.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/DetectRouterConnection.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/checkTimeout.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/includeLang.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/AES.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/DeviceConfig.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/initialCSS.js"></script>
+<link rel="stylesheet" type="text/css" href="resources/style_pages.css" media="all">
+<script type="text/javascript" charset="utf-8" src="resources/initialJQ.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/jquery-1.8.2.min.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/jquery.selectbox-0.2_new.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/jquery.stringify.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/initialValidate1.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/jquery.validate1.js"></script>
+
+<script>
+$(document).ready(function(){
+	
+	presetCheckBox("status_vpn", true);
+
+	//jquery
+	$("div.checkbox_on" || "div.checkbox_off").click(function(e) {
+	 var checkboxId =  e.target.id +'_ck';	 
+		if(e.target.getAttribute("class") == "checkbox_on") {
+			var disable = I18N("j","Disabled");
+			e.target.setAttribute("class", "checkbox_off");
+			e.target.setAttribute("className", "checkbox_off");
+			document.getElementById(e.target.id).innerHTML='<input type="checkbox" name=' + e.target.id + ' id=' + checkboxId + ' checked>'+disable;
+			document.getElementById(checkboxId).checked=false;
+			
+			if (checkboxId == "status_vpn_ck")
+			{
+				document.getElementById("userName").disabled = true;
+				document.getElementById("password").disabled = true;
+				document.getElementById("psk").disabled = true;
+				document.getElementById("Save_disable_vpn_btn").style.display = "block";
+				document.getElementById("Save_vpn_btn").style.display = "none";
+
+				$("#AuthProtocol").selectbox("disable");
+				$("#MPPE").selectbox("disable");
+				
+				document.getElementById("protocol").disabled = true;
+				document.getElementById("mppe").disabled = true;
+			}
+			
+			changeFlag = true;
+			save_button_changed();
+		}
+		else {
+			var enable = I18N("j","Enabled");
+			e.target.setAttribute("class", "checkbox_on");
+			e.target.setAttribute("className", "checkbox_on");
+			document.getElementById(e.target.id).innerHTML='<input type="checkbox" name=' + e.target.id + ' id=' + checkboxId + ' checked="">'+enable;
+			document.getElementById(checkboxId).checked=true;
+			
+			if (checkboxId == "status_vpn_ck")
+			{
+				document.getElementById("userName").disabled = false;
+				document.getElementById("password").disabled = false;
+				document.getElementById("psk").disabled = false;
+				document.getElementById("Save_vpn_btn").style.display = "block";
+				document.getElementById("Save_disable_vpn_btn").style.display = "none";
+
+				$("#AuthProtocol").selectbox("enable");
+				$("#MPPE").selectbox("enable");
+				
+				document.getElementById("protocol").disabled = false;
+				document.getElementById("mppe").disabled = false;
+			}
+			
+			changeFlag = true;
+			save_button_changed();
+			save_vpn_button_changed();
+		}
+	});
+	
+	GetXML();
+});
+
+</script>
+
+<script type="text/javascript">
+	
+	var HNAP = new HNAP_XML();
+	
+	var xml_SetVpnSettings = HNAP.GetXML("SetVpnSettingsAlpha");
+
+	function Load_HTML()
+	{ 
+		$("#header").load("header.html");
+	}
+	
+	function Initial()
+	{
+		initialMenu();
+		initialDetectRouterConnection();
+	}
+	
+	function GetXML()
+	{
+		var xml_GetVpnSettings = HNAP.GetXML("GetVpnSettingsAlpha");
+
+		// enable
+		var en_vpn = xml_GetVpnSettings.Get("GetVpnSettingsAlphaResponse/Enabled");
+		if(en_vpn == "true")
+		{
+			presetCheckBox("status_vpn", true);
+			document.getElementById("Save_disable_vpn_btn").style.display = "none";
+			document.getElementById("Save_vpn_btn").style.display = "block";
+		}
+		else
+		{
+			presetCheckBox("status_vpn", false);
+			document.getElementById("userName").disabled = true;
+			document.getElementById("password").disabled = true;
+			document.getElementById("psk").disabled = true;
+			document.getElementById("AuthProtocol").disabled = true;
+			document.getElementById("MPPE").disabled = true;
+			document.getElementById("Save_disable_vpn_btn").style.display = "block";
+			document.getElementById("Save_vpn_btn").style.display = "none";
+		}
+		
+		// username
+		var ssid = xml_GetVpnSettings.Get("GetVpnSettingsAlphaResponse/Username");
+		document.getElementById("userName").value = ssid;
+
+		// password
+		var password = xml_GetVpnSettings.Get("GetVpnSettingsAlphaResponse/Password");
+		document.getElementById("password").value = password;
+
+		// PSK
+		var psk = xml_GetVpnSettings.Get("GetVpnSettingsAlphaResponse/PSK");
+		if(psk == "") document.getElementById("psk").value = COMM_RandomStr(10);
+		else document.getElementById("psk").value = psk;
+
+		//Advanced
+		var check_Auth = xml_GetVpnSettings.Get("GetVpnSettingsAlphaResponse/Auth");
+		var check_Mppe = xml_GetVpnSettings.Get("GetVpnSettingsAlphaResponse/Mppe");
+
+		COMM_SetSelectValue(document.getElementById("AuthProtocol"), check_Auth);
+		COMM_SetSelectValue(document.getElementById("MPPE"), check_Mppe);
+		
+		$("#AuthProtocol").selectbox();
+		$("#MPPE").selectbox();
+		
+		if (document.getElementById("status_vpn_ck").checked != "1")	
+		{	
+			$("#AuthProtocol").selectbox("disable");	
+			$("#MPPE").selectbox("disable");	
+		}
+		
+	}
+	
+	function CheckConnectionStatus()
+	{
+		$.ajax({
+			cache : false,
+			url : "./js/CheckConnection",
+			timeout : 2000,
+			type : "GET",
+			success : function(data) { SetXML(); },
+			error : function() { document.getElementById("DetectRouterConnection").style.display = "inline"; }
+		});
+	}
+	
+	function SetXML()
+	{
+		// enable
+		if (document.getElementById("status_vpn_ck").checked == "1")
+		{
+			xml_SetVpnSettings.Set("SetVpnSettingsAlpha/Enabled", "true");
+		}
+		else
+		{
+			xml_SetVpnSettings.Set("SetVpnSettingsAlpha/Enabled", "false");
+		}
+		
+		// username
+		xml_SetVpnSettings.Set("SetVpnSettingsAlpha/Username", document.getElementById("userName").value);
+
+		// password
+		xml_SetVpnSettings.Set("SetVpnSettingsAlpha/Password", document.getElementById("password").value);
+		
+		// PSK
+		xml_SetVpnSettings.Set("SetVpnSettingsAlpha/PSK", document.getElementById("psk").value);
+			
+		// Advanced
+		xml_SetVpnSettings.Set("SetVpnSettingsAlpha/Auth", document.getElementById("AuthProtocol").value);
+		xml_SetVpnSettings.Set("SetVpnSettingsAlpha/Mppe", document.getElementById("MPPE").value);
+
+
+		//var xml_SetVpnSettingsResult = HNAP.SetXMLAsync("SetVpnSettings", xml_SetVpnSettings);
+		var xml_SetVpnSettingsResult = HNAP.SetXML("SetVpnSettingsAlpha", xml_SetVpnSettings);
+		//alert(xml_SetVpnSettingsResult.Get("SetVpnSettingsResponse/SetVpnSettingsResult"));
+		document.getElementById("CreatePopAlertMessage2").style.display = "inline";
+		setTimeout("waitSettingFinished()", 2000);
+
+	}
+			
+	function SaveConfigurationtoLocal()
+	{
+		var xml_StartVpnDownload = HNAP.GetXML("StartVpnDownload");
+		var xml_StartVpnDownloadResult = HNAP.SetXML("StartVpnDownload", xml_StartVpnDownload);
+		var GetStartVpnDownloadResult = xml_StartVpnDownloadResult.Get("StartVpnDownloadResponse/StartVpnDownloadResult");
+
+		if (GetStartVpnDownloadResult == "OK")
+		{
+			//self.location.href="/docs/vpnprofile.xml";
+			self.location.href="/vpnconfig.php";
+		}
+		
+	}
+		
+	function Start_reciprocal_Number_Reboot()
+	{
+		document.getElementById("reciprocal_Number_Reboot").innerHTML = _ReciprocalRebootNumber + " " + I18N("j", "Sec");
+		_ReciprocalRebootNumber --;
+		
+		if (_ReciprocalRebootNumber >= 0)
+		{
+			setTimeout("Start_reciprocal_Number_Reboot()", 1000);
+		}
+		else
+		{
+			document.getElementById("REBOOT").style.display = "none";
+			document.getElementById("SuccessREBOOT").style.display = "inline";
+		}
+	}
+	
+	function waitSettingFinished()
+	{
+		window.location.reload();
+	}
+	
+	function BasicSetting_hasChanged()
+	{
+		BasicSettinghasChanged = 1;
+	}
+	
+	function returnToHome()
+	{
+		var Host_Name = sessionStorage.getItem('hostname');
+		self.location.href = "http://" + Host_Name + "/VPN.html";
+	}
+	
+</script>
+<script language="JavaScript">
+        // 2013/09/23 Timmy Modify
+			$(function() {
+			$("select").change(function () {	save_button_changed();	save_vpn_button_changed();	});
+			$("input").keydown(function () {	save_button_changed();	save_vpn_button_changed();	});
+        });
+        
+		function save_button_changed()
+		{
+			document.getElementById("Save_Disable_btn").style.display = "none";
+			document.getElementById("Save_btn").style.display = "block";
+			changeFlag = true;
+		}
+		
+		function save_vpn_button_changed()
+		{
+			document.getElementById("Save_disable_vpn_btn").style.display = "block";
+			document.getElementById("Save_vpn_btn").style.display = "none";
+			changeFlag = true;
+		}
+</script>
+<style>
+#advancedBlock {
+	display: none;
+}
+</style>
+</head>
+
+<body>
+	 <form name="vpn_form" id="vpn_form" method="POST" action="" novalidate="novalidate"> 
+	<div id="wrapper">
+		<!-------------------- Logo ------------------------->
+		<div id="header"><div>
+	<div style="position:relative; top:37px;">
+		<a href="http://www.dlink.com/" target="_blank">
+			<img id="image_Logo" src="resources/logo_2.png" alt="D-Link" width="102" height="20" border="0">
+		</a>
+	</div>
+	<table id="device_ver" style="position:relative; top:33px; font-size:13px; color:#969696;" border="0">
+		<tbody>
+			<tr>
+				<td style="padding: 0 10px 0 0;"><label id="h_ModelName">DIR-890L</label></td>
+				<td style="padding: 0 10px 0 0;">HW:<label id="h_HWVersion">A1</label></td>
+				<td style="padding: 0 10px 0 0;">FW:<label id="h_FWVersion">1.00</label></td>
+			</tr>
+		</tbody>
+	</table>
+
+</div></div>
+		<!-------------------- Menu ------------------------->
+		<div id="menu"><ul>	<li><a id="menu_Home" href="Home.html">Home</a></li>	
+		
+		<li class="parent" onmouseover="this.className=&quot;parentOn&quot;" onmouseout="this.className=&quot;parent&quot;">
+		<a id="menu_Settings" href="#">Settings</a>		
+		
+		<ul>			
+		<li><a href="Wizard_Manual.html" onclick="return confirmExit()">Wizard</a></li>			
+		<li><a href="Internet.html" onclick="return confirmExit();">Internet</a></li>			
+		<li><a href="WiFi.html" onclick="return confirmExit()">Wireless</a></li>					
+		<li><a href="Network.html" onclick="return confirmExit()">Network</a></li>	
+		<li><a href="SharePort.html" onclick="return confirmExit()">SharePort</a></li>	
+		<li><a href="Mydlink.html" onclick="return confirmExit()">mydlink</a></li>
+
+		</ul>	</li>	
+		
+		
+		<li class="parent" onmouseover="this.className=&quot;parentOn&quot;" onmouseout="this.className=&quot;parent&quot;"><a id="menu_Advanced" href="#" style="background: url(resources/navigation_bg5.gif?v=20141117210117) 100% 0% no-repeat;">Features</a>		
+		
+		<ul>			
+		
+		<li><a href="QoS.html" onclick="return confirmExit()">QoS Engine</a></li>			
+		<li><a href="Firewall.html" onclick="return confirmExit()">Firewall</a></li>			
+		<li><a href="PortForwarding.html" onclick="return confirmExit()">Port Forwarding</a></li>			
+		<li><a href="WebsiteFilter.html" onclick="return confirmExit()">Website Filter</a></li>			
+		<li><a href="StaticRoute.html" onclick="return confirmExit()">Static Route</a></li>			
+		<li><a href="DynamicDNS.html" onclick="return confirmExit()">Dynamic DNS</a></li>			
+		<li><a href="VPN.html" onclick="return confirmExit()">Quick VPN</a></li>	
+		
+		</ul>	</li>	
+		<li class="parent" onmouseover="this.className=&quot;parentOn&quot;" onmouseout="this.className=&quot;parent&quot;"><a id="menu_Management" href="#">Management</a>		
+		
+		<ul>			
+		<li><a href="Time.html" onclick="return confirmExit()">Time &amp; Schedule</a></li>			
+		<li><a href="SystemLog.html" onclick="return confirmExit()">System Log</a></li>			
+		<li><a href="Admin.html" onclick="return confirmExit()">System Admin</a></li>			
+		<li><a href="UpdateFirmware.html" onclick="return confirmExit()">Upgrade</a></li>			
+		<li><a href="Statistics.html" onclick="return confirmExit()">Statistics</a></li>	
+
+		</ul>	
+		
+		</li></ul></div>
+		<!-------------------- Content ---------------------->
+		<div id="content">
+			<!-------------------- info ---------------------->
+			<div id="info">
+				<div id="FunctionName">Quick VPN</div>
+				<div id="wallimage"><img src="resources/page_network2.png" alt="" width="195" height="119"></div>
+				<div id="directions">
+					Quickly and easily create a profile for secure remote access to a Local Area Network (LAN). This profile can be used to configure other devices to connect to your LAN via a secure VPN tunnel.
+				</div>
+			</div>
+			<!-------------------- funcBar ---------------------->
+			<div id="funcBar">		
+				<div id="pagePath">&nbsp; Features &gt;&gt; Quick VPN</div>
+				<ul id="rightFunc">
+					<li style="display:block"><div id="Save_btn" onclick='alert("This feature has been disabled on this emulator.")' style="cursor:pointer; display:none">Save</div></li>
+					<li style="display:block"><div id="Save_Disable_btn">Save</div></li>
+					<input id="sumbit_CheckData" class="submit" type="submit" value="Submit" style="display:none">
+				</ul>
+			</div>
+			<!-------------------- main ---------------------->
+			<div id="main">
+				<!-------------------- table ---------------------->
+				<table class="block" style="margin: 10px 0 0 0;">
+					<tbody>
+						<tr>
+							<td><div class="title">General</div></td>
+						</tr>
+						<tr>
+							<th>L2TP over IPSec:</th>
+							<td><div id="status_vpn" class="checkbox_off" ><input type="checkbox" name="status_vpn" id="status_vpn_ck" checked="">Disabled</div></td>
+						</tr>
+						<tr>
+							<th>Username:</th>
+							<td><input class="styled-text" type="text" name="userName" size="30" maxlength="15" id="userName" disabled=""></td>									
+						</tr>
+						<tr>
+						</tr><tr>
+							<th>Password:</th>
+							<td><input class="styled-text" type="text" name="password" size="30" maxlength="15" id="password" disabled=""></td>
+						</tr>
+						<tr>
+							<th>PSK:</th>
+							<td><input class="styled-text" type="text" name="psk" size="30" maxlength="64" id="psk" disabled=""></td>
+						</tr>
+						<tr>
+							<th>Save Configuration To Local Hard Drive:</th>
+							<!-- <form id="dlcfgbin" action="dlcfg.cgi" method="post">
+			   				<td style="display:block">
+			   					<button type="button" class="styled_button_s" id="Save_vpn_btn" onclick="document.forms['dlcfgbin'].submit()"style="display:none" ><script>I18N("h", "Save");</script></button>
+									<button type="button" class="styled_button_s" id="Save_disable_vpn_btn" style="display:none" ><script>I18N("h", "Save");</script></button>
+								</td>
+			 				</form> -->
+			 				<td style="display:block">
+								<button type="button" class="styled_button_s" id="Save_vpn_btn" onclick="SaveConfigurationtoLocal()" style="display: none;">Save</button>
+								<button onclick='alert("This feature has been disabled on this emulator.")' type="button" class="styled_button_s" id="Save_disable_vpn_btn" style="display: block;">Save</button>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+		<div class="advButton" onclick="showAdv(&#39;advancedBlock&#39;);">Advanced Settings...</div>
+		<hr>
+		<div id="advancedBlock">
+		<table class="block" style="margin: 10px 0 0 0;">
+			<tbody>
+				<tr>
+					<td><div class="title">Advanced</div></td>
+				</tr>
+				<tr>
+					<th>Authentication Protocol:</th>
+						<td>
+						
+						<div id="sbHolder_63515107" class="sbHolder sbHolderDisabled" style="width:200px">
+		
+			<a id="sbToggle_63515107" href="#" class="sbToggle"></a>
+				<label class="custom-select">
+				<select style="height:30px; width:200px; border:none; font-size:inherit; padding: 5px;" id="protocol">
+					<option>MSCHAPv2</option>
+					<option>PAP</option>
+					<option>CHAP</option>
+													
+				</select>
+				</label>
+						<!--
+						<div class="styled-select">
+							<select name="AuthProtocol" id="AuthProtocol" ="" sb="69525591" style="display: none;">
+								<option value="MSCHAPv2" selected="">MSCHAPv2</option>
+								<option value="PAP">PAP</option>
+								<option value="CHAP">CHAP</option>
+							</select>
+							
+							<div id="sbHolder_69525591" class="sbHolder sbHolderDisabled" style="width:200px"><a id="sbToggle_69525591" href="http://192.168.0.1/VPN.html#" class="sbToggle"></a><a id="sbSelector_69525591" href="http://192.168.0.1/VPN.html#" class="sbSelector" style="width:170px">MSCHAPv2</a>
+							
+							<ul id="sbOptions_69525591" class="sbOptions" style="width: 200px; display: none;">
+							<li><a href="http://192.168.0.1/MSCHAPv2" rel="MSCHAPv2" class="sbFocus">MSCHAPv2</a></li>
+							<li><a href="http://192.168.0.1/PAP" rel="PAP">PAP</a></li><li>
+							<a href="http://192.168.0.1/CHAP" rel="CHAP">CHAP</a></li></ul></div>
+							
+							-->
+						</div>
+						</td>
+				</tr>
+				<tr>
+					<th>MPPE:</th>
+						<td>
+						<div id="sbHolder_26815536" class="sbHolder sbHolderDisabled" style="width:200px">
+	
+		<a id="sbToggle_63515107" href="#" class="sbToggle"></a>
+				<label class="custom-select">
+				<select style="height:30px; width:200px; border:none; font-size:inherit; padding: 5px;" id="mppe">
+					<option>None</option>
+					<option>RC4-40</option>
+					<option>RC4-128</option>
+													
+				</select>
+				</label>
+						<!--
+						<div class="styled-select">
+							<select name="MPPE" id="MPPE" disabled="" sb="48493553" style="display: none;">
+								<option value="none">None</option>
+								<option value="RC4-40">RC4-40</option>
+								<option value="RC4-128" selected="">RC4-128</option>
+								</select><div id="sbHolder_48493553" class="sbHolder sbHolderDisabled" style="width:200px"><a id="sbToggle_48493553" href="http://192.168.0.1/VPN.html#" class="sbToggle"></a><a id="sbSelector_48493553" href="http://192.168.0.1/VPN.html#" class="sbSelector" style="width:170px">RC4-128</a><ul id="sbOptions_48493553" class="sbOptions" style="width: 200px; display: none;"><li><a href="http://192.168.0.1/none" rel="none">None</a></li><li><a href="http://192.168.0.1/RC4-40" rel="RC4-40">RC4-40</a></li><li><a href="http://192.168.0.1/RC4-128" rel="RC4-128" class="sbFocus">RC4-128</a></li></ul></div>
+								
+								-->
+						</div>
+						</td>
+				</tr>
+			</tbody>
+		</table>
+		</div>
+		<div id="CreatePopAlertMessage2" style="display:none">
+			<div id="AlertPopRect">
+			<div id="AlertPopBody">
+				<table class="myAlertPop_table_b" id="waitSettingFinish" border="0" cellspacing="0">
+					<tbody>
+						<tr>
+							<td>
+								<center><div id="Loading_pop_image2"></div></center>
+							</td>
+						</tr>
+						<tr>
+							<td label="" id="reciprocal_Number"></td>
+						</tr>
+						<tr>
+							<td id="dialog_msg_black2">Your changes are being saved.</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+			</div>
+	 	</div>
+	 	<!-- Detect Router Connection, Timmy Add 2013/08/15 -->
+		<div id="DetectRouterConnection" style="display:none"><div class="dialogBox" style="width:616px"><table class="myCreatePop_table" border="0" cellspacing="0" id="RouterConnectionTable"><tbody><tr><td colspan="3"><div class="popTitle">Router Not Found</div></td></tr><tr><td id="save_td" colspan="4"><center><div id="Save_edit_pop_btn" style="cursor:pointer" tabindex="12" onclick="CheckHTMLStatus(&#39;&#39;);">Retry</div></center></td></tr></tbody></table></div></div>
+		<div id="footer">
+			<div id="copyright">COPYRIGHT © 2014 D-Link</div>
+		</div>
+	</div>
+	</form>
+<script type="text/javascript" charset="utf-8">
+	
+	$(document).ready( function() {
+		
+		$.validator.addMethod("checkSetValues", function( value, element ) {
+			var elem_id = element.id;
+			var error_msg = "";
+			
+			/* check username */
+			if(elem_id=="userName")
+			{	
+				if (value == "" || value == null)
+					error_msg = I18N("j","Please enter a username.");
+				else
+				{
+					if (value.length > 15)
+						error_msg = I18N("j","Username must be less than 15 characters length.");
+				}
+			}
+			
+			/* check password */
+			if(elem_id=="password")
+			{	
+				if (value == "" || value == null)
+					error_msg = I18N("j","Please enter a password.");
+				else
+				{
+					if (value.length > 15)
+						error_msg = I18N("j","Password must be less than 15 characters length.");
+				}
+			}
+			
+			/* check PSK */
+			if(elem_id=="psk")
+			{
+				if (value == "" || value == null)
+					error_msg = I18N("j","Please enter a PSK.");
+				else
+				{
+					if (value.length > 64 || value.length < 6)
+						error_msg = I18N("j","Your PSK must be between 6-64 characters length.");
+				}
+			}
+			
+			return error_msg;
+		}, "");
+		
+		$('#vpn_form').validate({
+			submitHandler: function(form) {
+				CheckConnectionStatus();
+			}
+		});
+		
+		var elements = $("#userName, #password, #psk");
+		$.each(elements, function(i, element) {
+			$(this).rules("add", { checkSetValues: true });
+		});
+		
+	});
+	
+</script>
+<!--
+<script type="text/javascript">
+	Load_HTML();
+	Initial();
+	setMenu("menu_Advanced");
+	checkTimeout();
+</script>
+-->
+</body></html>

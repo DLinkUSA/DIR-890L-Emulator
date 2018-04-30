@@ -1,0 +1,775 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!-- saved from url=(0033)http://192.168.0.1/SystemLog.html -->
+<html xmlns="http://www.w3c.org/1999/xhtml" xml:lang="zh_TW" lang="zh_TW"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>D-LINK</title>
+<meta http-equiv="X-UA-Compatible" content="IE=9">
+
+<meta http-equiv="Content-Type" content="text/css">
+<link rel="stylesheet" type="text/css" href="resources/jquery.selectbox.css">
+<script type="text/javascript" charset="utf-8" src="resources/initialJS.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/comm.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/hmac_md5.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/libajax.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/hnap.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/i18n.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/pagetool.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/menu.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/DetectRouterConnection.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/checkTimeout.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/includeLang.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/AES.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/DeviceConfig.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/initialCSS.js"></script>
+<link rel="stylesheet" type="text/css" href="resources/style_pages.css" media="all">
+<script type="text/javascript" charset="utf-8" src="resources/initialJQ.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/jquery-1.8.2.min.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/jquery.selectbox-0.2_new.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/jquery.stringify.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/initialValidate.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/jquery.validate.js"></script>
+
+<script>
+$(document).ready(function(){
+	presetCheckBox("systemLogEnable", true);
+	presetCheckBox("enableEmailNotification", true);
+	presetCheckBox("enableAuthentication", true);
+	presetCheckBox("onLogFull", true);
+	presetCheckBox("onSchedule", true);
+	//jquery
+	$("div.checkbox_on" || "div.checkbox_off").click(function(e) {
+	 var checkboxId =  e.target.id +'_ck';	 
+		if(e.target.getAttribute("class") == "checkbox_on") {
+			var disable = I18N("j","Disabled");
+			e.target.setAttribute("class", "checkbox_off");
+			e.target.setAttribute("className", "checkbox_off");
+			document.getElementById(e.target.id).innerHTML='<input type="checkbox" name=' + e.target.id + ' id=' + checkboxId + ' checked>'+disable;
+			document.getElementById(checkboxId).checked=false;
+			if (checkboxId == "systemLogEnable_ck")
+			{
+				document.getElementById("sysLogServer_Description").disabled = true;
+				$("#sysLogServerName").selectbox("disable");
+				document.getElementById("show_ServerIPAddress").style.display = "none";
+			}
+			if (checkboxId == "enableEmailNotification_ck")
+			{
+				document.getElementById("EA").style.display = "none";
+				document.getElementById("FEA").style.display = "none";
+				document.getElementById("TEA").style.display = "none";
+				document.getElementById("SSA").style.display = "none";
+				document.getElementById("SSP").style.display = "none";
+				document.getElementById("AN").style.display = "none";
+				document.getElementById("PW").style.display = "none";
+				document.getElementById("fromEmailAddress").disabled = true;
+				document.getElementById("toEmailAddress").disabled = true;
+				document.getElementById("smtpServerAddress").disabled = true;
+				document.getElementById("smtpServerPort").disabled = true;
+				presetCheckBox("enableAuthentication", false);
+				document.getElementById("enableAuthentication").disabled = true;
+				document.getElementById("accountName").disabled = true;
+				document.getElementById("password").disabled = true;
+				presetCheckBox("onLogFull", false);
+				document.getElementById("onLogFull").disabled = true;
+				presetCheckBox("onSchedule", false);
+				document.getElementById("onSchedule").disabled = true;
+				document.getElementById("sendLog").style.display = "none";
+				
+				if (document.getElementById("onSchedule_ck").checked == "false")	{	document.getElementById("showSchedule").style.display = "none"	}
+				else	{	document.getElementById("showSchedule").style.display = "none"	}
+			}
+			if (checkboxId == "enableAuthentication_ck")
+			{
+				document.getElementById("AN").style.display = "none";
+				document.getElementById("PW").style.display = "none";
+				document.getElementById("accountName").disabled = true;
+				document.getElementById("password").disabled = true;
+			}
+			if (checkboxId == "onSchedule_ck")	{	document.getElementById("showSchedule").style.display = "none"	}
+			
+			changeFlag = true;
+			save_button_changed();
+		}
+		else { //=off
+			var enable = I18N("j","Enabled");
+			e.target.setAttribute("class", "checkbox_on");
+			e.target.setAttribute("className", "checkbox_on");
+			document.getElementById(e.target.id).innerHTML='<input type="checkbox" name=' + e.target.id + ' id=' + checkboxId + ' checked="">'+enable;
+			document.getElementById(checkboxId).checked=true;
+			if (checkboxId == "systemLogEnable_ck")
+			{
+				document.getElementById("sysLogServer_Description").disabled = false;
+				$("#sysLogServerName").selectbox("enable");
+				document.getElementById("show_ServerIPAddress").style.display = "table-row";
+			}
+			if (checkboxId == "enableEmailNotification_ck")
+			{
+				document.getElementById("EA").style.display = "table-row";
+				document.getElementById("FEA").style.display = "table-row";
+				document.getElementById("TEA").style.display = "table-row";
+				document.getElementById("SSA").style.display = "table-row";
+				document.getElementById("SSP").style.display = "table-row";
+				document.getElementById("fromEmailAddress").disabled = false;
+				document.getElementById("toEmailAddress").disabled = false;
+				document.getElementById("smtpServerAddress").disabled = false;
+				document.getElementById("smtpServerPort").disabled = false;
+				document.getElementById("enableAuthentication").disabled = false;
+				document.getElementById("onLogFull").disabled = false;
+				document.getElementById("onSchedule").disabled = false;
+				document.getElementById("sendLog").style.display = "inline";
+				if (document.getElementById("onSchedule_ck").checked == "true")	{	document.getElementById("showSchedule").style.display = "table-row"	}
+			}
+			if (checkboxId == "enableAuthentication_ck")
+			{
+				document.getElementById("AN").style.display = "table-row";
+				document.getElementById("PW").style.display = "table-row";
+				document.getElementById("accountName").disabled = false;
+				document.getElementById("password").disabled = false;
+			}
+			if (checkboxId == "onSchedule_ck")	{	document.getElementById("showSchedule").style.display = "table-row"	}
+			
+			changeFlag = true;
+			save_button_changed();
+		}
+	});
+});
+</script>
+<script type="text/javascript">
+	var HNAP = new HNAP_XML();
+	// Detect how many Schedule.
+	var Total_ScheduleRules = 0;
+	// Detect how many Client.
+	var Total_Client = 0;
+	// Set up the limit total Client.
+	var Limit_Client = 256;
+	// validate checkIPAddress
+	var lanIP;
+
+	function Load_HTML()	{	$("#header").load("header.html");	}
+	function Initial()
+	{
+		initialMenu();
+		initialDetectRouterConnection();
+	}
+	function GetScheduleList()
+	{
+		HNAP.GetXMLAsync("GetScheduleSettings", null, "GetValue", function(xml)	{	GetResult_1st(xml)	});	
+	}
+	
+	function GetResult_1st(result_xml)
+	{
+		var GetResult_1st = result_xml.Get("GetScheduleSettingsResponse/GetScheduleSettingsResult");
+		if (GetResult_1st == "OK")
+		{
+			var GetSC_ListNumber = result_xml.Get("GetScheduleSettingsResponse/ScheduleInfoLists#");
+			Total_ScheduleRules = GetSC_ListNumber;
+			var onSchedule_Select = document.getElementById("onSchedule_Select");
+			for (var i = 1; i <= Total_ScheduleRules; i ++)
+			{
+				var Schedule_Name = decode_char_text(result_xml.Get("GetScheduleSettingsResponse/ScheduleInfoLists:" + i + "/ScheduleName"));
+				onSchedule_Select.options.add(new Option(Schedule_Name, Schedule_Name));
+			}
+			HNAP.GetXMLAsync("GetClientInfo", null, "GetValue", function(xml)	{	GetResult_2nd(xml);	});
+		}
+		else	{	if (DebugMode == 1)	{	alert("[!!GetXML Error!!] Function: GetResult_1st");	}	}
+	}
+	function GetResult_2nd(result_xml)
+	{
+		var GetResult_2nd = result_xml.Get("GetClientInfoResponse/GetClientInfoResult");
+		if (GetResult_2nd == "OK")
+		{
+			Total_Client = result_xml.Get("GetClientInfoResponse/ClientInfoLists/ClientInfo#");
+			var getClientIPAddress = document.getElementById("sysLogServerName");
+			var ListCount = 1;
+			for (var i = 1; i <= Total_Client; i ++)
+			{
+				var GetClientInfo_DeviceName = result_xml.Get("GetClientInfoResponse/ClientInfoLists/ClientInfo:" + i + "/DeviceName");
+				var GetClientInfo_IPv4Address = result_xml.Get("GetClientInfoResponse/ClientInfoLists/ClientInfo:" + i + "/IPv4Address");
+				if (GetClientInfo_DeviceName == "")		{	GetClientInfo_DeviceName = "Unknown";	}
+				if (GetClientInfo_IPv4Address != "")
+				{
+					getClientIPAddress.options.add(new Option(GetClientInfo_IPv4Address + " (" + GetClientInfo_DeviceName + ")", ListCount));
+					ListCount ++;
+				}
+			}
+			HNAP.GetXMLAsync("GetSysLogSettings", null, "GetValue", function(xml)	{	GetResult_3rd(xml)	});
+		}
+		else	{	if (DebugMode == 1)	{	alert("[!!GetXML Error!!] Function: GetResult_2nd");	}	}
+	}
+	function GetResult_3rd(result_xml)
+	{
+		var GetResult_3rd = result_xml.Get("GetSysLogSettingsResponse/GetSysLogSettingsResult");
+		if (GetResult_3rd == "OK")
+		{
+			var Enable_SystemLog = result_xml.Get("GetSysLogSettingsResponse/SysLog");
+			if(Enable_SystemLog == "true")
+			{
+				presetCheckBox("systemLogEnable", true);
+				document.getElementById("sysLogServer_Description").disabled = false;
+				document.getElementById("show_ServerIPAddress").style.display = "table-row";
+			}
+			else
+			{
+				presetCheckBox("systemLogEnable", false);
+				document.getElementById("sysLogServer_Description").disabled = true;
+				document.getElementById("show_ServerIPAddress").style.display = "none";
+			}
+			var SystemLog_IPAddress = result_xml.Get("GetSysLogSettingsResponse/IPAddress");
+			document.getElementById("sysLogServer_Description").value = SystemLog_IPAddress;
+			HNAP.GetXMLAsync("GetSysEmailSettings", null, "GetValue", function(xml)	{	GetResult_4th(xml)	});
+		}
+		else	{	if (DebugMode == 1)	{	alert("[!!GetXML Error!!] Function: GetResult_3rd");	}	}
+	}
+	function GetResult_4th(result_xml)
+	{
+		var GetResult_4th = result_xml.Get("GetSysEmailSettingsResponse/GetSysEmailSettingsResult");
+		if (GetResult_4th == "OK")
+		{
+			var System_EmailNotification = result_xml.Get("GetSysEmailSettingsResponse/SysEmail");
+			if(System_EmailNotification == "true")	{
+				presetCheckBox("enableEmailNotification", true);
+				document.getElementById("sendLog").style.display = "inline";
+			}
+			else
+			{
+				presetCheckBox("enableEmailNotification", false);
+				document.getElementById("EA").style.display = "none";
+				document.getElementById("FEA").style.display = "none";
+				document.getElementById("TEA").style.display = "none";
+				document.getElementById("SSA").style.display = "none";
+				document.getElementById("SSP").style.display = "none";
+				document.getElementById("fromEmailAddress").disabled = true;
+				document.getElementById("toEmailAddress").disabled = true;
+				document.getElementById("smtpServerAddress").disabled = true;
+				document.getElementById("smtpServerPort").disabled = true;
+				presetCheckBox("enableAuthentication", false);
+				document.getElementById("enableAuthentication").disabled = true;
+				document.getElementById("accountName").disabled = true;
+				document.getElementById("password").disabled = true;
+				document.getElementById("sendLog").style.display = "none";
+				presetCheckBox("onLogFull", false);
+				document.getElementById("onLogFull").disabled = true;
+				presetCheckBox("onSchedule", false);
+				document.getElementById("onSchedule").disabled = true;
+				document.getElementById("onSchedule_Select").disabled = true;
+			}
+			var System_EmailFrom = result_xml.Get("GetSysEmailSettingsResponse/EmailFrom");
+			document.getElementById("fromEmailAddress").value = System_EmailFrom;
+			var System_EmailTo = result_xml.Get("GetSysEmailSettingsResponse/EmailTo");
+			document.getElementById("toEmailAddress").value = System_EmailTo;
+			var System_SMTPServerAddress = result_xml.Get("GetSysEmailSettingsResponse/SMTPServerAddress");
+			document.getElementById("smtpServerAddress").value = System_SMTPServerAddress;
+			var System_SMTPServerPort = result_xml.Get("GetSysEmailSettingsResponse/SMTPServerPort");
+			document.getElementById("smtpServerPort").value = System_SMTPServerPort;
+			var System_Authentication = result_xml.Get("GetSysEmailSettingsResponse/Authentication");
+			if(System_Authentication == "true")	{	presetCheckBox("enableAuthentication", true);	}
+			else
+			{
+				presetCheckBox("enableAuthentication", false);
+				document.getElementById("AN").style.display = "none";
+				document.getElementById("PW").style.display = "none";
+				document.getElementById("accountName").disabled = true;
+				document.getElementById("password").disabled = true;
+			}
+			var System_AccountName = result_xml.Get("GetSysEmailSettingsResponse/AccountName");
+			document.getElementById("accountName").value = System_AccountName;
+			var System_AccountPassword = result_xml.Get("GetSysEmailSettingsResponse/AccountPassword");
+			document.getElementById("password").value = System_AccountPassword;
+			var System_OnLogFull = result_xml.Get("GetSysEmailSettingsResponse/OnLogFull");
+			if(System_OnLogFull == "true")	{	presetCheckBox("onLogFull", true);	}
+			else	{	presetCheckBox("onLogFull", false);	}
+			var System_OnSchedule = result_xml.Get("GetSysEmailSettingsResponse/OnSchedule");
+			if(System_OnSchedule == "true")
+			{
+				presetCheckBox("onSchedule", true);
+				var getScheduleStatus = document.getElementById("onSchedule_Select");
+				var System_ScheduleName = decode_char_text(result_xml.Get("GetSysEmailSettingsResponse/ScheduleName"));
+				for (var i = 0; i <= Total_ScheduleRules; i ++)
+				{
+					if(getScheduleStatus.options[i].text === System_ScheduleName)
+					{
+						$("#onSchedule_Select").selectbox('detach');
+						$("#onSchedule_Select").val(System_ScheduleName);
+						$("#onSchedule_Select").selectbox('attach');
+						break;
+					}
+				}
+			}
+			else	{	presetCheckBox("onSchedule", false);	}
+			$("#sysLogServerName").selectbox();
+			$("#onSchedule_Select").selectbox();
+			if (document.getElementById("systemLogEnable_ck").checked != "1")	{	$("#sysLogServerName").selectbox("disable");	}
+			if (document.getElementById("onSchedule_ck").checked != "1")		{	document.getElementById("showSchedule").style.display = "none"	}
+			CheckNetworkStatus();
+			document.getElementById("main").style.display = "inline";
+			
+			HNAP.GetXMLAsync("GetRouterLanSettings", null, "GetValue", function(xml)	{	GetResult_5th(xml);	});
+		}
+		else	{	if (DebugMode == 1)	{	alert("[!!GetXML Error!!] Function: GetResult_4th");	}	}
+	}
+	
+	function GetResult_5th(result_xml)
+	{
+		var GetResult_5th = result_xml.Get("GetRouterLanSettingsResponse/GetRouterLanSettingsResult");
+		if (GetResult_5th == "OK")
+		{
+			lanIP = result_xml.Get("GetRouterLanSettingsResponse/RouterIPAddress");
+		}
+		else	{	if (DebugMode == 1)	{	alert("[!!GetXML Error!!] Function: GetResult_5th");	}	}
+	}
+
+	function SetXML()
+	{
+		document.getElementById("CreatePopAlertMessage").style.display = "inline";
+		HNAP.GetXMLAsync("SetSysLogSettings", null, "GetXML", function(xml)	{	SetResult_1st(xml)	});
+	}
+	function SetResult_1st(result_xml)
+	{
+		if (result_xml != null)
+		{
+			if (document.getElementById("systemLogEnable_ck").checked == "1")	{	result_xml.Set("SetSysLogSettings/SysLog", "true");	}
+			else																{	result_xml.Set("SetSysLogSettings/SysLog", "false");	}
+			result_xml.Set("SetSysLogSettings/IPAddress", document.getElementById("sysLogServer_Description").value);
+			// Send HNAP to DUT
+			HNAP.SetXMLAsync("SetSysLogSettings", result_xml, function(xml)	{	SetResult_2nd(xml);	});
+		}
+		else	{	if (DebugMode == 1)	{	alert("[!!SetXML Error!!] Function: SetResult_1st");	}	window.location.reload();	}
+	}
+	function SetResult_2nd(result_xml)
+	{
+		var SetResult_2nd = result_xml.Get("SetSysLogSettingsResponse/SetSysLogSettingsResult");
+		if (SetResult_2nd == "OK")		{	HNAP.GetXMLAsync("SetSysEmailSettings", null, "GetXML", function(xml)	{	SetResult_3rd(xml)	});	}
+		if (SetResult_2nd == "ERROR")	{	if (DebugMode == 1)	{	alert("[!!SetXML Error!!] Function: SetResult_2nd");	}	window.location.reload();	}
+	}
+	function SetResult_3rd(result_xml)
+	{
+		if (result_xml != null)
+		{
+			if (document.getElementById("enableEmailNotification_ck").checked == "1"){	
+			
+				result_xml.Set("SetSysEmailSettings/SysEmail", "true");
+				result_xml.Set("SetSysEmailSettings/EmailFrom", document.getElementById("fromEmailAddress").value);
+				result_xml.Set("SetSysEmailSettings/EmailTo", document.getElementById("toEmailAddress").value);
+				result_xml.Set("SetSysEmailSettings/SMTPServerAddress", document.getElementById("smtpServerAddress").value);
+				result_xml.Set("SetSysEmailSettings/SMTPServerPort", document.getElementById("smtpServerPort").value);
+				if (document.getElementById("enableAuthentication_ck").checked == "1")	{	result_xml.Set("SetSysEmailSettings/Authentication", "true");	}
+				else																	{	result_xml.Set("SetSysEmailSettings/Authentication", "false");	}
+				result_xml.Set("SetSysEmailSettings/AccountName", document.getElementById("accountName").value);
+				result_xml.Set("SetSysEmailSettings/AccountPassword", document.getElementById("password").value);
+				if (document.getElementById("onLogFull_ck").checked == "1")	{	result_xml.Set("SetSysEmailSettings/OnLogFull", "true");	}
+				else														{	result_xml.Set("SetSysEmailSettings/OnLogFull", "false");	}
+				if (document.getElementById("onSchedule_ck").checked == "1")	{	result_xml.Set("SetSysEmailSettings/OnSchedule", "true");	}
+				else															{	result_xml.Set("SetSysEmailSettings/OnSchedule", "false");	}
+				var getScheduleStatus = document.getElementById("onSchedule_Select");
+				var getScheduleResult = getScheduleStatus.options[getScheduleStatus.selectedIndex].value;
+				result_xml.Set("SetSysEmailSettings/ScheduleName", encode_char_text(getScheduleResult));
+			}
+			else
+			{
+				result_xml.Set("SetSysEmailSettings/SysEmail", "false");
+				result_xml.Set("SetSysEmailSettings/EmailFrom", "");
+				result_xml.Set("SetSysEmailSettings/EmailTo", "");
+				result_xml.Set("SetSysEmailSettings/SMTPServerAddress", "");
+				result_xml.Set("SetSysEmailSettings/SMTPServerPort", "");
+				result_xml.Set("SetSysEmailSettings/Authentication", "false");
+				result_xml.Set("SetSysEmailSettings/AccountName", "");
+				result_xml.Set("SetSysEmailSettings/AccountPassword", "");
+				result_xml.Set("SetSysEmailSettings/OnLogFull", "false");
+				result_xml.Set("SetSysEmailSettings/OnSchedule", "false");
+				var getScheduleStatus = document.getElementById("onSchedule_Select");
+				var getScheduleResult = getScheduleStatus.options[getScheduleStatus.selectedIndex].value;
+				result_xml.Set("SetSysEmailSettings/ScheduleName", encode_char_text(getScheduleResult));
+			}
+			// Send HNAP to DUT
+			HNAP.SetXMLAsync("SetSysEmailSettings", result_xml, function(xml)	{	SetResult_4th(xml);	});
+		}
+		else	{	if (DebugMode == 1)	{	alert("[!!SetXML Error!!] Function: SetResult_3rd");	}	window.location.reload();	}
+	}
+	function SetResult_4th(result_xml)
+	{
+		var SetResult_4th = result_xml.Get("SetSysEmailSettingsResponse/SetSysEmailSettingsResult");
+		if (SetResult_4th == "OK")		{	setTimeout("waitSettingFinished()", 1000);	}
+		if (SetResult_4th == "ERROR")	{	if (DebugMode == 1)	{	alert("[!!SetXML Error!!] Function: SetResult_4th");	}	window.location.reload();	}
+	}
+	function waitSettingFinished()	{	window.location.reload();	}
+	function sysLogServerName_Description(element, value)
+	{
+		var get_Selection = element.options[value].text;
+		var split_Selection = get_Selection.split(/[\s(]+/);
+		var split_SelectionString = split_Selection[split_Selection.length - 2];
+		if (value == "0")		{	document.getElementById("sysLogServer_Description").value = "";		}
+		else	{	document.getElementById("sysLogServer_Description").value = split_SelectionString;	}
+	}
+	function CheckNetworkStatus()
+	{
+		var status = sessionStorage.getItem('networkStatus');
+		if ((status == 1)&&(currentDevice.helpVer != ""))
+		{
+			document.getElementById("Get_Help").style.display = "inline";
+		}
+		else
+		{
+			document.getElementById("Get_Help").style.display = "none";
+		}
+	}
+</script>
+<script language="JavaScript">
+	// 2013/09/23 Timmy Modify
+	$(function() {
+		$("select").change(function () {	save_button_changed();	});
+		$("input").keydown(function () {	save_button_changed();	});
+	});
+	function save_button_changed()
+	{
+		document.getElementById("Save_Disable_btn").style.display = "none";
+		document.getElementById("Save_btn").style.display = "block";
+		changeFlag = true;
+		checkFlag = true;
+		GetClickTime();
+	}
+</script>
+</head>
+
+<body>
+	<form name="systemlog_form" id="systemlog_form" method="POST" action="" novalidate="novalidate">
+	<div id="wrapper">
+		<!-------------------- Logo ------------------------->
+		<div id="header"><div>
+	<div style="position:relative; top:37px;">
+		<a href="http://www.dlink.com/" target="_blank">
+			<img id="image_Logo" src="resources/logo_2.png" alt="D-Link" width="102" height="20" border="0">
+		</a>
+	</div>
+	<table id="device_ver" style="position:relative; top:33px; font-size:13px; color:#969696;" border="0">
+		<tbody>
+			<tr>
+				<td style="padding: 0 10px 0 0;"><label id="h_ModelName">DIR-890L</label></td>
+				<td style="padding: 0 10px 0 0;">HW:<label id="h_HWVersion">A1</label></td>
+				<td style="padding: 0 10px 0 0;">FW:<label id="h_FWVersion">1.00</label></td>
+			</tr>
+		</tbody>
+	</table>
+
+</div></div>
+		<!-------------------- Menu ------------------------->
+		<div id="menu"><ul>	<li><a id="menu_Home" href="Home.html">Home</a></li>	
+		
+		<li class="parent" onmouseover="this.className=&quot;parentOn&quot;" onmouseout="this.className=&quot;parent&quot;"><a id="menu_Settings" href="#">Settings</a>		
+		
+		<ul>			
+		
+		<li><a href="Wizard_Manual.html" onclick="return confirmExit()">Wizard</a></li>			
+		<li><a href="Internet.html" onclick="return confirmExit();">Internet</a></li>			
+		<li><a href="WiFi.html" onclick="return confirmExit()">Wireless</a></li>					
+		<li><a href="Network.html" onclick="return confirmExit()">Network</a></li>	
+		<li><a href="SharePort.html" onclick="return confirmExit()">SharePort</a></li>	
+		<li><a href="Mydlink.html" onclick="return confirmExit()">mydlink</a></li>	
+		
+		</ul>	</li>	
+		
+		<li class="parent" onmouseover="this.className=&quot;parentOn&quot;" onmouseout="this.className=&quot;parent&quot;"><a id="menu_Advanced" href="#">Features</a>		
+		
+		<ul>			
+		
+		<li><a href="QoS.html" onclick="return confirmExit()">QoS Engine</a></li>			
+		<li><a href="Firewall.html" onclick="return confirmExit()">Firewall</a></li>			
+		<li><a href="PortForwarding.html" onclick="return confirmExit()">Port Forwarding</a></li>			
+		<li><a href="WebsiteFilter.html" onclick="return confirmExit()">Website Filter</a></li>			
+		<li><a href="StaticRoute.html" onclick="return confirmExit()">Static Route</a></li>			
+		<li><a href="DynamicDNS.html" onclick="return confirmExit()">Dynamic DNS</a></li>			
+		<li><a href="VPN.html" onclick="return confirmExit()">Quick VPN</a></li>
+	
+		
+		</ul>	</li>	
+		
+		<li class="parent" onmouseover="this.className=&quot;parentOn&quot;" onmouseout="this.className=&quot;parent&quot;"><a id="menu_Management" href="#" style="background: url(resources/navigation_bg5.gif?v=20141117210117) 100% 0% no-repeat;">Management</a>		
+		
+		<ul>			
+		
+		
+		<li><a href="Time.html" onclick="return confirmExit()">Time &amp; Schedule</a></li>			
+		<li><a href="SystemLog.html" onclick="return confirmExit()">System Log</a></li>			
+		<li><a href="Admin.html" onclick="return confirmExit()">System Admin</a></li>			
+		<li><a href="UpdateFirmware.html" onclick="return confirmExit()">Upgrade</a></li>			
+		<li><a href="Statistics.html" onclick="return confirmExit()">Statistics</a></li>		
+		
+		</ul>	</li></ul></div>
+		<div id="menu_edge"></div>
+		<!-------------------- Content ---------------------->
+		<div id="content">
+			<!-------------------- info ---------------------->	
+	  		<div id="info">
+			  <div id="FunctionName">System Log</div>
+		      <div id="wallimage"><img src="resources/page_log.png" alt="" width="195" height="119"></div>
+		      <div id="directions">
+				On-board diagnostics run continually in the background to monitor the health of your router. The results are recorded in the system log if it is enabled. This info can be used to diagnose common problems or help Customer Support resolve issues more quickly.
+			  	<label id="Get_Help" onclick="window.open('http://support.dlink.com')" style="cursor: pointer; display: inline; text-decoration: underline;">Click here for help.</label>
+			  </div>
+			</div>
+			<!-------------------- funcBar ---------------------->
+			<div id="funcBar">		
+				<div id="pagePath">&nbsp; Management &gt;&gt; System Log</div>
+				<ul id="rightFunc">
+					<li style="display:block"><div id="Save_btn" onclick='alert("This feature has been disabled on this emulator.")' style="cursor:pointer; display:none">Save</div></li>
+					<li style="display:block"><div id="Save_Disable_btn">Save</div></li>
+					<input id="sumbit_CheckData" class="submit" type="submit" value="Submit" style="display:none">
+				</ul>
+			</div>
+			<!-------------------- main ---------------------->
+			<div id="main" style="display: inline;">
+				<table class="block" border="0" cellspacing="0" style="margin: 10px 0 0 0;">
+					<tbody>
+						<tr>
+							<td colspan="3"><div class="title">SysLog Settings</div></td>
+						</tr><tr>
+							<th>Enable Logging to Syslog Server:</th>
+							<td width="200px"><div id="systemLogEnable" class="checkbox_off"><input type="checkbox" name="systemLogEnable" id="systemLogEnable_ck" checked="">Disabled</div></td>
+							<td></td>
+						</tr>
+						<tr id="show_ServerIPAddress" style="display: none;">
+							<th>SysLog Server IP Address:</th>
+							<td with="20px" valign="top"><input class="styled-text required" type="text" name="sysLogServer_Description" size="27" id="sysLogServer_Description" disabled=""></td>
+							<td valign="top">
+							<!--
+								<div class="styled-select">
+								<select name="sysLogServerName" id="sysLogServerName" onchange="sysLogServerName_Description(this, this.value)" sb="55768364" style="display: none;">
+									<option value="0" selected="">&lt;&lt; Computer Name</option>
+								<option value="1">192.168.0.193 (TS-Windows-8PC)</option></select>
+								-->
+								<div id="sbHolder_91572755" class="sbHolder" style="width:200px">
+	<a id="sbToggle_91572755" href="#" class="sbToggle"></a>
+													
+			<label class="custom-select">
+				<select style="height:30px; width:200px; border:none; font-size:inherit; padding: 5px;">
+					<option>&lt;&lt; Computer Name</option>
+					<option>192.168.0.193 (TS-Windows-8PC)</option>
+											
+				</select>
+			</label>
+			</div>
+								
+								
+								<!--
+								<div id="sbHolder_55768364" class="sbHolder sbHolderDisabled" style="width:200px"><a id="sbToggle_55768364" href="http://192.168.0.1/SystemLog.html#" class="sbToggle"></a><a id="sbSelector_55768364" href="http://192.168.0.1/SystemLog.html#" class="sbSelector" style="width:170px">&lt;&lt; Computer Name</a><ul id="sbOptions_55768364" class="sbOptions" style="width: 200px; display: none;"><li><a href="http://192.168.0.1/0" rel="0" class="sbFocus">&lt;&lt; Computer Name</a></li><li><a href="http://192.168.0.1/1" rel="1">192.168.0.193 (TS-Windows-8PC)</a></li></ul></div>
+								
+								-->
+								</div>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+				<div id="email_Settings">
+					<hr>
+					<table class="block" border="0" cellspacing="0" style="margin: 10px 0 0 0;">
+						<tbody>
+							<tr>
+								<td colspan="2"><div class="title">E-mail Settings</div></td>
+							</tr>
+							<tr>
+								<th>Enable E-mail Notification:</th>
+								<td><div id="enableEmailNotification" class="checkbox_off"><input type="checkbox" name="enableEmailNotification" id="enableEmailNotification_ck" checked="">Disabled</div></td>
+							</tr>
+							<tr id="FEA" style="display: none;">
+								<th>From E-mail Address:</th>
+								<td><input class="styled-text required" type="text" name="fromEmailAddress" size="27" id="fromEmailAddress" disabled=""></td>
+							</tr>
+							<tr id="TEA" style="display: none;">
+								<th>To E-mail Address:</th>
+								<td><input class="styled-text required" type="text" name="toEmailAddress" size="27" id="toEmailAddress" disabled=""></td>
+							</tr>
+							<tr id="SSA" style="display: none;">
+								<th>SMTP Server Address:</th>
+								<td><input class="styled-text required" type="text" name="smtpServerAddress" size="27" id="smtpServerAddress" disabled=""></td>
+							</tr>
+							<tr id="SSP" style="display: none;">
+								<th>SMTP Server Port:</th>
+								<td><input class="styled-text required" type="text" name="smtpServerPort" size="27" id="smtpServerPort" disabled=""></td>
+							</tr>
+							<tr id="EA" style="display: none;">
+								<th>Enable Authentication:</th>
+								<td><div id="enableAuthentication" class="checkbox_off"><input type="checkbox" name="enableAuthentication" id="enableAuthentication_ck" checked="">Disabled</div></td>
+							</tr>
+							<tr id="AN" style="display: none;">
+								<th>Account Name:</th>
+								<td><input class="styled-text required" type="text" name="accountName" size="27" id="accountName" disabled=""></td>
+							</tr>
+							<tr id="PW" style="display: none;">
+								<th>Password:</th>
+								<td><input class="styled-text required" type="password" name="password" size="27" id="password" disabled=""></td>
+							</tr>
+						</tbody>
+					</table>
+					<div id="sendLog" style="display: none;">
+					<hr>
+					<table class="block" border="0" cellspacing="0" ondragstart="return false" onselectstart="return false" style="margin: 10px 0 0 0;">
+						<tbody>
+							<tr>
+								<td colspan="2"><div class="title">E-mail Log When Full or On Schedule</div></td>
+							</tr>
+							<tr>
+								<th>Send When Log Full:</th>
+								<td><div id="onLogFull" class="checkbox_off"><input type="checkbox" name="onLogFull" id="onLogFull_ck" checked="">Disabled</div></td>
+							</tr>
+							<tr>
+								<th>Send on Schedule:</th>
+								<td><div id="onSchedule" class="checkbox_off"><input type="checkbox" name="onSchedule" id="onSchedule_ck" checked="">Disabled</div></td>
+							</tr>
+							<tr id="showSchedule" style="display: none;">
+								<th>Schedule:</th>
+								<td>
+								<!--
+									<div class="styled-select">
+									<select name="onSchedule_Select" id="onSchedule_Select" disabled="" sb="50713919" style="display: none;">
+									 	<option value="Always" selected="">Always</option>
+									</select>
+									-->
+									<div id="sbHolder_11278541" class="sbHolder" style="width:200px">
+ 
+	<a id="sbToggle_11278541" href="#" class="sbToggle"></a>
+													
+			<label class="custom-select">
+				<select style="height:30px; width:200px; border:none; font-size:inherit; padding: 5px;">
+					<option>Always Enabled</option>
+							
+				</select>
+			</label>
+									</div>
+									<!--
+									<div id="sbHolder_50713919" class="sbHolder" style="width:200px"><a id="sbToggle_50713919" href="#" class="sbToggle"></a><a id="sbSelector_50713919" href="#" class="sbSelector" style="width:170px">Always Enable</a><ul id="sbOptions_50713919" class="sbOptions" style="width: 200px; display: none;"><li class="last"><a href="#" rel="Always" class="sbFocus">Always Enable</a></li></ul></div>
+									
+									-->
+									</div> 
+								</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+			</div>
+			<div id="CreatePopAlertMessage" style="display:none">
+			<div id="AlertPopRect">
+			<div id="AlertPopBody">
+				<table class="myAlertPop_table_b" id="waitSettingFinish" border="0" cellspacing="0">
+				   <tbody>
+						 <tr>
+						 	<td>
+								<center><div id="Loading_pop_image2"></div></center>
+							</td>
+						 </tr>
+						 <tr>
+						 	<td label="" id="reciprocal_Number"></td>
+						 </tr>
+						 <tr>
+						 	<td id="dialog_msg_black2">Your changes are being saved.</td>
+						 </tr>
+				   </tbody>
+				</table>
+			</div>
+			</div>
+			</div>
+			<!-- Detect Router Connection, Timmy Add 2013/08/15 -->
+			<div id="DetectRouterConnection" style="display:none"><div class="dialogBox" style="width:616px"><table class="myCreatePop_table" border="0" cellspacing="0" id="RouterConnectionTable"><tbody><tr><td colspan="3"><div class="popTitle">Router Not Found</div></td></tr><tr><td id="save_td" colspan="4"><center><div id="Save_edit_pop_btn" style="cursor:pointer" tabindex="12" onclick="CheckHTMLStatus(&#39;&#39;);">Retry</div></center></td></tr></tbody></table></div></div>
+			<div id="footer">
+				<div id="copyright">COPYRIGHT © 2014 D-Link</div>
+			</div>
+	</div>
+	
+<script type="text/javascript" charset="utf-8">
+	$(document).ready( function() {
+		$.validator.setDefaults( { submitHandler: function(form) { form.submit(); } } );
+		// Check IPv4 Format
+		$.validator.addMethod("checkIPFormat", function( value, element ) {
+			var ValidIpAddressRegex = /(^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?))+$/;
+			var returnVal = true;
+			if (ValidIpAddressRegex.test(value))	{	returnVal = true;	}
+			else	{	returnVal = false;	}
+			return returnVal;
+		}, jQuery.validator.messages.address_Check);
+		
+		// Check Port Range
+		$.validator.addMethod("checkPortRange", function( value, element ) {
+			var ValidPortRangeRegex = /(^([1-9]|[1-9]\d|[1-9]\d\d|[1-9]\d{3}|[1-5]\d{4}|6[0-5][0-5][0-3][0-5]))+$/;
+			var returnVal = true;
+			if (ValidPortRangeRegex.test(value))	{	returnVal = true;	}
+			else	{	returnVal = false;	}
+			return returnVal;
+		}, jQuery.validator.messages.port_Check);
+		
+		$.validator.addMethod("checkIPAddress", function( value, element ) {
+			var returnVal = true;
+			
+			if(lanIP==value)
+			{
+				returnVal = false;
+			}
+			else if(!COMM_ValidV4Format(value) || !COMM_ValidV4Addr(value) )
+			{
+				returnVal = false;
+			}else
+			{
+				returnVal = true;
+			}
+			return returnVal;
+		}, jQuery.validator.messages.address_Check);
+		
+		$('#systemlog_form').validate({
+			rules: {
+				sysLogServer_Description: {
+					required: true,
+					checkIPAddress: true,
+					checkIPFormat: true
+				},
+				fromEmailAddress: {
+					required: true,
+					email: true
+				},
+				toEmailAddress: {
+					required: true,
+					email: true
+				},
+				smtpServerAddress: {
+					required: true,
+				},
+				smtpServerPort: {
+					required: true,
+					checkPortRange: true
+				},
+				accountName: "required",
+				password: "required"
+			},
+			messages: {
+				sysLogServer_Description: {
+					required: jQuery.validator.messages.ip
+				},
+				fromEmailAddress: {
+					required: jQuery.validator.messages.email,
+					email: jQuery.validator.messages.email_Check
+				},
+				toEmailAddress: {
+					required: jQuery.validator.messages.email,
+					email: jQuery.validator.messages.email_Check
+				},
+				smtpServerPort: {
+					required: jQuery.validator.messages.port
+				},
+				accountName: {
+					required: jQuery.validator.messages.email_AccountName
+				},
+				password: {
+					required: jQuery.validator.messages.email_Password
+				}
+			},
+			submitHandler: function(form) {
+				SetXML();
+			}
+		});
+	});
+</script>
+<!--
+<script type="text/javascript">
+	Load_HTML();
+	Initial();
+	setMenu("menu_Management");
+	GetScheduleList();
+	checkTimeout();
+</script>
+-->
+</div></form></body></html>

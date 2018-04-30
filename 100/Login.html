@@ -1,0 +1,313 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!-- saved from url=(0034)http://192.168.0.1/info/Login.html -->
+<html xmlns="http://www.w3c.org/1999/xhtml" xml:lang="zh_TW" lang="zh_TW"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>D-LINK</title>
+<meta http-equiv="X-UA-Compatible" content="IE=9">
+
+<meta http-equiv="Content-Type" content="text/css">
+<link rel="stylesheet" type="text/css" href="resources/jquery.selectbox.css">
+<link rel="stylesheet" type="text/css" href="resources/style_h.css" media="all">
+<script type="text/javascript" charset="utf-8" src="resources/initialJQ.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/jquery-1.8.2.min.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/jquery.selectbox-0.2_new.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/jquery.stringify.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/jquery.cookie.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/initialJSDefault.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/comm.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/hmac_md5.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/libajax.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/i18n.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/DeviceConfig.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/Login.js"></script> <!--    /* for loging */  -->
+<script type="text/javascript" charset="utf-8" src="resources/deviceinfo.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/features.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/SOAPAction.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/SOAPDeviceSettings.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/initEnv.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/SOAPLogin.js"></script>
+
+
+
+<!--
+<script type="text/javascript">
+	var HasCAPTCHA = 0;
+	var ShowShareportLink = 0;
+
+	//OnLoad
+	var init = initEnv();
+	$(document).ready( function() {	
+		init.done(function()
+		{
+			showDeviceInfo();
+		});
+		//$("#Language").selectbox({width:120});
+	});
+	
+	function showDeviceInfo()
+	{
+		var getURL = getDeviceSettings.PresentationURL;
+
+		getURL = getURL.replace("http://", "");
+		getURL = getURL.split(/[\s.]+/);
+		var Host_Name = getURL[getURL.length - 2].toLowerCase();
+		//	Show the hyperlinks of web file access if we make sure the IP is private IP.
+		if (window.location.hostname.search(Host_Name) != -1 || window.location.hostname.substr(0, 8)=="192.168." || window.location.hostname.substr(0, 3)=="10." || window.location.hostname.substr(0, 7)=="172.16.")
+		{
+			ShowShareportLink = 1;
+		}
+		
+		document.getElementById("modelName").innerHTML = getDeviceSettings.ModelName;
+		document.getElementById("HWversion").innerHTML = getDeviceSettings.HardwareVersion;
+		document.getElementById("FWversion").innerHTML = getDeviceSettings.FirmwareVersion;
+		if (getDeviceSettings.SharePortStatus != "true" || ShowShareportLink==0)	{	document.getElementById("sharePortAccess").style.display = "none";	}
+		if (getDeviceSettings.CAPTCHA == "true")
+		{
+			document.getElementById("logIn_captcha").style.display = "table";
+			generate_Captcha();
+			HasCAPTCHA = 1;
+		}
+		else
+		{
+			document.getElementById("logIn").style.display = "table";
+			HasCAPTCHA = 0;
+		}
+
+		var lang = localStorage.getItem('language');
+		$("#Language").selectbox('detach');
+		$("#Language").val(lang);
+		$("#Language").selectbox({width:120});
+		document.getElementById("main").style.display = "inline";
+		document.getElementById("admin_Password").disabled = false;
+		document.getElementById("admin_Password_with_Captcha").disabled = false;
+		$("#logIn_btn").attr("class", "styled_button_s").attr("disabled", false);
+		$("#logIn_btn_c").attr("class", "styled_button_s").attr("disabled", false);
+		
+		if(getDeviceSettings.CAPTCHA == "true"){
+			document.getElementById("admin_Password_with_Captcha").focus();
+		}
+		else{
+			document.getElementById("admin_Password").focus();
+		}
+	}
+	
+	function OnClickLogin()
+	{
+		var Login_Password = null;
+		var Login_Captcha = null;
+		if (HasCAPTCHA == 0)
+		{
+			Login_Password = document.getElementById("admin_Password").value;
+			Login_Captcha = "";
+		}
+		else
+		{
+			Login_Password = document.getElementById("admin_Password_with_Captcha").value;
+			Login_Captcha = document.getElementById("input_Captcha").value;
+		}
+		document.getElementById("admin_Password").disabled = true;
+		document.getElementById("admin_Password_with_Captcha").disabled = true;
+		$("#logIn_btn").attr("class", "styled_button_dis").attr("disabled", true);
+		$("#logIn_btn_c").attr("class", "styled_button_dis").attr("disabled", true);
+
+		doLogin(Login_Password,Login_Captcha)
+		.done(function(){
+			var redirect_url = sessionStorage.getItem("RedirectUrl");
+			if((redirect_url == null) || (redirect_url.indexOf("Login.html") > 0) || (redirect_url.indexOf("html") < 0))
+			{
+				window.location.href = "/IndexHome.html";	
+			}
+			else								
+			{	
+				window.location.href = redirect_url;		
+			}
+		})
+		.fail(function(){
+			document.getElementById("admin_Password").disabled = false;
+			document.getElementById("admin_Password_with_Captcha").disabled = false;
+			$("#logIn_btn").attr("class", "styled_button_s").attr("disabled", false);
+			$("#logIn_btn_c").attr("class", "styled_button_s").attr("disabled", true);
+			if (HasCAPTCHA == 1)
+			{
+				alert(I18N("j", "Invalid password or captcha, please try again."));
+				document.getElementById("admin_Password_with_Captcha").value = "";
+				document.getElementById("input_Captcha").value = "";
+				document.getElementById("admin_Password_with_Captcha").focus();
+				generate_Captcha();
+			}
+			else
+			{
+				alert(I18N("j", "Invalid password, please try again."));
+				document.getElementById("admin_Password").value = "";
+				document.getElementById("admin_Password").focus();
+			}
+		});		
+	}
+
+	function generate_Captcha()
+	{
+		/*var soapAction = new SOAPAction();
+		var getCAPTCHAsettingResponse = new SOAPGetCAPTCHAsettingResponse();
+
+		soapAction.sendSOAPAction("GetCAPTCHAsetting", null, getCAPTCHAsettingResponse).done(function(obj)
+		{
+			console.log("url="+obj.CaptchaUrl);
+
+		});*/
+
+		if (navigator.cookieEnabled)
+		{
+			document.cookie = "uid="+COMM_RandomStr(10)+"; path=/";
+		}
+		var AJAX = GetAjaxObj("captcha");
+		AJAX.release();
+		AJAX.createRequest();
+		AJAX.onCallback = function(xml)
+		{
+			switch (xml.Get("/captcha/result"))
+			{
+				case "OK":
+					self.captcha = xml.Get("/captcha/message");
+					document.getElementById("captcha_image").innerHTML = "<img src="+self.captcha+"?"+COMM_RandomStr(6)+" />";
+					break;
+			}
+			AJAX.release();
+		}
+		AJAX.setHeader("Content-Type", "application/x-www-form-urlencoded");
+		AJAX.sendRequest("/captcha.cgi", "DUMMY=YES");
+	}
+
+	function switch_Language(value)
+	{
+		sessionStorage.removeItem('langPack');
+		localStorage.setItem('language', value);
+		location.reload();
+	}
+	
+	function detect_KeyValue(e)
+	{
+		var key = window.event ? e.keyCode : e.which;
+		if (key == 13)	
+		{	
+			document.getElementById("logIn_btn").click();
+			document.getElementById("logIn_btn_c").click();	
+		}
+	}
+	
+</script>
+
+-->
+
+</head>
+
+<body id="main" style="display: inline;">
+	<div id="wrapper">
+		<!-------------------- Logo ------------------------->
+		<div id="Lheader">
+				<div id="logo">
+						<img id="DLink_logo" src="resources/logo_2.gif" width="105" height="95">
+				</div>
+				<table class="versionTable" id="versionTable" border="0" cellspacing="0">
+					<tbody>
+						</tbody><thead>
+					     <tr><td>Model Name:&nbsp;<label id="modelName">DIR-890L</label></td>
+					     <td>Hardware Version:&nbsp;<label id="HWversion">A1</label></td>
+					     <td>Firmware Version:&nbsp;<label id="FWversion">1.00</label></td>
+					     <td align="right">Language:</td>
+ 							 <td>
+					     		<div class="styled-select">
+										<select name="Language" id="Language" onchange="switch_Language(this.value)" sb="93651034" style="display: none;">
+											<option value="en-us">English</option>
+											<option value="zh-tw">繁體中文</option>
+											<option value="zh-cn">简体中文</option>
+											<option value="ko-kr">한국</option>
+											<option value="fr-fr">français</option>
+											<option value="pt-br">português</option>
+											<option value="es-es">Español</option>
+											<option value="it-it">Italiano</option>
+											<option value="de-de">Deutsch</option>
+											<option value="ru-ru">русский</option>
+										</select><div id="sbHolder_93651034" class="sbHolder" style="width:120px"><a id="sbToggle_93651034" href="Login.html#" class="sbToggle"></a><a id="sbSelector_93651034" href="Login.html#" class="sbSelector" style="width:90px">English</a>
+										<ul id="sbOptions_93651034" class="sbOptions" style="width: 120px; display: none;"><li>
+										<a href="en-us" rel="en-us" class="sbFocus">English</a></li><li>
+										<a href="zh-tw" rel="zh-tw">繁體中文</a></li><li>
+										<a href="zh-cn" rel="zh-cn">简体中文</a></li><li>
+										<a href="ko-kr" rel="ko-kr">한국</a></li><li>
+										<a href="fr-fr" rel="fr-fr">français</a></li><li>
+										<a href="pt-br" rel="pt-br">português</a></li><li>
+										<a href="es-es" rel="es-es">Español</a></li><li>
+										<a href="it-it" rel="it-it">Italiano</a></li><li>
+										<a href="de-de" rel="de-de">Deutsch</a></li><li>
+										<a href="ru-ru" rel="ru-ru">русский</a></li></ul></div>
+									</div>
+							 </td>
+						</tr></thead>
+					
+				</table>
+		</div>
+		<!-------------------- Content ---------------------->
+		<div id="content">
+			<br>
+			<div id="logIn" style="display: table;">
+				<table class="logInTable" id="logInTable" border="0" cellspacing="0">
+					<tbody>
+					</tbody><thead>
+					     <tr>
+					     	 <th>Admin Password:</th>
+					     </tr>
+					     <tr>
+					     	 <td><input class="styled-text" type="password" name="admin_Password" size="27" id="admin_Password" onkeydown="detect_KeyValue(event)"></td>
+					     </tr>
+					</thead>
+					
+				</table>
+				<center><button type="button" id="logIn_btn" class="styled_button_s" onclick="parent.location='Home.html'">Log In</button></center>
+			</div>
+			<div id="logIn_captcha" style="display:none">
+				<table id="logInTable_captcha_left" border="0" cellspacing="0">
+					<tbody>
+					</tbody><thead>
+					     <tr>
+					     	 <th>Admin Password:</th>
+					     </tr>
+					     <tr>
+					     	 <td><input class="styled-text" type="password" name="admin_Password_with_Captcha" size="27" id="admin_Password_with_Captcha"></td>
+					     </tr>
+					</thead>
+					
+				</table>
+				<table id="logInTable_captcha_right" border="0" cellspacing="0">
+					<thead>
+				     <tr>
+				     	  <td>Type the characters you see in the picture below.</td>
+				     </tr>
+				     <tr>
+				     	<td align="center" height="50px"><input class="styled-text" type="text" name="input_Captcha" size="15" id="input_Captcha"></td>
+				     </tr>
+				     <tr>
+				     	<td align="center" height="30px">
+				     		<label id="captcha_image"></label>
+				     		<img id="refresh_button" src="resources/refresh.png" width="37" height="37" onclick="generate_Captcha()">
+				     	</td>
+				     </tr>
+					</thead>
+					<tbody></tbody>
+				</table>
+				<center><button type="button" id="logIn_btn_c" class="styled_button_s" onclick="parent.location='Home.html'">Log In</button></center>
+			</div>
+		</div>
+		<br>
+		<div id="sharePortAccess">To access your storage with SharePort Web Access, <a target="_blank" href="shareport.local.html">click here.</a></div>
+		<br>
+		<br>
+		<br>
+		<br>
+		<br>
+		<br>
+		<br>
+		<div id="footer_login">
+			<div id="copyright">COPYRIGHT © 2014 D-Link</div>
+			<div id="eula"><a target="_blank" href="EULA.html">License Agreement</a></div>
+		</div>
+	</div>
+
+</body></html>

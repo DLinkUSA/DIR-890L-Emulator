@@ -1,0 +1,3252 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!-- saved from url=(0032)http://192.168.0.1/Internet.html -->
+<html xmlns="http://www.w3c.org/1999/xhtml" xml:lang="zh_TW" lang="zh_TW"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>D-LINK</title>
+<meta http-equiv="X-UA-Compatible" content="IE=9">
+
+<meta http-equiv="Content-Type" content="text/css">
+<link rel="stylesheet" type="text/css" href="resources/jquery.selectbox.css">
+<script type="text/javascript" charset="utf-8" src="resources/initialJS.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/comm.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/hmac_md5.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/libajax.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/hnap.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/i18n.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/pagetool.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/menu.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/DetectRouterConnection.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/checkTimeout.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/includeLang.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/AES.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/DeviceConfig.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/initialCSS.js"></script>
+<link rel="stylesheet" type="text/css" href="resources/style_pages.css" media="all">
+<script type="text/javascript" charset="utf-8" src="resources/initialJQ.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/jquery-1.8.2.min.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/jquery.selectbox-0.2_new.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/jquery.stringify.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/initialValidate1.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/jquery.validate1.js"></script>
+
+<script type="text/javascript">
+	var HNAP = new HNAP_XML();
+	var init_macaddr;
+	var bootuptime = 60;
+	var timer;
+	var current_wantype;
+	var devicemode_org;
+
+	var xml_GetNetworkSettings = HNAP.GetXML("GetNetworkSettings");
+	var lan_IPAddr = xml_GetNetworkSettings.Get("GetNetworkSettingsResponse/IPAddress");
+	var redirect_url = lan_IPAddr;
+
+	var xml_GetIPv6Status        = HNAP.GetXML("GetIPv6Status");
+	var xml_GetIPv6PppoeSettings = HNAP.GetXML("GetIPv6PppoeSettings");
+	var wan_IPv6type    = xml_GetIPv6Status.Get("GetIPv6StatusResponse/IPv6_ConnectionType");
+	var PppoeNewSession = xml_GetIPv6PppoeSettings.Get("GetIPv6PppoeSettingsResponse/IPv6_PppoeNewSession");
+
+	var xml_GetWLanRadioSettings = HNAP.GetXML("GetWLanRadioSettings");
+	var lan_macaddr = xml_GetWLanRadioSettings.Get("GetWLanRadioSettingsResponse/MacAddress");
+	var lanmac = lan_macaddr.split(":");
+	
+	var xml_GetWanSettings = HNAP.GetXML("GetWanSettings");
+	var hostname = xml_GetWanSettings.Get("GetWanSettingsResponse/HostName");
+
+	function Load_HTML()
+	{
+		$("#header").load("header.html");
+	}
+
+	function Initial()
+	{
+		initialMenu();
+		initialDetectRouterConnection();
+	}
+
+	function StrToUpperCase(str)
+	{
+		str = str.toUpperCase();
+		return str;
+	}
+
+	function InitMACList()
+	{
+		var xml_GetClientinfo = HNAP.GetXML("GetClientInfo");
+		var clone_mac_DynamicIP = document.getElementById("clone_mac_DynamicIP");
+		var clone_mac_StaticIP = document.getElementById("clone_mac_StaticIP");
+		var total_clients = xml_GetClientinfo.Get("GetClientInfoResponse/ClientInfoLists/ClientInfo#");
+
+		for (var i=1; i<=total_clients; i++)
+		{
+			var client_macaddr = StrToUpperCase(xml_GetClientinfo.Get("GetClientInfoResponse/ClientInfoLists/ClientInfo:"+i+"/MacAddress"));
+			clone_mac_DynamicIP.options.add(new Option(client_macaddr, i));
+			clone_mac_StaticIP.options.add(new Option(client_macaddr, i));
+		}
+	}
+
+	function ChangeConnectType(type)
+	{
+		var staticIP = document.getElementById("generalBlock_staticIP");
+		var DynamicIP = document.getElementById("generalBlock_DynamicIP");
+		var PPPoE = document.getElementById("generalBlock_PPPoE");
+		var PPTP = document.getElementById("generalBlock_PPTP");
+		var L2TP = document.getElementById("generalBlock_L2TP");
+		var DSLite = document.getElementById("generalBlock_DSLite");
+
+		var adv_Block = document.getElementById("advancedBlock");
+		var adv_StaticIP = document.getElementById("advancedBlock_staticIP");
+		var adv_DynamicIP = document.getElementById("advancedBlock_DynamicIP");
+		var adv_PPPoE = document.getElementById("advancedBlock_PPPoE");
+		var adv_PPTP = document.getElementById("advancedBlock_PPTP");
+		var adv_L2TP = document.getElementById("advancedBlock_L2TP");
+		var adv_DSLite = document.getElementById("advancedBlock_DSLite");
+		var adv_Ru_PPPoE = document.getElementById("advancedBlock_Ru_PPPoE");
+
+		switch(type)
+		{
+			case "STATIC":
+				staticIP.style.display = "inline";
+				PPPoE.style.display = "none";
+				PPTP.style.display = "none";
+				L2TP.style.display = "none";
+				adv_Block.style.display = "none";
+				adv_StaticIP.style.display = "inline";
+				adv_DynamicIP.style.display = "none";
+				adv_PPPoE.style.display = "none";
+				adv_PPTP.style.display = "none";
+				adv_L2TP.style.display = "none";
+				adv_DSLite.style.display = "none";
+				adv_Ru_PPPoE.style.display = "none";
+				break;
+			case "DHCP":
+				staticIP.style.display = "none";
+				PPPoE.style.display = "none";
+				PPTP.style.display = "none";
+				L2TP.style.display = "none";
+				adv_Block.style.display = "none";
+				adv_StaticIP.style.display = "none";
+				adv_DynamicIP.style.display = "inline";
+				adv_PPPoE.style.display = "none";
+				adv_PPTP.style.display = "none";
+				adv_L2TP.style.display = "none";
+				adv_DSLite.style.display = "none";
+				adv_Ru_PPPoE.style.display = "none";
+				break;
+			case "PPPoE":
+				staticIP.style.display = "none";
+				PPPoE.style.display = "inline";
+				PPTP.style.display = "none";
+				L2TP.style.display = "none";
+				adv_Block.style.display = "none";
+				adv_StaticIP.style.display = "none";
+				adv_DynamicIP.style.display = "none";
+				adv_PPPoE.style.display = "inline";
+				adv_PPTP.style.display = "none";
+				adv_L2TP.style.display = "none";
+				adv_DSLite.style.display = "none";
+				adv_Ru_PPPoE.style.display = "none";
+				break;
+			case "PPTP":
+				staticIP.style.display = "none";
+				PPPoE.style.display = "none";
+				PPTP.style.display = "inline";
+				L2TP.style.display = "none";
+				adv_Block.style.display = "none";
+				adv_StaticIP.style.display = "none";
+				adv_DynamicIP.style.display = "none";
+				adv_PPPoE.style.display = "none";
+				adv_PPTP.style.display = "inline";
+				adv_L2TP.style.display = "none";
+				adv_DSLite.style.display = "none";
+				adv_Ru_PPPoE.style.display = "none";
+				break;
+			case "L2TP":
+				staticIP.style.display = "none";
+				PPPoE.style.display = "none";
+				PPTP.style.display = "none";
+				L2TP.style.display = "inline";
+				adv_Block.style.display = "none";
+				adv_StaticIP.style.display = "none";
+				adv_DynamicIP.style.display = "none";
+				adv_PPPoE.style.display = "none";
+				adv_PPTP.style.display = "none";
+				adv_L2TP.style.display = "inline";
+				adv_DSLite.style.display = "none";
+				adv_Ru_PPPoE.style.display = "none";
+				break;
+			case "DSLite":
+				staticIP.style.display = "none";
+				PPPoE.style.display = "none";
+				PPTP.style.display = "none";
+				L2TP.style.display = "none";
+				adv_Block.style.display = "none";
+				adv_StaticIP.style.display = "none";
+				adv_DynamicIP.style.display = "none";
+				adv_PPPoE.style.display = "none";
+				adv_PPTP.style.display = "none";
+				adv_L2TP.style.display = "none";
+				adv_DSLite.style.display = "inline";
+				adv_Ru_PPPoE.style.display = "none";
+				break;
+			case "Ru_PPPoE":
+				staticIP.style.display = "none";
+				PPPoE.style.display = "inline";
+				PPTP.style.display = "none";
+				L2TP.style.display = "none";
+				adv_Block.style.display = "none";
+				adv_StaticIP.style.display = "none";
+				adv_DynamicIP.style.display = "none";
+				adv_PPPoE.style.display = "inline";
+				adv_PPTP.style.display = "none";
+				adv_L2TP.style.display = "none";
+				adv_DSLite.style.display = "none";
+				adv_Ru_PPPoE.style.display = "inline";
+				break;
+			case "Ru_PPTP":
+				staticIP.style.display = "none";
+				PPPoE.style.display = "none";
+				PPTP.style.display = "inline";
+				L2TP.style.display = "none";
+				adv_Block.style.display = "none";
+				adv_StaticIP.style.display = "none";
+				adv_DynamicIP.style.display = "none";
+				adv_PPPoE.style.display = "none";
+				adv_PPTP.style.display = "inline";
+				adv_L2TP.style.display = "none";
+				adv_DSLite.style.display = "none";
+				adv_Ru_PPPoE.style.display = "none";
+				break;
+			case "Ru_L2TP":
+				staticIP.style.display = "none";
+				PPPoE.style.display = "none";
+				PPTP.style.display = "none";
+				L2TP.style.display = "inline";
+				adv_Block.style.display = "none";
+				adv_StaticIP.style.display = "none";
+				adv_DynamicIP.style.display = "none";
+				adv_PPPoE.style.display = "none";
+				adv_PPTP.style.display = "none";
+				adv_L2TP.style.display = "inline";
+				adv_DSLite.style.display = "none";
+				adv_Ru_PPPoE.style.display = "none";
+				break;
+		}
+
+		DisplayMACClone(type);
+	}
+
+	function InitWAN()
+	{
+		var xml_GetDeviceFeature = HNAP.GetXML("GetDeviceFeatureAlpha");
+		var xml_GetIPv6Status = HNAP.GetXML("GetIPv6Status");
+		var xml_GetRouterLanSettings = HNAP.GetXML("GetRouterLanSettings");
+
+		var feature_bridge = xml_GetDeviceFeature.Get("GetDeviceFeatureAlphaResponse/FeatureBridge");
+		var feature_repeater = xml_GetDeviceFeature.Get("GetDeviceFeatureAlphaResponse/FeatureRepeater");
+		var feature_ipv6 = xml_GetDeviceFeature.Get("GetDeviceFeatureAlphaResponse/FeatureIPv6");
+
+		//Russia
+		var feature_russia = xml_GetDeviceFeature.Get("GetDeviceFeatureAlphaResponse/FeatureRussia");
+		
+		if(feature_russia == "true")
+		{
+			$("#connect_type").append('<option value="Ru_PPPoE">Russia PPPoE (Dual Access)</option>');
+			$("#connect_type").append('<option value="Ru_PPTP">Russia PPTP (Dual Access)</option>');
+			$("#connect_type").append('<option value="Ru_L2TP">Russia L2TP (Dual Access)</option>');
+		}	
+			
+
+		if(feature_ipv6)
+			document.getElementById("FUNC_IPv6").style.display = "block";
+		else
+			document.getElementById("FUNC_IPv6").style.display = "none";
+
+		if(feature_bridge)
+			$("#device_mode").append('<option value="BRIDGE">Bridge Mode</option>');
+		else if(feature_repeater)
+			$("#device_mode").append('<option value="REPEATER">Repeater Mode</option>');
+
+		var obj_devicemode = document.getElementById("device_mode");
+		var wan_type = xml_GetWanSettings.Get("GetWanSettingsResponse/Type");
+		var obj_wantype = document.getElementById("connect_type");
+		var wantype;
+		var bridge_mode = false;
+
+		if(wan_type.indexOf("Bridged")>=0) bridge_mode = true;
+		else bridge_mode = false;
+
+		if(bridge_mode)
+		{
+			devicemode_org = "BRIDGE";
+			document.getElementById("FUNC_IPv6").style.display = "none";
+			document.getElementById("directions").innerHTML = I18N("j", "Use this section to configure your Internet Connection type.");
+		}
+		else
+		{
+			devicemode_org = "ROUTER";
+			document.getElementById("directions").innerHTML = I18N("j", "Use this section to configure your Internet Connection type. There are several connection types to choose from Static IP, DHCP, PPPoE, PPTP, L2TP, and DS-Lite. If you are unsure of your connection method, please contact your Internet Service Provider. Note:  If using the PPPoE option, you will need to remove or disable any PPPoE client software on your computers.");
+		}
+		COMM_SetSelectValue(obj_devicemode, devicemode_org);
+		ConnectTypeList(devicemode_org);
+
+		switch (wan_type)
+		{
+			case "Static":
+			case "StaticBridged":
+				wantype = "STATIC";
+
+				var static_ipaddr = xml_GetWanSettings.Get("GetWanSettingsResponse/IPAddress");
+				document.getElementById("iPAddress_StaticIP").value = static_ipaddr;
+
+				var static_mask = xml_GetWanSettings.Get("GetWanSettingsResponse/SubnetMask");
+				document.getElementById("subnetMask_StaticIP").value = static_mask;
+
+				var static_gw = xml_GetWanSettings.Get("GetWanSettingsResponse/Gateway");
+				document.getElementById("defaultGateway_StaticIP").value = static_gw;
+
+				var static_pridns = xml_GetWanSettings.Get("GetWanSettingsResponse/ConfigDNS/Primary");
+				document.getElementById("primaryDNSAddress_StaticIP").value = static_pridns;
+
+				var static_secdns = xml_GetWanSettings.Get("GetWanSettingsResponse/ConfigDNS/Secondary");
+				document.getElementById("secondaryDNSAddress_StaticIP").value = static_secdns;
+
+				var static_mtu_value = xml_GetWanSettings.Get("GetWanSettingsResponse/MTU");
+				document.getElementById("mtu_StaticIP_Input").value = static_mtu_value;
+
+				var static_mtu = "";
+				var obj_static_mtu = document.getElementById("mtu_StaticIP");
+				if (static_mtu_value=="1500")
+				{
+					static_mtu = "AUTO";
+					document.getElementById("mtu_StaticIP_Input").style.display = "none";
+				}
+				else
+				{
+					static_mtu = "MANUAL";
+					document.getElementById("mtu_StaticIP_Input").style.display = "inline";
+				}
+				COMM_SetSelectValue(obj_static_mtu, static_mtu);
+
+				if(wan_type=="Static")
+				{
+					var macaddr = StrToUpperCase(xml_GetWanSettings.Get("GetWanSettingsResponse/MacAddress"));
+					document.getElementById("macAddress_StaticIP").value = macaddr;
+					init_macaddr = macaddr;
+				}
+				break;
+			case "DHCP":
+			case "DynamicBridged":
+				wantype = "DHCP";
+
+				document.getElementById("hostName_DynamicIP").value = hostname;
+
+				var dhcp_pridns = xml_GetWanSettings.Get("GetWanSettingsResponse/ConfigDNS/Primary");
+				document.getElementById("primaryDNSAddress_DynamicIP").value = dhcp_pridns;
+
+				var dhcp_secdns = xml_GetWanSettings.Get("GetWanSettingsResponse/ConfigDNS/Secondary");
+				document.getElementById("secondaryDNSAddress_DynamicIP").value = dhcp_secdns;
+
+				var dhcp_mtu_value = xml_GetWanSettings.Get("GetWanSettingsResponse/MTU");
+				document.getElementById("mtu_DynamicIP_Input").value = dhcp_mtu_value;
+
+				var dhcp_mtu = "";
+				var obj_dhcp_mtu = document.getElementById("mtu_DynamicIP");
+				if (dhcp_mtu_value=="1500")
+				{
+					dhcp_mtu = "AUTO";
+					document.getElementById("mtu_DynamicIP_Input").style.display = "none";
+				}
+				else
+				{
+					dhcp_mtu = "MANUAL";
+					document.getElementById("mtu_DynamicIP_Input").style.display = "inline";
+				}
+				COMM_SetSelectValue(obj_dhcp_mtu, dhcp_mtu);
+
+				if(wan_type=="DHCP")
+				{
+					var macaddr = StrToUpperCase(xml_GetWanSettings.Get("GetWanSettingsResponse/MacAddress"));
+					document.getElementById("macAddress_DynamicIP").value = macaddr;
+					init_macaddr = macaddr;
+				}
+				break;
+			case "DHCPPPPoE":
+			case "StaticPPPoE":
+				wantype = "PPPoE";
+
+				var pppoe_username = xml_GetWanSettings.Get("GetWanSettingsResponse/Username");
+				document.getElementById("userName_PPPoE").value = pppoe_username;
+
+				var pppoe_passwd = xml_GetWanSettings.Get("GetWanSettingsResponse/Password");
+				document.getElementById("password_PPPoE").value = pppoe_passwd;
+
+				var addrmode = "";
+				var obj_addrmode = document.getElementById("addressMode_PPPoE");
+				if (wan_type=="DHCPPPPoE")
+				{
+					addrmode = "DYNAMICIP";
+					document.getElementById("ipAddress_PPPoE").value = "";
+				}
+				else if (wan_type=="StaticPPPoE")
+				{
+					addrmode = "STATICIP";
+					var pppoe_ipaddr = xml_GetWanSettings.Get("GetWanSettingsResponse/IPAddress");
+					document.getElementById("ipAddress_PPPoE").value = pppoe_ipaddr;
+				}
+				ChangeAddrMode(addrmode, wantype);
+				COMM_SetSelectValue(obj_addrmode, addrmode);
+
+				var pppoe_servicename = xml_GetWanSettings.Get("GetWanSettingsResponse/ServiceName");
+				document.getElementById("serviceName_PPPoE").value = pppoe_servicename;
+
+				var pppoe_pridns = xml_GetWanSettings.Get("GetWanSettingsResponse/ConfigDNS/Primary");
+				document.getElementById("primaryDNSAddress_PPPoE").value = pppoe_pridns;
+
+				var pppoe_secdns = xml_GetWanSettings.Get("GetWanSettingsResponse/ConfigDNS/Secondary");
+				document.getElementById("secondaryDNSAddress_PPPoE").value = pppoe_secdns;
+
+				var pppoe_mtu_value = xml_GetWanSettings.Get("GetWanSettingsResponse/MTU");
+				document.getElementById("mtu_PPPoE_Input").value = pppoe_mtu_value;
+
+				var pppoe_mtu = "";
+				var obj_pppoe_mtu = document.getElementById("mtu_PPPoE");
+				if (pppoe_mtu_value=="1492")
+				{
+					pppoe_mtu = "AUTO";
+					document.getElementById("mtu_PPPoE_Input").style.display = "none";
+				}
+				else
+				{
+					pppoe_mtu = "MANUAL";
+					document.getElementById("mtu_PPPoE_Input").style.display = "inline";
+				}
+				COMM_SetSelectValue(obj_pppoe_mtu, pppoe_mtu);
+
+				var pppoe_reconnect = xml_GetWanSettings.Get("GetWanSettingsResponse/AutoReconnect");
+				var pppoe_maxidle_t = xml_GetWanSettings.Get("GetWanSettingsResponse/MaxIdleTime");
+
+				var pppoe_recmode = "";
+				var obj_pppoe_recmode = document.getElementById("reconnectMode_PPPoE");
+
+				switch (pppoe_reconnect)
+				{
+					case "true": /*Always On*/
+						pppoe_recmode = "ALWAYSON";
+						document.getElementById("maxIdleTime_PPPoE_tr").style.display = "none";
+						document.getElementById("maximumIdleTime_PPPoE").value = 0;
+						document.getElementById("maximumIdleTime_PPPoE").disabled  = true;
+						break;
+					case "false":
+						if (pppoe_maxidle_t==0) /* Manual */
+						{
+							pppoe_recmode = "MANUAL";
+							document.getElementById("maxIdleTime_PPPoE_tr").style.display = "none";
+							document.getElementById("maximumIdleTime_PPPoE").value = 0;
+							document.getElementById("maximumIdleTime_PPPoE").disabled  = true;
+						}
+						else /*On Demand*/
+						{
+							pppoe_recmode = "ONDEMAND";
+							document.getElementById("maximumIdleTime_PPPoE").value = pppoe_maxidle_t/60; //Maximum idle time in D-Link New GUI is minute unit. However, HNAP SPEC. HNAP Core Specification v1.1 Rev12.pdf uses second for the unit.
+							document.getElementById("maximumIdleTime_PPPoE").disabled  = false;
+						}
+						break;
+				}
+				COMM_SetSelectValue(obj_pppoe_recmode, pppoe_recmode);
+				break;
+			case "DynamicPPTP":
+			case "StaticPPTP":
+				wantype = "PPTP";
+
+				var pptp_username = xml_GetWanSettings.Get("GetWanSettingsResponse/Username");
+				document.getElementById("userName_PPTP").value = pptp_username;
+
+				var pptp_passwd = xml_GetWanSettings.Get("GetWanSettingsResponse/Password");
+				document.getElementById("password_PPTP").value = pptp_passwd;
+
+				var addrmode = "";
+				var obj_addrmode = document.getElementById("addressMode_PPTP");
+				if (wan_type=="DynamicPPTP")
+				{
+					addrmode = "DYNAMICIP";
+				//	document.getElementById("ipAddress_PPTP").value = "";
+				}
+				else if (wan_type=="StaticPPTP")
+				{
+					addrmode = "STATICIP";
+				}
+				var pptp_ipaddr = xml_GetWanSettings.Get("GetWanSettingsResponse/IPAddress");
+				document.getElementById("ipAddress_PPTP").value = pptp_ipaddr;
+
+				var pptp_mask = xml_GetWanSettings.Get("GetWanSettingsResponse/SubnetMask");
+				document.getElementById("subnetMask_PPTP").value = pptp_mask;
+
+				var pptp_gw = xml_GetWanSettings.Get("GetWanSettingsResponse/Gateway");
+				document.getElementById("gatewayIP_PPTP").value = pptp_gw;
+					
+				ChangeAddrMode(addrmode, wantype);
+				COMM_SetSelectValue(obj_addrmode, addrmode);
+
+				var pptp_servicename = xml_GetWanSettings.Get("GetWanSettingsResponse/ServiceName");
+				document.getElementById("serverIPAddress_PPTP").value = pptp_servicename;
+
+				var pptp_pridns = xml_GetWanSettings.Get("GetWanSettingsResponse/ConfigDNS/Primary");
+				document.getElementById("primaryDNSAddress_PPTP").value = pptp_pridns;
+
+				var pptp_secdns = xml_GetWanSettings.Get("GetWanSettingsResponse/ConfigDNS/Secondary");
+				document.getElementById("secondaryDNSAddress_PPTP").value = pptp_secdns;
+
+				var pptp_mtu_value = xml_GetWanSettings.Get("GetWanSettingsResponse/MTU");
+				document.getElementById("mtu_PPTP_Input").value = pptp_mtu_value;
+
+				var pptp_mtu = "";
+				var obj_pptp_mtu = document.getElementById("mtu_PPTP");
+				if (pptp_mtu_value=="1400")
+				{
+					pptp_mtu = "AUTO";
+					document.getElementById("mtu_PPTP_Input").style.display = "none";
+				}
+				else
+				{
+					pptp_mtu = "MANUAL";
+					document.getElementById("mtu_PPTP_Input").style.display = "inline";
+				}
+				COMM_SetSelectValue(obj_pptp_mtu, pptp_mtu);
+
+				var pptp_reconnect = xml_GetWanSettings.Get("GetWanSettingsResponse/AutoReconnect");
+				var pptp_maxidle_t = xml_GetWanSettings.Get("GetWanSettingsResponse/MaxIdleTime");
+
+				var pptp_recmode = "";
+				var obj_pptp_recmode = document.getElementById("reconnectMode_PPTP");
+				switch (pptp_reconnect)
+				{
+					case "true": /*Always On*/
+						pptp_recmode = "ALWAYSON";
+						document.getElementById("maxIdleTime_PPTP_tr").style.display = "none";
+						document.getElementById("maximumIdleTime_PPTP").value = 0;
+						document.getElementById("maximumIdleTime_PPTP").disabled  = true;
+						break;
+					case "false":
+						if (pptp_maxidle_t==0) /*Manual*/
+						{
+							pptp_recmode = "MANUAL";
+							document.getElementById("maxIdleTime_PPTP_tr").style.display = "none";
+							document.getElementById("maximumIdleTime_PPTP").value = 0;
+							document.getElementById("maximumIdleTime_PPTP").disabled  = true;
+						}
+						else /*On Demand*/
+						{
+							pptp_recmode = "ONDEMAND";
+							document.getElementById("maximumIdleTime_PPTP").value = pptp_maxidle_t/60; //Maximum idle time in D-Link New GUI is minute unit. However, HNAP SPEC. HNAP Core Specification v1.1 Rev12.pdf uses second for the unit.
+							document.getElementById("maximumIdleTime_PPTP").disabled  = false;
+						}
+						break;
+				}
+				COMM_SetSelectValue(obj_pptp_recmode, pptp_recmode);
+				break;
+			case "DynamicL2TP":
+			case "StaticL2TP":
+				wantype = "L2TP";
+
+				var l2tp_username = xml_GetWanSettings.Get("GetWanSettingsResponse/Username");
+				document.getElementById("userName_L2TP").value = l2tp_username;
+
+				var l2tp_passwd = xml_GetWanSettings.Get("GetWanSettingsResponse/Password");
+				document.getElementById("password_L2TP").value = l2tp_passwd;
+
+				var addrmode = "";
+				var obj_addrmode = document.getElementById("addressMode_L2TP");
+				if (wan_type=="DynamicL2TP")
+				{
+					addrmode = "DYNAMICIP";
+					//document.getElementById("ipAddress_L2TP").value = "";
+				}
+				else if (wan_type=="StaticL2TP")
+				{
+					addrmode = "STATICIP";
+				}
+				var l2tp_ipaddr = xml_GetWanSettings.Get("GetWanSettingsResponse/IPAddress");
+				document.getElementById("ipAddress_L2TP").value = l2tp_ipaddr;
+
+				var l2tp_mask = xml_GetWanSettings.Get("GetWanSettingsResponse/SubnetMask");
+				document.getElementById("subnetMask_L2TP").value = l2tp_mask;
+
+				var l2tp_gw = xml_GetWanSettings.Get("GetWanSettingsResponse/Gateway");
+				document.getElementById("gatewayIP_L2TP").value = l2tp_gw;
+					
+				ChangeAddrMode(addrmode, wantype);
+				COMM_SetSelectValue(obj_addrmode, addrmode);
+
+				var l2tp_servicename = xml_GetWanSettings.Get("GetWanSettingsResponse/ServiceName");
+				document.getElementById("serverIPAddress_L2TP").value = l2tp_servicename;
+
+				var l2tp_pridns = xml_GetWanSettings.Get("GetWanSettingsResponse/ConfigDNS/Primary");
+				document.getElementById("primaryDNSAddress_L2TP").value = l2tp_pridns;
+
+				var l2tp_secdns = xml_GetWanSettings.Get("GetWanSettingsResponse/ConfigDNS/Secondary");
+				document.getElementById("secondaryDNSAddress_L2TP").value = l2tp_secdns;
+
+				var l2tp_mtu_value = xml_GetWanSettings.Get("GetWanSettingsResponse/MTU");
+				document.getElementById("mtu_L2TP_Input").value = l2tp_mtu_value;
+
+				var l2tp_mtu = "";
+				var obj_l2tp_mtu = document.getElementById("mtu_L2TP");
+				if (l2tp_mtu_value=="1400")
+				{
+					l2tp_mtu = "AUTO";
+					document.getElementById("mtu_L2TP_Input").style.display = "none";
+				}
+				else
+				{
+					l2tp_mtu = "MANUAL";
+					document.getElementById("mtu_L2TP_Input").style.display = "inline";
+				}
+				COMM_SetSelectValue(obj_l2tp_mtu, l2tp_mtu);
+
+				var l2tp_reconnect = xml_GetWanSettings.Get("GetWanSettingsResponse/AutoReconnect");
+				var l2tp_maxidle_t = xml_GetWanSettings.Get("GetWanSettingsResponse/MaxIdleTime");
+
+				var l2tp_recmode = "";
+				var obj_l2tp_recmode = document.getElementById("reconnectMode_L2TP");
+				switch (l2tp_reconnect)
+				{
+					case "true": /*Always On*/
+						l2tp_recmode = "ALWAYSON";
+						document.getElementById("maxIdleTime_L2TP_tr").style.display = "none";
+						document.getElementById("maximumIdleTime_L2TP").value = 0;
+						document.getElementById("maximumIdleTime_L2TP").disabled  = true;
+						break;
+					case "false":
+						if (l2tp_maxidle_t==0) /*Manual*/
+						{
+							l2tp_recmode = "MANUAL";
+							document.getElementById("maxIdleTime_L2TP_tr").style.display = "none";
+							document.getElementById("maximumIdleTime_L2TP").value = 0;
+							document.getElementById("maximumIdleTime_L2TP").disabled  = true;
+						}
+						else /*On Demand*/
+						{
+							l2tp_recmode = "ONDEMAND";
+							document.getElementById("maximumIdleTime_L2TP").value = l2tp_maxidle_t/60; //Maximum idle time in D-Link New GUI is minute unit. However, HNAP SPEC. HNAP Core Specification v1.1 Rev12.pdf uses second for the unit.
+							document.getElementById("maximumIdleTime_L2TP").disabled  = false;
+						}
+						break;
+				}
+				COMM_SetSelectValue(obj_l2tp_recmode, l2tp_recmode);
+				break;
+			case "DsLite":
+				wantype = "DSLite";
+
+				var dlite_config = xml_GetWanSettings.Get("GetWanSettingsResponse/DsLite_Configuration");
+				ChangeDSLiteConfig (dlite_config);
+				var obj_dlite_config = document.getElementById("configuration_DSLite");
+				COMM_SetSelectValue(obj_dlite_config, dlite_config);
+
+				var dslite_aftr_v6addr = xml_GetWanSettings.Get("GetWanSettingsResponse/DsLite_AFTR_IPv6Address");
+				document.getElementById("afterIPv6Address_DSLite").value = dslite_aftr_v6addr;
+
+				var dslite_b4v4addr = xml_GetWanSettings.Get("GetWanSettingsResponse/DsLite_B4IPv4Address");
+				var split_dslite_b4v4addr = dslite_b4v4addr.split(".");
+				var last_elem = split_dslite_b4v4addr[split_dslite_b4v4addr.length-1];
+				document.getElementById("b4IPv4Address_DSLite").value = last_elem;
+
+				var dslite_v6_addr = xml_GetIPv6Status.Get("GetIPv6StatusResponse/IPv6_Address");
+				if (dslite_v6_addr!="")
+					document.getElementById("wanIPv6Address_DSLite").innerHTML = dslite_v6_addr;
+				else
+					document.getElementById("wanIPv6Address_DSLite").innerHTML = "N/A";
+
+				var dslite_gw = xml_GetIPv6Status.Get("GetIPv6StatusResponse/IPv6_DefaultGateway");
+				if (dslite_gw != "")
+					document.getElementById("ipv6WanDefaultGateway_DSLite").innerHTML = dslite_gw;
+				else
+					document.getElementById("ipv6WanDefaultGateway_DSLite").innerHTML = "N/A";
+
+				break;
+				
+			case "Ru_DHCPPPPoE":
+			
+			case "Ru_StaticPPPoE":
+				wantype = "Ru_PPPoE";
+
+				var pppoe_username = xml_GetWanSettings.Get("GetWanSettingsResponse/Username");
+				document.getElementById("userName_PPPoE").value = pppoe_username;
+
+				var pppoe_passwd = xml_GetWanSettings.Get("GetWanSettingsResponse/Password");
+				document.getElementById("password_PPPoE").value = pppoe_passwd;
+
+				var addrmode = "";
+				var obj_addrmode = document.getElementById("addressMode_PPPoE");
+			
+				if (wan_type=="Ru_DHCPPPPoE")
+				{
+					addrmode = "DYNAMICIP";
+					document.getElementById("ipAddress_PPPoE").value = "";
+				}
+				else if (wan_type=="Ru_StaticPPPoE")
+				{
+					addrmode = "STATICIP";
+					var pppoe_ipaddr = xml_GetWanSettings.Get("GetWanSettingsResponse/IPAddress");
+					document.getElementById("ipAddress_PPPoE").value = pppoe_ipaddr;
+				}
+				ChangeAddrMode(addrmode, wantype);
+				COMM_SetSelectValue(obj_addrmode, addrmode);
+
+				var pppoe_servicename = xml_GetWanSettings.Get("GetWanSettingsResponse/ServiceName");
+				document.getElementById("serviceName_PPPoE").value = pppoe_servicename;
+
+				var pppoe_pridns = xml_GetWanSettings.Get("GetWanSettingsResponse/ConfigDNS/Primary");
+				document.getElementById("primaryDNSAddress_PPPoE").value = pppoe_pridns;
+
+				var pppoe_secdns = xml_GetWanSettings.Get("GetWanSettingsResponse/ConfigDNS/Secondary");
+				document.getElementById("secondaryDNSAddress_PPPoE").value = pppoe_secdns;
+
+				var pppoe_mtu_value = xml_GetWanSettings.Get("GetWanSettingsResponse/MTU");
+				document.getElementById("mtu_PPPoE_Input").value = pppoe_mtu_value;
+
+				var pppoe_mtu = "";
+				var obj_pppoe_mtu = document.getElementById("mtu_PPPoE");
+				if (pppoe_mtu_value=="1492")
+				{
+					pppoe_mtu = "AUTO";
+					document.getElementById("mtu_PPPoE_Input").style.display = "none";
+				}
+				else
+				{
+					pppoe_mtu = "MANUAL";
+					document.getElementById("mtu_PPPoE_Input").style.display = "inline";
+				}
+				COMM_SetSelectValue(obj_pppoe_mtu, pppoe_mtu);
+
+				var pppoe_reconnect = xml_GetWanSettings.Get("GetWanSettingsResponse/AutoReconnect");
+				var pppoe_maxidle_t = xml_GetWanSettings.Get("GetWanSettingsResponse/MaxIdleTime")/60; //Maximum idle time in D-Link New GUI is minute unit. However, HNAP SPEC. HNAP Core Specification v1.1 Rev12.pdf uses second for the unit.
+
+				var pppoe_recmode = "";
+				var obj_pppoe_recmode = document.getElementById("reconnectMode_PPPoE");
+
+				switch (pppoe_reconnect)
+				{
+					case "true": /*Always On*/
+						pppoe_recmode = "ALWAYSON";
+						document.getElementById("maxIdleTime_PPPoE_tr").style.display = "none";
+						document.getElementById("maximumIdleTime_PPPoE").value = 0;
+						document.getElementById("maximumIdleTime_PPPoE").disabled  = true;
+						break;
+					case "false":
+						if (pppoe_maxidle_t==0) /* Manual */
+						{
+							pppoe_recmode = "MANUAL";
+							document.getElementById("maxIdleTime_PPPoE_tr").style.display = "none";
+							document.getElementById("maximumIdleTime_PPPoE").value = 0;
+							document.getElementById("maximumIdleTime_PPPoE").disabled  = true;
+						}
+						else /*On Demand*/
+						{
+							pppoe_recmode = "ONDEMAND";
+							document.getElementById("maximumIdleTime_PPPoE").value = pppoe_maxidle_t/60; //Maximum idle time in D-Link New GUI is minute unit. However, HNAP SPEC. HNAP Core Specification v1.1 Rev12.pdf uses second for the unit.
+							document.getElementById("maximumIdleTime_PPPoE").disabled  = false;
+						}
+						break;
+				}
+				COMM_SetSelectValue(obj_pppoe_recmode, pppoe_recmode);
+				
+				
+				var ru_addrmode = "";
+				var ru_obj_addrmode = document.getElementById("addressMode_Ru_PPPoE");
+				var ru_wan_type = xml_GetWanSettings.Get("GetWanSettingsResponse/RussiaPPP/Type");
+				var ru_wantype = "Ru_PPPoE_WAN";
+						
+				if (ru_wan_type=="DHCPPPPoE")
+				{
+					addrmode = "DYNAMICIP";
+					document.getElementById("ipAddress_Ru_PPPoE").value = "";
+				}
+				else if (ru_wan_type=="StaticPPPoE")
+				{
+					addrmode = "STATICIP";
+
+					var ru_ppp_ipaddr = xml_GetWanSettings.Get("GetWanSettingsResponse/RussiaPPP/IPAddress");
+					document.getElementById("ipAddress_Ru_PPPoE").value = ru_ppp_ipaddr;
+
+					var ru_ppp_mask = xml_GetWanSettings.Get("GetWanSettingsResponse/RussiaPPP/SubnetMask");
+					document.getElementById("subnetMask_Ru_PPPoE").value = ru_ppp_mask;
+
+					var ru_ppp_gw = xml_GetWanSettings.Get("GetWanSettingsResponse/RussiaPPP/Gateway");
+					document.getElementById("gatewayIP_Ru_PPPoE").value = ru_ppp_gw;
+					
+					var ru_ppp_pridns = xml_GetWanSettings.Get("GetWanSettingsResponse/RussiaPPP/DNS/Primary");
+					document.getElementById("primaryDNSAddress_Ru_PPPoE").value = ru_ppp_pridns;
+					
+					var ru_ppp_secdns = xml_GetWanSettings.Get("GetWanSettingsResponse/RussiaPPP/DNS/Secondary");
+					document.getElementById("secondaryDNSAddress_Ru_PPPoE").value = ru_ppp_secdns;
+				}
+				ChangeAddrMode(addrmode, ru_wantype);
+				COMM_SetSelectValue(ru_obj_addrmode, addrmode);
+				
+				break;
+			
+			case "Ru_DynamicPPTP":
+			
+			case "Ru_StaticPPTP":
+				wantype = "Ru_PPTP";
+
+				var pptp_username = xml_GetWanSettings.Get("GetWanSettingsResponse/Username");
+				document.getElementById("userName_PPTP").value = pptp_username;
+
+				var pptp_passwd = xml_GetWanSettings.Get("GetWanSettingsResponse/Password");
+				document.getElementById("password_PPTP").value = pptp_passwd;
+
+				var addrmode = "";
+				var obj_addrmode = document.getElementById("addressMode_PPTP");
+				if (wan_type=="Ru_DynamicPPTP")
+				{
+					addrmode = "DYNAMICIP";
+					document.getElementById("ipAddress_PPTP").value = "";
+				}
+				else if (wan_type=="Ru_StaticPPTP")
+				{
+					addrmode = "STATICIP";
+
+					var pptp_ipaddr = xml_GetWanSettings.Get("GetWanSettingsResponse/IPAddress");
+					document.getElementById("ipAddress_PPTP").value = pptp_ipaddr;
+
+					var pptp_mask = xml_GetWanSettings.Get("GetWanSettingsResponse/SubnetMask");
+					document.getElementById("subnetMask_PPTP").value = pptp_mask;
+
+					var pptp_gw = xml_GetWanSettings.Get("GetWanSettingsResponse/Gateway");
+					document.getElementById("gatewayIP_PPTP").value = pptp_gw;
+				}
+				ChangeAddrMode(addrmode, wantype);
+				COMM_SetSelectValue(obj_addrmode, addrmode);
+
+				var pptp_servicename = xml_GetWanSettings.Get("GetWanSettingsResponse/ServiceName");
+				document.getElementById("serverIPAddress_PPTP").value = pptp_servicename;
+
+				var pptp_pridns = xml_GetWanSettings.Get("GetWanSettingsResponse/ConfigDNS/Primary");
+				document.getElementById("primaryDNSAddress_PPTP").value = pptp_pridns;
+
+				var pptp_secdns = xml_GetWanSettings.Get("GetWanSettingsResponse/ConfigDNS/Secondary");
+				document.getElementById("secondaryDNSAddress_PPTP").value = pptp_secdns;
+
+				var pptp_mtu_value = xml_GetWanSettings.Get("GetWanSettingsResponse/MTU");
+				document.getElementById("mtu_PPTP_Input").value = pptp_mtu_value;
+
+				var pptp_mtu = "";
+				var obj_pptp_mtu = document.getElementById("mtu_PPTP");
+				if (pptp_mtu_value=="1400")
+				{
+					pptp_mtu = "AUTO";
+					document.getElementById("mtu_PPTP_Input").style.display = "none";
+				}
+				else
+				{
+					pptp_mtu = "MANUAL";
+					document.getElementById("mtu_PPTP_Input").style.display = "inline";
+				}
+				COMM_SetSelectValue(obj_pptp_mtu, pptp_mtu);
+
+				var pptp_reconnect = xml_GetWanSettings.Get("GetWanSettingsResponse/AutoReconnect");
+				var pptp_maxidle_t = xml_GetWanSettings.Get("GetWanSettingsResponse/MaxIdleTime");
+
+				var pptp_recmode = "";
+				var obj_pptp_recmode = document.getElementById("reconnectMode_PPTP");
+				switch (pptp_reconnect)
+				{
+					case "true": /*Always On*/
+						pptp_recmode = "ALWAYSON";
+						document.getElementById("maxIdleTime_PPTP_tr").style.display = "none";
+						document.getElementById("maximumIdleTime_PPTP").value = 0;
+						document.getElementById("maximumIdleTime_PPTP").disabled  = true;
+						break;
+					case "false":
+						if (pptp_maxidle_t==0) /*Manual*/
+						{
+							pptp_recmode = "MANUAL";
+							document.getElementById("maxIdleTime_PPTP_tr").style.display = "none";
+							document.getElementById("maximumIdleTime_PPTP").value = 0;
+							document.getElementById("maximumIdleTime_PPTP").disabled  = true;
+						}
+						else /*On Demand*/
+						{
+							pptp_recmode = "ONDEMAND";
+							document.getElementById("maximumIdleTime_PPTP").value = pptp_maxidle_t/60; //Maximum idle time in D-Link New GUI is minute unit. However, HNAP SPEC. HNAP Core Specification v1.1 Rev12.pdf uses second for the unit.
+							document.getElementById("maximumIdleTime_PPTP").disabled  = false;
+						}
+						break;
+				}
+				COMM_SetSelectValue(obj_pptp_recmode, pptp_recmode);
+				break;
+			
+			case "Ru_DynamicL2TP":
+			
+			case "Ru_StaticL2TP":
+				wantype = "Ru_L2TP";
+
+				var l2tp_username = xml_GetWanSettings.Get("GetWanSettingsResponse/Username");
+				document.getElementById("userName_L2TP").value = l2tp_username;
+
+				var l2tp_passwd = xml_GetWanSettings.Get("GetWanSettingsResponse/Password");
+				document.getElementById("password_L2TP").value = l2tp_passwd;
+
+				var addrmode = "";
+				var obj_addrmode = document.getElementById("addressMode_L2TP");
+				if (wan_type=="Ru_DynamicL2TP")
+				{
+					addrmode = "DYNAMICIP";
+					document.getElementById("ipAddress_L2TP").value = "";
+				}
+				else if (wan_type=="Ru_StaticL2TP")
+				{
+					addrmode = "STATICIP";
+
+					var l2tp_ipaddr = xml_GetWanSettings.Get("GetWanSettingsResponse/IPAddress");
+					document.getElementById("ipAddress_L2TP").value = l2tp_ipaddr;
+
+					var l2tp_mask = xml_GetWanSettings.Get("GetWanSettingsResponse/SubnetMask");
+					document.getElementById("subnetMask_L2TP").value = l2tp_mask;
+
+					var l2tp_gw = xml_GetWanSettings.Get("GetWanSettingsResponse/Gateway");
+					document.getElementById("gatewayIP_L2TP").value = l2tp_gw;
+					
+					document.getElementById("ipAddress_L2TP").disabled  = false;
+					document.getElementById("subnetMask_L2TP").disabled  = false;
+					document.getElementById("gatewayIP_L2TP").disabled  = false;
+				}
+				ChangeAddrMode(addrmode, wantype);
+				COMM_SetSelectValue(obj_addrmode, addrmode);
+
+				var l2tp_servicename = xml_GetWanSettings.Get("GetWanSettingsResponse/ServiceName");
+				document.getElementById("serverIPAddress_L2TP").value = l2tp_servicename;
+
+				var l2tp_pridns = xml_GetWanSettings.Get("GetWanSettingsResponse/ConfigDNS/Primary");
+				document.getElementById("primaryDNSAddress_L2TP").value = l2tp_pridns;
+
+				var l2tp_secdns = xml_GetWanSettings.Get("GetWanSettingsResponse/ConfigDNS/Secondary");
+				document.getElementById("secondaryDNSAddress_L2TP").value = l2tp_secdns;
+
+				var l2tp_mtu_value = xml_GetWanSettings.Get("GetWanSettingsResponse/MTU");
+				document.getElementById("mtu_L2TP_Input").value = l2tp_mtu_value;
+
+				var l2tp_mtu = "";
+				var obj_l2tp_mtu = document.getElementById("mtu_L2TP");
+				if (l2tp_mtu_value=="1400")
+				{
+					l2tp_mtu = "AUTO";
+					document.getElementById("mtu_L2TP_Input").style.display = "none";
+				}
+				else
+				{
+					l2tp_mtu = "MANUAL";
+					document.getElementById("mtu_L2TP_Input").style.display = "inline";
+				}
+				COMM_SetSelectValue(obj_l2tp_mtu, l2tp_mtu);
+
+				var l2tp_reconnect = xml_GetWanSettings.Get("GetWanSettingsResponse/AutoReconnect");
+				var l2tp_maxidle_t = xml_GetWanSettings.Get("GetWanSettingsResponse/MaxIdleTime");
+
+				var l2tp_recmode = "";
+				var obj_l2tp_recmode = document.getElementById("reconnectMode_L2TP");
+				switch (l2tp_reconnect)
+				{
+					case "true": /*Always On*/
+						l2tp_recmode = "ALWAYSON";
+						document.getElementById("maxIdleTime_L2TP_tr").style.display = "none";
+						document.getElementById("maximumIdleTime_L2TP").value = 0;
+						document.getElementById("maximumIdleTime_L2TP").disabled  = true;
+						break;
+					case "false":
+						if (l2tp_maxidle_t==0) /*Manual*/
+						{
+							l2tp_recmode = "MANUAL";
+							document.getElementById("maxIdleTime_L2TP_tr").style.display = "none";
+							document.getElementById("maximumIdleTime_L2TP").value = 0;
+							document.getElementById("maximumIdleTime_L2TP").disabled  = true;
+						}
+						else /*On Demand*/
+						{
+							l2tp_recmode = "ONDEMAND";
+							document.getElementById("maximumIdleTime_L2TP").value = l2tp_maxidle_t/60; //Maximum idle time in D-Link New GUI is minute unit. However, HNAP SPEC. HNAP Core Specification v1.1 Rev12.pdf uses second for the unit.
+							document.getElementById("maximumIdleTime_L2TP").disabled  = false;
+						}
+						break;
+				}
+				COMM_SetSelectValue(obj_l2tp_recmode, l2tp_recmode);
+				break;
+		}
+		current_wantype = wantype;
+		ChangeConnectType(wantype);
+		COMM_SetSelectValue(obj_wantype, wantype);
+
+		$("#device_mode").selectbox();
+		$("#connect_type").selectbox('detach');
+		$("#connect_type").selectbox();
+		$("#mtu_StaticIP").selectbox();
+		$("#clone_mac_StaticIP").selectbox();
+		$("#mtu_DynamicIP").selectbox();
+		$("#clone_mac_DynamicIP").selectbox();
+		$("#addressMode_PPPoE").selectbox();
+		$("#reconnectMode_PPPoE").selectbox();
+		$("#mtu_PPPoE").selectbox();
+		$("#addressMode_PPTP").selectbox();
+		$("#reconnectMode_PPTP").selectbox();
+		$("#mtu_PPTP").selectbox();
+		$("#addressMode_L2TP").selectbox();
+		$("#reconnectMode_L2TP").selectbox();
+		$("#mtu_L2TP").selectbox();
+		$("#configuration_DSLite").selectbox();
+		$("#addressMode_Ru_PPPoE").selectbox();		
+	}
+
+	function CheckConnectionStatus()
+	{
+		$.ajax({
+			cache : false,
+			url : "./js/CheckConnection",
+			timeout : 2000,
+			type : "GET",
+			success : function(data) { SaveWAN(); },
+			error : function() { document.getElementById("DetectRouterConnection").style.display = "inline"; }
+		});
+	}
+
+	function SaveWAN()
+	{
+		var xml_SetWanSettings = HNAP.GetXML("SetWanSettings");
+
+		/* set wan settings */
+		var connect_type = document.getElementById("connect_type").value;
+		var device_mode = document.getElementById("device_mode").value;
+		var static_ipaddr = document.getElementById("iPAddress_StaticIP").value;
+
+		switch(connect_type)
+		{
+			case "STATIC":
+				if(device_mode=="BRIDGE")
+					xml_SetWanSettings.Set("SetWanSettings/Type", "StaticBridged");
+				else
+				{
+					xml_SetWanSettings.Set("SetWanSettings/Type", "Static");
+					xml_SetWanSettings.Set("SetWanSettings/MacAddress", document.getElementById("macAddress_StaticIP").value);
+				}
+
+				xml_SetWanSettings.Set("SetWanSettings/IPAddress", static_ipaddr);
+				xml_SetWanSettings.Set("SetWanSettings/SubnetMask", document.getElementById("subnetMask_StaticIP").value);
+				xml_SetWanSettings.Set("SetWanSettings/Gateway", document.getElementById("defaultGateway_StaticIP").value);
+				xml_SetWanSettings.Set("SetWanSettings/MTU", document.getElementById("mtu_StaticIP_Input").value);
+
+				var static_mtu = document.getElementById("mtu_StaticIP").value;
+				if (static_mtu=="AUTO")
+					xml_SetWanSettings.Set("SetWanSettings/MTU", "1500");
+				else
+					xml_SetWanSettings.Set("SetWanSettings/MTU", document.getElementById("mtu_StaticIP_Input").value);
+
+				xml_SetWanSettings.Set("SetWanSettings/ConfigDNS/Primary", document.getElementById("primaryDNSAddress_StaticIP").value);
+				xml_SetWanSettings.Set("SetWanSettings/ConfigDNS/Secondary", document.getElementById("secondaryDNSAddress_StaticIP").value);
+				break;
+			case "DHCP":
+				if(device_mode=="BRIDGE")
+					xml_SetWanSettings.Set("SetWanSettings/Type", "DynamicBridged");
+				else
+				{
+					xml_SetWanSettings.Set("SetWanSettings/Type", "DHCP");
+					xml_SetWanSettings.Set("SetWanSettings/MacAddress", document.getElementById("macAddress_DynamicIP").value);
+				}
+
+				xml_SetWanSettings.Set("SetWanSettings/MTU", document.getElementById("mtu_DynamicIP_Input").value);
+
+				var mtu_dhcp = document.getElementById("mtu_DynamicIP").value;
+				if (mtu_dhcp=="AUTO")
+					xml_SetWanSettings.Set("SetWanSettings/MTU", "1500");
+				else
+					xml_SetWanSettings.Set("SetWanSettings/MTU", document.getElementById("mtu_DynamicIP_Input").value);
+
+				xml_SetWanSettings.Set("SetWanSettings/HostName", document.getElementById("hostName_DynamicIP").value);
+				xml_SetWanSettings.Set("SetWanSettings/ConfigDNS/Primary", document.getElementById("primaryDNSAddress_DynamicIP").value);
+				xml_SetWanSettings.Set("SetWanSettings/ConfigDNS/Secondary", document.getElementById("secondaryDNSAddress_DynamicIP").value);
+				break;
+			case "PPPoE":
+				xml_SetWanSettings.Set("SetWanSettings/Username", document.getElementById("userName_PPPoE").value);
+				xml_SetWanSettings.Set("SetWanSettings/Password", document.getElementById("password_PPPoE").value);
+
+				var addrmode = document.getElementById("addressMode_PPPoE").value;
+				if(addrmode=="DYNAMICIP")
+				{
+					xml_SetWanSettings.Set("SetWanSettings/Type", "DHCPPPPoE");
+					xml_SetWanSettings.Set("SetWanSettings/IPAddress", "");
+				}
+				else if(addrmode=="STATICIP")
+				{
+					xml_SetWanSettings.Set("SetWanSettings/Type", "StaticPPPoE");
+					xml_SetWanSettings.Set("SetWanSettings/IPAddress", document.getElementById("ipAddress_PPPoE").value);
+				}
+
+				xml_SetWanSettings.Set("SetWanSettings/ServiceName", document.getElementById("serviceName_PPPoE").value);
+
+				var reconnect_mode = document.getElementById("reconnectMode_PPPoE").value;
+				switch(reconnect_mode)
+				{
+					case "ALWAYSON":
+						xml_SetWanSettings.Set("SetWanSettings/AutoReconnect", "true");
+						xml_SetWanSettings.Set("SetWanSettings/MaxIdleTime", "0");
+						break;
+					case "ONDEMAND":
+						xml_SetWanSettings.Set("SetWanSettings/AutoReconnect", "false");
+						xml_SetWanSettings.Set("SetWanSettings/MaxIdleTime", document.getElementById("maximumIdleTime_PPPoE").value * 60); //Maximum idle time in D-Link New GUI is minute unit. However, HNAP SPEC. HNAP Core Specification v1.1 Rev12.pdf uses second for the unit.
+						break;
+					case "MANUAL":
+						xml_SetWanSettings.Set("SetWanSettings/AutoReconnect", "false");
+						xml_SetWanSettings.Set("SetWanSettings/MaxIdleTime", "0");
+						break;
+				}
+
+				var mtu_type = document.getElementById("mtu_PPPoE").value;
+				if(mtu_type=="AUTO")
+					xml_SetWanSettings.Set("SetWanSettings/MTU", "1492");
+				else
+					xml_SetWanSettings.Set("SetWanSettings/MTU", document.getElementById("mtu_PPPoE_Input").value);
+
+				xml_SetWanSettings.Set("SetWanSettings/ConfigDNS/Primary", document.getElementById("primaryDNSAddress_PPPoE").value);
+				xml_SetWanSettings.Set("SetWanSettings/ConfigDNS/Secondary", document.getElementById("secondaryDNSAddress_PPPoE").value);
+				break;
+			case "PPTP":
+				xml_SetWanSettings.Set("SetWanSettings/ServiceName", document.getElementById("serverIPAddress_PPTP").value);
+				xml_SetWanSettings.Set("SetWanSettings/Username", document.getElementById("userName_PPTP").value);
+				xml_SetWanSettings.Set("SetWanSettings/Password", document.getElementById("password_PPTP").value);
+
+				var addrmode = document.getElementById("addressMode_PPTP").value;
+				if(addrmode=="DYNAMICIP")
+				{
+					xml_SetWanSettings.Set("SetWanSettings/Type", "DynamicPPTP");
+					xml_SetWanSettings.Set("SetWanSettings/IPAddress", "");
+					xml_SetWanSettings.Set("SetWanSettings/SubnetMask", "");
+					xml_SetWanSettings.Set("SetWanSettings/Gateway", "");
+				}
+				else if(addrmode=="STATICIP")
+				{
+					xml_SetWanSettings.Set("SetWanSettings/Type", "StaticPPTP");
+					xml_SetWanSettings.Set("SetWanSettings/IPAddress", document.getElementById("ipAddress_PPTP").value);
+					xml_SetWanSettings.Set("SetWanSettings/SubnetMask", document.getElementById("subnetMask_PPTP").value);
+					xml_SetWanSettings.Set("SetWanSettings/Gateway", document.getElementById("gatewayIP_PPTP").value);
+				}
+
+				var reconnect_mode = document.getElementById("reconnectMode_PPTP").value;
+				switch(reconnect_mode)
+				{
+					case "ALWAYSON":
+						xml_SetWanSettings.Set("SetWanSettings/AutoReconnect", "true");
+						xml_SetWanSettings.Set("SetWanSettings/MaxIdleTime", "0");
+						break;
+					case "ONDEMAND":
+						xml_SetWanSettings.Set("SetWanSettings/AutoReconnect", "false");
+						xml_SetWanSettings.Set("SetWanSettings/MaxIdleTime", document.getElementById("maximumIdleTime_PPTP").value * 60); //Maximum idle time in D-Link New GUI is minute unit. However, HNAP SPEC. HNAP Core Specification v1.1 Rev12.pdf uses second for the unit.
+						break;
+					case "MANUAL":
+						xml_SetWanSettings.Set("SetWanSettings/AutoReconnect", "false");
+						xml_SetWanSettings.Set("SetWanSettings/MaxIdleTime", "0");
+						break;
+				}
+
+				var mtu_type = document.getElementById("mtu_PPTP").value;
+				if(mtu_type=="AUTO")
+					xml_SetWanSettings.Set("SetWanSettings/MTU", "1400");
+				else
+					xml_SetWanSettings.Set("SetWanSettings/MTU", document.getElementById("mtu_PPTP_Input").value);
+
+				xml_SetWanSettings.Set("SetWanSettings/ConfigDNS/Primary", document.getElementById("primaryDNSAddress_PPTP").value);
+				xml_SetWanSettings.Set("SetWanSettings/ConfigDNS/Secondary", document.getElementById("secondaryDNSAddress_PPTP").value);
+				break;
+			case "L2TP":
+				xml_SetWanSettings.Set("SetWanSettings/ServiceName", document.getElementById("serverIPAddress_L2TP").value);
+				xml_SetWanSettings.Set("SetWanSettings/Username", document.getElementById("userName_L2TP").value);
+				xml_SetWanSettings.Set("SetWanSettings/Password", document.getElementById("password_L2TP").value);
+
+				var addrmode = document.getElementById("addressMode_L2TP").value;
+				if(addrmode=="DYNAMICIP")
+				{
+					xml_SetWanSettings.Set("SetWanSettings/Type", "DynamicL2TP");
+					xml_SetWanSettings.Set("SetWanSettings/IPAddress", "");
+					xml_SetWanSettings.Set("SetWanSettings/SubnetMask", "");
+					xml_SetWanSettings.Set("SetWanSettings/Gateway", "");
+				}
+				else if(addrmode=="STATICIP")
+				{
+					xml_SetWanSettings.Set("SetWanSettings/Type", "StaticL2TP");
+					xml_SetWanSettings.Set("SetWanSettings/IPAddress", document.getElementById("ipAddress_L2TP").value);
+					xml_SetWanSettings.Set("SetWanSettings/SubnetMask", document.getElementById("subnetMask_L2TP").value);
+					xml_SetWanSettings.Set("SetWanSettings/Gateway", document.getElementById("gatewayIP_L2TP").value);
+				}
+
+				var reconnect_mode = document.getElementById("reconnectMode_L2TP").value;
+				switch(reconnect_mode)
+				{
+					case "ALWAYSON":
+						xml_SetWanSettings.Set("SetWanSettings/AutoReconnect", "true");
+						xml_SetWanSettings.Set("SetWanSettings/MaxIdleTime", "0");
+						break;
+					case "ONDEMAND":
+						xml_SetWanSettings.Set("SetWanSettings/AutoReconnect", "false");
+						xml_SetWanSettings.Set("SetWanSettings/MaxIdleTime", document.getElementById("maximumIdleTime_L2TP").value * 60); //Maximum idle time in D-Link New GUI is minute unit. However, HNAP SPEC. HNAP Core Specification v1.1 Rev12.pdf uses second for the unit.
+						break;
+					case "MANUAL":
+						xml_SetWanSettings.Set("SetWanSettings/AutoReconnect", "false");
+						xml_SetWanSettings.Set("SetWanSettings/MaxIdleTime", "0");
+						break;
+				}
+
+				var mtu_type = document.getElementById("mtu_L2TP").value;
+				if(mtu_type=="AUTO")
+					xml_SetWanSettings.Set("SetWanSettings/MTU", "1400");
+				else
+					xml_SetWanSettings.Set("SetWanSettings/MTU", document.getElementById("mtu_L2TP_Input").value);
+
+				xml_SetWanSettings.Set("SetWanSettings/ConfigDNS/Primary", document.getElementById("primaryDNSAddress_L2TP").value);
+				xml_SetWanSettings.Set("SetWanSettings/ConfigDNS/Secondary", document.getElementById("secondaryDNSAddress_L2TP").value);
+				break;
+			case "DSLite":
+				xml_SetWanSettings.Set("SetWanSettings/Type", "DsLite");
+
+				var dslite_configvalue = document.getElementById("configuration_DSLite").value;
+				xml_SetWanSettings.Set("SetWanSettings/DsLite_Configuration", dslite_configvalue);
+
+				var combine_b4v4addr = document.getElementById("b4IPv4Address_DSLite").value;
+				if (combine_b4v4addr != "")
+				{
+					xml_SetWanSettings.Set("SetWanSettings/DsLite_B4IPv4Address", "192.0.0." + combine_b4v4addr);
+				}
+				xml_SetWanSettings.Set("SetWanSettings/DsLite_AFTR_IPv6Address", document.getElementById("afterIPv6Address_DSLite").value);
+				break;
+				
+			case "Ru_PPPoE":
+				xml_SetWanSettings.Set("SetWanSettings/Username", document.getElementById("userName_PPPoE").value);
+				xml_SetWanSettings.Set("SetWanSettings/Password", document.getElementById("password_PPPoE").value);
+
+				var addrmode = document.getElementById("addressMode_PPPoE").value;
+			
+				if(addrmode=="DYNAMICIP")
+				{
+					xml_SetWanSettings.Set("SetWanSettings/Type", "Ru_DHCPPPPoE");
+					xml_SetWanSettings.Set("SetWanSettings/IPAddress", "");
+				}
+				else if(addrmode=="STATICIP")
+				{
+					xml_SetWanSettings.Set("SetWanSettings/Type", "Ru_StaticPPPoE");
+					xml_SetWanSettings.Set("SetWanSettings/IPAddress", document.getElementById("ipAddress_PPPoE").value);
+				}
+
+				xml_SetWanSettings.Set("SetWanSettings/ServiceName", document.getElementById("serviceName_PPPoE").value);
+
+				var reconnect_mode = document.getElementById("reconnectMode_PPPoE").value;
+				switch(reconnect_mode)
+				{
+					case "ALWAYSON":
+						xml_SetWanSettings.Set("SetWanSettings/AutoReconnect", "true");
+						xml_SetWanSettings.Set("SetWanSettings/MaxIdleTime", "0");
+						break;
+					case "ONDEMAND":
+						xml_SetWanSettings.Set("SetWanSettings/AutoReconnect", "false");
+						xml_SetWanSettings.Set("SetWanSettings/MaxIdleTime", document.getElementById("maximumIdleTime_PPPoE").value * 60); //Maximum idle time in D-Link New GUI is minute unit. However, HNAP SPEC. HNAP Core Specification v1.1 Rev12.pdf uses second for the unit.
+						break;
+					case "MANUAL":
+						xml_SetWanSettings.Set("SetWanSettings/AutoReconnect", "false");
+						xml_SetWanSettings.Set("SetWanSettings/MaxIdleTime", "0");
+						break;
+				}
+				
+				var mtu_type = document.getElementById("mtu_PPPoE").value;
+				if(mtu_type=="AUTO")
+					xml_SetWanSettings.Set("SetWanSettings/MTU", "1492");
+				else
+					xml_SetWanSettings.Set("SetWanSettings/MTU", document.getElementById("mtu_PPPoE_Input").value);
+
+				xml_SetWanSettings.Set("SetWanSettings/ConfigDNS/Primary", document.getElementById("primaryDNSAddress_PPPoE").value);
+				xml_SetWanSettings.Set("SetWanSettings/ConfigDNS/Secondary", document.getElementById("secondaryDNSAddress_PPPoE").value);
+				
+				
+				//Russia WAN Physical settings
+				var Ru_addrmode = document.getElementById("addressMode_Ru_PPPoE").value;
+				
+				if(Ru_addrmode=="DYNAMICIP")
+				{
+					xml_SetWanSettings.Set("SetWanSettings/RussiaPPP/Type", "DHCPPPPoE");
+					xml_SetWanSettings.Set("SetWanSettings/RussiaPPP/IPAddress", "");
+					xml_SetWanSettings.Set("SetWanSettings/RussiaPPP/SubnetMask", "");
+					xml_SetWanSettings.Set("SetWanSettings/RussiaPPP/Gateway", "");
+					xml_SetWanSettings.Set("SetWanSettings/RussiaPPP/DNS/Primary", "");
+					xml_SetWanSettings.Set("SetWanSettings/RussiaPPP/DNS/Secondary", "");
+				}
+				else if(Ru_addrmode=="STATICIP")
+				{
+					xml_SetWanSettings.Set("SetWanSettings/RussiaPPP/Type", "StaticPPPoE");
+					xml_SetWanSettings.Set("SetWanSettings/RussiaPPP/IPAddress", document.getElementById("ipAddress_Ru_PPPoE").value);
+					xml_SetWanSettings.Set("SetWanSettings/RussiaPPP/SubnetMask", document.getElementById("subnetMask_Ru_PPPoE").value);
+					xml_SetWanSettings.Set("SetWanSettings/RussiaPPP/Gateway", document.getElementById("gatewayIP_Ru_PPPoE").value);
+					xml_SetWanSettings.Set("SetWanSettings/RussiaPPP/DNS/Primary", document.getElementById("primaryDNSAddress_Ru_PPPoE").value);
+					xml_SetWanSettings.Set("SetWanSettings/RussiaPPP/DNS/Secondary", document.getElementById("secondaryDNSAddress_Ru_PPPoE").value);
+				}			
+				break;
+				
+			case "Ru_PPTP":
+				xml_SetWanSettings.Set("SetWanSettings/ServiceName", document.getElementById("serverIPAddress_PPTP").value);
+				xml_SetWanSettings.Set("SetWanSettings/Username", document.getElementById("userName_PPTP").value);
+				xml_SetWanSettings.Set("SetWanSettings/Password", document.getElementById("password_PPTP").value);
+
+				var addrmode = document.getElementById("addressMode_PPTP").value;
+				if(addrmode=="DYNAMICIP")
+				{
+					xml_SetWanSettings.Set("SetWanSettings/Type", "Ru_DynamicPPTP");
+					xml_SetWanSettings.Set("SetWanSettings/IPAddress", "");
+					xml_SetWanSettings.Set("SetWanSettings/SubnetMask", "");
+					xml_SetWanSettings.Set("SetWanSettings/Gateway", "");
+				}
+				else if(addrmode=="STATICIP")
+				{
+					xml_SetWanSettings.Set("SetWanSettings/Type", "Ru_StaticPPTP");
+					xml_SetWanSettings.Set("SetWanSettings/IPAddress", document.getElementById("ipAddress_PPTP").value);
+					xml_SetWanSettings.Set("SetWanSettings/SubnetMask", document.getElementById("subnetMask_PPTP").value);
+					xml_SetWanSettings.Set("SetWanSettings/Gateway", document.getElementById("gatewayIP_PPTP").value);
+				}
+
+				var reconnect_mode = document.getElementById("reconnectMode_PPTP").value;
+				switch(reconnect_mode)
+				{
+					case "ALWAYSON":
+						xml_SetWanSettings.Set("SetWanSettings/AutoReconnect", "true");
+						xml_SetWanSettings.Set("SetWanSettings/MaxIdleTime", "0");
+						break;
+					case "ONDEMAND":
+						xml_SetWanSettings.Set("SetWanSettings/AutoReconnect", "false");
+						xml_SetWanSettings.Set("SetWanSettings/MaxIdleTime", document.getElementById("maximumIdleTime_PPTP").value * 60); //Maximum idle time in D-Link New GUI is minute unit. However, HNAP SPEC. HNAP Core Specification v1.1 Rev12.pdf uses second for the unit.
+						break;
+					case "MANUAL":
+						xml_SetWanSettings.Set("SetWanSettings/AutoReconnect", "false");
+						xml_SetWanSettings.Set("SetWanSettings/MaxIdleTime", "0");
+						break;
+				}
+		
+				var mtu_type = document.getElementById("mtu_PPTP").value;
+				if(mtu_type=="AUTO")
+					xml_SetWanSettings.Set("SetWanSettings/MTU", "1400");
+				else
+					xml_SetWanSettings.Set("SetWanSettings/MTU", document.getElementById("mtu_PPTP_Input").value);
+
+				xml_SetWanSettings.Set("SetWanSettings/ConfigDNS/Primary", document.getElementById("primaryDNSAddress_PPTP").value);
+				xml_SetWanSettings.Set("SetWanSettings/ConfigDNS/Secondary", document.getElementById("secondaryDNSAddress_PPTP").value);
+				break;
+				
+			case "Ru_L2TP":
+				xml_SetWanSettings.Set("SetWanSettings/ServiceName", document.getElementById("serverIPAddress_L2TP").value);
+				xml_SetWanSettings.Set("SetWanSettings/Username", document.getElementById("userName_L2TP").value);
+				xml_SetWanSettings.Set("SetWanSettings/Password", document.getElementById("password_L2TP").value);
+
+				var addrmode = document.getElementById("addressMode_L2TP").value;
+				if(addrmode=="DYNAMICIP")
+				{
+					xml_SetWanSettings.Set("SetWanSettings/Type", "Ru_DynamicL2TP");
+					xml_SetWanSettings.Set("SetWanSettings/IPAddress", "");
+					xml_SetWanSettings.Set("SetWanSettings/SubnetMask", "");
+					xml_SetWanSettings.Set("SetWanSettings/Gateway", "");
+				}
+				else if(addrmode=="STATICIP")
+				{
+					xml_SetWanSettings.Set("SetWanSettings/Type", "Ru_StaticL2TP");
+					xml_SetWanSettings.Set("SetWanSettings/IPAddress", document.getElementById("ipAddress_L2TP").value);
+					xml_SetWanSettings.Set("SetWanSettings/SubnetMask", document.getElementById("subnetMask_L2TP").value);
+					xml_SetWanSettings.Set("SetWanSettings/Gateway", document.getElementById("gatewayIP_L2TP").value);
+				}
+
+				var reconnect_mode = document.getElementById("reconnectMode_L2TP").value;
+				switch(reconnect_mode)
+				{
+					case "ALWAYSON":
+						xml_SetWanSettings.Set("SetWanSettings/AutoReconnect", "true");
+						xml_SetWanSettings.Set("SetWanSettings/MaxIdleTime", "0");
+						break;
+					case "ONDEMAND":
+						xml_SetWanSettings.Set("SetWanSettings/AutoReconnect", "false");
+						xml_SetWanSettings.Set("SetWanSettings/MaxIdleTime", document.getElementById("maximumIdleTime_L2TP").value * 60); //Maximum idle time in D-Link New GUI is minute unit. However, HNAP SPEC. HNAP Core Specification v1.1 Rev12.pdf uses second for the unit.
+						break;
+					case "MANUAL":
+						xml_SetWanSettings.Set("SetWanSettings/AutoReconnect", "false");
+						xml_SetWanSettings.Set("SetWanSettings/MaxIdleTime", "0");
+						break;
+				}
+
+				var mtu_type = document.getElementById("mtu_L2TP").value;
+				if(mtu_type=="AUTO")
+					xml_SetWanSettings.Set("SetWanSettings/MTU", "1400");
+				else
+					xml_SetWanSettings.Set("SetWanSettings/MTU", document.getElementById("mtu_L2TP_Input").value);
+
+				xml_SetWanSettings.Set("SetWanSettings/ConfigDNS/Primary", document.getElementById("primaryDNSAddress_L2TP").value);
+				xml_SetWanSettings.Set("SetWanSettings/ConfigDNS/Secondary", document.getElementById("secondaryDNSAddress_L2TP").value);
+				break;	
+		}
+
+		var xml_SetWanSettingsResult = HNAP.SetXML("SetWanSettings", xml_SetWanSettings);
+		var result = xml_SetWanSettingsResult.Get("SetWanSettingsResponse/SetWanSettingsResult");
+
+		if(result=="REBOOT") /* device mode is changed or wan mode is changed ppp4 <-> ipv4 */
+		{
+			document.getElementById("CreatePopAlertMessage").style.display = "inline";
+			document.getElementById("waitSettingFinish").style.display = "none";
+			document.getElementById("waitDeviceReboot").style.display = "inline";
+			document.getElementById("SuccessREBOOT").style.display = "none";
+
+			var msg;
+			if(device_mode == devicemode_org) /* WAN mode chang PPP4 <-> IPV4*/
+				msg = I18N("j", "Rebooting");
+			else if(device_mode=="BRIDGE") /* router mode -> bridge mode */
+			{
+				if(connect_type=="STATIC") redirect_url = static_ipaddr;
+				else if(connect_type=="DHCP") redirect_url = hostname + lanmac[4] + lanmac[5] + ".local";
+				msg = I18N("j", "The device is changing to bridge mode.");
+			}
+			else /* bridge mode -> router mode */
+				msg = I18N("j", "The device is changing to router mode.");
+
+			document.getElementById("Font_Color_Red").innerHTML = msg;
+			document.getElementById("reciprocal_Number_Reboot").innerHTML = bootuptime + " " + I18N("j", "Sec");
+			timer = setTimeout("ReciprocalBootupTime()", 1000);
+			setTimeout("clearTimeout("+timer+");SavingFinishBlock()", bootuptime*1000);
+			Reboot();
+		}
+		else
+		{
+			document.getElementById("CreatePopAlertMessage").style.display = "inline";
+			document.getElementById("waitSettingFinish").style.display = "inline";
+			document.getElementById("waitDeviceReboot").style.display = "none";
+			document.getElementById("SuccessREBOOT").style.display = "none";
+
+			if(device_mode=="BRIDGE") /* bridge mode */
+			{
+				if(connect_type=="STATIC") redirect_url = static_ipaddr;
+				else if(connect_type=="DHCP") redirect_url = "192.168.0.50";
+
+				setTimeout("RedirectToURL()", 1000);
+			}
+			else /* router mode */
+				setTimeout("window.location.reload()", 1000);
+		}
+	}
+
+	function Reboot()
+	{
+		var xml_DeviceReboot = HNAP.GetXML("Reboot");
+		HNAP.SetXML("Reboot", xml_DeviceReboot);
+	}
+
+	function ReciprocalBootupTime()
+	{
+		bootuptime--;
+		document.getElementById("reciprocal_Number_Reboot").innerHTML = bootuptime + " " + I18N("j", "Sec");
+		timer = setTimeout("ReciprocalBootupTime()", 1000);
+	}
+
+	function SavingFinishBlock()
+	{
+		document.getElementById("CreatePopAlertMessage").style.display = "inline";
+		document.getElementById("waitSettingFinish").style.display = "none";
+		document.getElementById("waitDeviceReboot").style.display = "none";
+		document.getElementById("SuccessREBOOT").style.display = "inline";
+	}
+
+	function RedirectToURL()
+	{
+		window.location.href = 'http://'+redirect_url;
+	}
+
+	function ListMACAddress(element, status, type)
+	{
+		if(status==0)
+			document.getElementById("macAddress_"+type).value = init_macaddr;
+		else
+			document.getElementById("macAddress_"+type).value = element.options[status].text;
+	}
+
+	function ChangeMTU(status, type)
+	{
+		switch(status)
+		{
+			case "AUTO":
+				document.getElementById("mtu_"+type+"_tr").style.display = "none";
+				document.getElementById("mtu_"+type+"_Input").style.display = "none";
+				break;
+			case "MANUAL":
+				document.getElementById("mtu_"+type+"_tr").style.display = "inline";
+				document.getElementById("mtu_"+type+"_Input").style.display = "inline";
+				break;
+		}
+	}
+
+	function ChangeAddrMode(status, type)
+	{
+		switch(type)
+		{
+			case "PPPoE":
+				if(status=="DYNAMICIP")
+					document.getElementById("ipAddress_tr").style.display = "none";
+				else if(status=="STATICIP")
+					document.getElementById("ipAddress_tr").style.display = "table-row";
+				break;
+			case "PPTP":
+			case "L2TP":
+				if(status=="DYNAMICIP")
+				{
+					document.getElementById("ipAddress_"+type+"_tr").style.display = "none";
+					document.getElementById("subnetMask_"+type+"_tr").style.display = "none";
+					document.getElementById("gatewayIP_"+type+"_tr").style.display = "none";
+				}
+				else if(status=="STATICIP")
+				{
+					document.getElementById("ipAddress_"+type+"_tr").style.display = "table-row";
+					document.getElementById("subnetMask_"+type+"_tr").style.display = "table-row";
+					document.getElementById("gatewayIP_"+type+"_tr").style.display = "table-row";
+				}
+				break;
+				
+			case "Ru_PPPoE":		
+				if(status=="DYNAMICIP")
+					document.getElementById("ipAddress_tr").style.display = "none";
+				else if(status=="STATICIP")
+					document.getElementById("ipAddress_tr").style.display = "table-row";
+				break;
+			
+			case "Ru_PPPoE_WAN":
+				if(status=="DYNAMICIP")
+				{
+					document.getElementById("ipAddress_"+type+"_tr").style.display = "none";
+					document.getElementById("subnetMask_"+type+"_tr").style.display = "none";
+					document.getElementById("gatewayIP_"+type+"_tr").style.display = "none";
+					document.getElementById("primaryDNSAddress_"+type+"_tr").style.display = "none";
+					document.getElementById("secondaryDNSAddress_"+type+"_tr").style.display = "none";
+				}
+				else if(status=="STATICIP")
+				{
+					document.getElementById("ipAddress_"+type+"_tr").style.display = "table-row";
+					document.getElementById("subnetMask_"+type+"_tr").style.display = "table-row";
+					document.getElementById("gatewayIP_"+type+"_tr").style.display = "table-row";
+					document.getElementById("primaryDNSAddress_"+type+"_tr").style.display = "table-row";
+					document.getElementById("secondaryDNSAddress_"+type+"_tr").style.display = "table-row";
+				}	
+				break;
+				
+			case "Ru_PPTP":
+				if(status=="DYNAMICIP")
+				{
+					document.getElementById("ipAddress_PPTP_tr").style.display = "none";
+					document.getElementById("subnetMask_PPTP_tr").style.display = "none";
+					document.getElementById("gatewayIP_PPTP_tr").style.display = "none";
+				}
+				else if(status=="STATICIP")
+				{
+					document.getElementById("ipAddress_PPTP_tr").style.display = "table-row";
+					document.getElementById("subnetMask_PPTP_tr").style.display = "table-row";
+					document.getElementById("gatewayIP_PPTP_tr").style.display = "table-row";
+				}	
+				break;
+			
+			case "Ru_L2TP":
+				if(status=="DYNAMICIP")
+				{
+					document.getElementById("ipAddress_L2TP_tr").style.display = "none";
+					document.getElementById("subnetMask_L2TP_tr").style.display = "none";
+					document.getElementById("gatewayIP_L2TP_tr").style.display = "none";
+				}
+				else if(status=="STATICIP")
+				{
+					document.getElementById("ipAddress_L2TP_tr").style.display = "table-row";
+					document.getElementById("subnetMask_L2TP_tr").style.display = "table-row";
+					document.getElementById("gatewayIP_L2TP_tr").style.display = "table-row";
+				}	
+				break;
+		}
+	}
+
+	function ChangeReconnectMode(status, type)
+	{
+		switch(status)
+		{
+			case "ALWAYSON":
+			case "MANUAL":
+				document.getElementById("maxIdleTime_"+type+"_tr").style.display = "none";
+				document.getElementById("maximumIdleTime_"+type).value = "0";
+				break;
+			case "ONDEMAND":
+				document.getElementById("maximumIdleTime_"+type).disabled = false;
+				document.getElementById("maximumIdleTime_"+type).value = "5";
+				document.getElementById("maxIdleTime_"+type+"_tr").style.display = "table-row";
+				break;
+		}
+	}
+	
+	function ChangeDSLiteConfig(status)
+	{
+		switch(status)
+		{
+			case "Dhcpv6Option":
+				document.getElementById("afterIPv6Address_DSLite_tr").style.display = "none";
+				break;
+			case "Manual":
+				document.getElementById("afterIPv6Address_DSLite_tr").style.display = "table-row";
+				break;
+		}
+	}
+
+	function DisplayMACClone(type)
+	{
+		var device_mode = document.getElementById("device_mode").value;
+
+		switch(type)
+		{
+			case "STATIC":
+				if(device_mode=="BRIDGE")
+					document.getElementById("mac_clone_StaticIP_tr").style.display = "none";
+				else if(device_mode=="ROUTER")
+					document.getElementById("mac_clone_StaticIP_tr").style.display = "table-row";
+				break;
+			case "DHCP":
+				if(device_mode=="BRIDGE")
+					document.getElementById("mac_clone_DynamicIP_tr").style.display = "none";
+				else if(device_mode=="ROUTER")
+					document.getElementById("mac_clone_DynamicIP_tr").style.display = "table-row";
+				break;
+		}
+	}
+
+	function ConnectTypeList(value)
+	{
+		$("#connect_type").children().remove();
+
+		var xml_GetDeviceFeature = HNAP.GetXML("GetDeviceFeatureAlpha");
+		var feature_russia = xml_GetDeviceFeature.Get("GetDeviceFeatureAlphaResponse/FeatureRussia");
+		
+		switch(value)
+		{
+			case "BRIDGE":
+				$("#connect_type").append('<option value="STATIC">Static IP</option>');
+				$("#connect_type").append('<option value="DHCP">Dynamic IP (DHCP)</option>');
+				break;
+			case "ROUTER":
+				if(feature_russia == "true")
+				{
+				$("#connect_type").append('<option value="STATIC">Static IP</option>');
+				$("#connect_type").append('<option value="DHCP">Dynamic IP (DHCP)</option>');
+				$("#connect_type").append('<option value="PPPoE">PPPoE</option>');
+				$("#connect_type").append('<option value="PPTP">PPTP</option>');
+				$("#connect_type").append('<option value="L2TP">L2TP</option>');
+				$("#connect_type").append('<option value="DSLite">DS-Lite</option>');
+					$("#connect_type").append('<option value="Ru_PPPoE">Russia PPPoE (Dual Access)</option>');
+					$("#connect_type").append('<option value="Ru_PPTP">Russia PPTP (Dual Access)</option>');
+					$("#connect_type").append('<option value="Ru_L2TP">Russia L2TP (Dual Access)</option>');	
+				}
+				else
+				{	
+					$("#connect_type").append('<option value="STATIC">Static IP</option>');
+					$("#connect_type").append('<option value="DHCP">Dynamic IP (DHCP)</option>');
+					$("#connect_type").append('<option value="PPPoE">PPPoE</option>');
+					$("#connect_type").append('<option value="PPTP">PPTP</option>');
+					$("#connect_type").append('<option value="L2TP">L2TP</option>');
+					$("#connect_type").append('<option value="DSLite">DS-Lite</option>');
+				}
+				break;
+		}
+	}
+
+	function ChangeDeviceMode(value)
+	{
+		$("#connect_type").selectbox('detach');
+
+		ConnectTypeList(value);
+
+		var obj_wantype = document.getElementById("connect_type");
+		if(current_wantype=="STATIC" || current_wantype=="DHCP")
+			current_wantype = current_wantype;
+		else
+			current_wantype = "DHCP";
+
+		DisplayMACClone(current_wantype);
+		ChangeConnectType(current_wantype);
+		COMM_SetSelectValue(obj_wantype, current_wantype);
+
+		$("#connect_type").selectbox('attach');
+	}
+
+	function ReplaceEmpty(element, value)
+	{
+		element.value = element.value.replace(/\s/g, "");
+	}
+
+</script>
+<script type="text/javascript">
+
+	$(function() {
+		$("select").change(function () {	save_button_changed();	});
+		$("input").keydown(function () {	save_button_changed();	});
+	});
+
+</script>
+</head>
+
+<body>
+	<form name="internet_form" id="internet_form" method="POST" action="" novalidate="novalidate">
+	<div id="wrapper">
+		<!-------------------- Logo ------------------------->
+		<div id="header"><div>
+	<div style="position:relative; top:37px;">
+		<a href="http://www.dlink.com/" target="_blank">
+			<img id="image_Logo" src="resources/logo_2.png" alt="D-Link" width="102" height="20" border="0">
+		</a>
+	</div>
+	<table id="device_ver" style="position:relative; top:33px; font-size:13px; color:#969696;" border="0">
+		<tbody>
+			<tr>
+				<td style="padding: 0 10px 0 0;"><label id="h_ModelName">DIR-890L</label></td>
+				<td style="padding: 0 10px 0 0;">HW:<label id="h_HWVersion">A1</label></td>
+				<td style="padding: 0 10px 0 0;">FW:<label id="h_FWVersion">1.00</label></td>
+			</tr>
+		</tbody>
+	</table>
+
+</div></div>
+		<!-------------------- Menu ------------------------->
+		<div id="menu"><ul>	<li><a id="menu_Home" href="Home.html">Home</a></li>	<li class="parent" onmouseover="this.className=&quot;parentOn&quot;" onmouseout="this.className=&quot;parent&quot;">
+		<a id="menu_Settings" href="#" style="background: url(resources/navigation_bg5.gif?v=20141117210117) 100% 0% no-repeat;">Settings</a>		
+		
+		
+		<ul>			
+		
+		<li><a href="Wizard_Manual.html" onclick="return confirmExit()">Wizard</a></li>			
+		<li><a href="Internet.html" onclick="return confirmExit();">Internet</a></li>			
+		
+		<li><a href="WiFi.html" onclick="return confirmExit()">Wireless</a></li>
+		<li><a href="Network.html" onclick="return confirmExit()">Network</a></li>	
+		<li><a href="SharePort.html" onclick="return confirmExit()">SharePort</a></li>	
+		<li><a href="Mydlink.html" onclick="return confirmExit()">mydlink</a></li>
+		
+		</ul>	</li>	
+		
+		
+		<li class="parent" onmouseover="this.className=&quot;parentOn&quot;" onmouseout="this.className=&quot;parent&quot;">
+		<a id="menu_Advanced" href="#">Features</a>		
+		<ul>		
+		
+		<li><a href="QoS.html" onclick="return confirmExit()">QoS Engine</a></li>			
+		<li><a href="Firewall.html" onclick="return confirmExit()">Firewall</a></li>			
+		<li><a href="PortForwarding.html" onclick="return confirmExit()">Port Forwarding</a></li>			
+		<li><a href="WebsiteFilter.html" onclick="return confirmExit()">Website Filter</a></li>			
+		<li><a href="StaticRoute.html" onclick="return confirmExit()">Static Route</a></li>			
+		<li><a href="DynamicDNS.html" onclick="return confirmExit()">Dynamic DNS</a></li>			
+		<li><a href="VPN.html" onclick="return confirmExit()">Quick VPN</a></li>
+
+		</ul>	</li>	
+		
+		<li class="parent" onmouseover="this.className=&quot;parentOn&quot;" onmouseout="this.className=&quot;parent&quot;"><a id="menu_Management" href="#">Management</a>		
+		<ul>	
+		
+		<li><a href="Time.html" onclick="return confirmExit()">Time &amp; Schedule</a></li>			
+		<li><a href="SystemLog.html" onclick="return confirmExit()">System Log</a></li>			
+		<li><a href="Admin.html" onclick="return confirmExit()">System Admin</a></li>			
+		<li><a href="UpdateFirmware.html" onclick="return confirmExit()">Upgrade</a></li>			
+		<li><a href="Statistics.html" onclick="return confirmExit()">Statistics</a></li>	
+		
+		</ul>	
+		
+		</li></ul></div>
+		<!-------------------- Content ---------------------->
+		<div id="content">
+		<!-------------------- info ---------------------->
+			<div id="info">
+				<div id="FunctionName">Internet</div>
+				<div id="wallimage"><img src="resources/internet_page.png" alt="" width="195" height="119"></div>
+				<div id="directions">Use this section to configure your Internet Connection type. There are several connection types to choose from Static IP, DHCP, PPPoE, PPTP, L2TP and DS-Lite. If you are unsure of your connection method, please contact your Internet service provider. Note: If using the PPPoE option, you will need to remove or disable any PPPoE client software on your computers.</div>
+			</div>
+			<!-------------------- funcBar ---------------------->
+			<div id="funcBar">
+				<div id="pagePath">&nbsp; Settings &gt;&gt; Internet</div>
+				<ul id="rightFunc">
+					<li style="display:block"><div id="Save_btn" onclick='alert("This feature has been disabled on this emulator.")' style="cursor:pointer; display:none">Save</div></li>
+					<li style="display:block"><div id="Save_Disable_btn">Save</div></li>
+					<input id="sumbit_CheckData" class="submit" type="submit" value="Submit" style="display:none">
+					<li id="FUNC_IPv6" style="display: block;"><a href="Internet_IPv6.html" style="text-decoration:none;" onclick="return confirmExit()"><div id="page_btn" class="linkstyle_1">IPv6</div></a></li>
+				</ul>
+			</div>
+			<!-------------------- main ---------------------->
+			<br>
+			<div id="main">
+				<!-------------------- device mode block ---------------------->
+				<div id="devicemode_block" style="display">
+					<table class="block" border="0">
+						<tbody>
+							<tr>
+								<th>Device Mode:</th>
+								<td>
+								
+								<div id="sbHolder_99835897" class="sbHolder" style="width:200px">
+		<a id="sbToggle_99835897" href="#" class="sbToggle"></a>
+													
+			<label class="custom-select">
+			<select style="height:30px; width:200px; border:none; font-size:inherit; padding: 5px;">
+				<option>Router Mode</option>
+				<option>Bridge Mode</option>
+				
+								
+			</select>
+			</label>
+								
+								<!--
+									<div class="sbHolder" >
+													
+								
+								<a   class="sbToggle"></a>
+										<select style="height:30px; width:200px; border:none; font-size:inherit; padding: 5px;" id="device_mode" name="device_mode" onchange="ChangeDeviceMode(this.value)" sb="11145764" style="display; none">
+											<option value="ROUTER">Router Mode</option>
+										<option value="BRIDGE">Bridge Mode</option></select>
+										
+										<!--
+										<div id="sbHolder_11145764" class="sbHolder" style="width:200px"><a id="sbToggle_11145764" href="http://192.168.0.1/Internet.html#" class="sbToggle"></a><a id="sbSelector_11145764" href="http://192.168.0.1/Internet.html#" class="sbSelector" style="width:170px">Router Mode</a><ul id="sbOptions_11145764" class="sbOptions" style="width: 200px; display: none;"><li><a href="http://192.168.0.1/ROUTER" rel="ROUTER" class="sbFocus">Router Mode</a></li><li><a href="http://192.168.0.1/BRIDGE" rel="BRIDGE">Bridge Mode</a></li></ul></div>-->
+									</div>
+								</td>
+							</tr>
+						</tbody>
+					</table>
+					<hr>
+				</div>
+				<table class="block" border="0">
+					<tbody>
+						<tr>
+							<th>My Internet Connection is:</th>
+							<td>
+							
+							
+							<div class="sbHolder" style="width:200px">
+													
+								
+								<a   class="sbToggle"></a>
+									<select  style="height:30px; width:200px; border:none; font-size:inherit; padding: 5px;" id="connect_type" name="connect_type" onchange="ChangeConnectType(this.value);" sb="63834800" style="display: ">
+										
+										
+										
+										
+										
+										
+									<option value="STATIC">Static IP</option><option value="DHCP">Dynamic IP (DHCP)</option><option value="PPPoE">PPPoE</option><option value="PPTP">PPTP</option><option value="L2TP">L2TP</option><option value="DSLite">DS-Lite</option></select>
+									
+									<!--<div id="sbHolder_63834800" class="sbHolder" style="width:200px"><a id="sbToggle_63834800" href="http://192.168.0.1/Internet.html#" class="sbToggle"></a><a id="sbSelector_63834800" href="http://192.168.0.1/Internet.html#" class="sbSelector" style="width:170px">Dynamic IP (DHCP)</a><ul id="sbOptions_63834800" class="sbOptions" style="width: 200px; display: none;"><li><a href="http://192.168.0.1/STATIC" rel="STATIC">Static IP</a></li><li><a href="http://192.168.0.1/DHCP" rel="DHCP" class="sbFocus">Dynamic IP (DHCP)</a></li><li><a href="http://192.168.0.1/PPPoE" rel="PPPoE">PPPoE</a></li><li><a href="http://192.168.0.1/PPTP" rel="PPTP">PPTP</a></li><li><a href="http://192.168.0.1/L2TP" rel="L2TP">L2TP</a></li><li><a href="http://192.168.0.1/DSLite" rel="DSLite">DS-Lite</a></li></ul></div>-->
+								</div>
+								<input class="styled-text" type="text" name="value_Session" size="1" id="value_Session" value="1" style="visibility: hidden; position: absolute; width: 0px; height: 0px;">
+							</td>
+						</tr>
+					</tbody>
+				</table>
+				<!-------------------- generalBlock_staticIP ---------------------->
+			  <div id="generalBlock_staticIP" style="display: none;">
+					<table class="block" border="0">
+						<tbody>
+							<tr>
+								<th>IP Address:</th>
+								<td><input class="styled-text" type="text" name="iPAddress_StaticIP" size="27" maxlength="15" id="iPAddress_StaticIP" onchange="ReplaceEmpty(this, this.value)"></td>
+							</tr>
+							<tr>
+								<th>Subnet Mask:</th>
+								<td><input class="styled-text" type="text" name="subnetMask_StaticIP" size="27" maxlength="15" id="subnetMask_StaticIP" onchange="ReplaceEmpty(this, this.value)"></td>
+							</tr>
+							<tr>
+								<th>Default Gateway:</th>
+								<td><input class="styled-text" type="text" name="defaultGateway_StaticIP" size="27" maxlength="15" id="defaultGateway_StaticIP" onchange="ReplaceEmpty(this, this.value)"></td>
+							</tr>
+							<tr>
+								<th>Primary DNS Server:</th>
+								<td><input class="styled-text" type="text" name="primaryDNSAddress_StaticIP" size="27" maxlength="15" id="primaryDNSAddress_StaticIP" onchange="ReplaceEmpty(this, this.value)"></td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+			<!-------------------- generalBlock_Dynamic IP (DHCP)-------NONE>
+			<!-------------------- generalBlock_PPPoE ---------------------->
+			<div id="generalBlock_PPPoE" style="display: none;">
+				<table class="block">
+					<tbody>
+						<tr>
+							<th>Username:</th>
+							<td><input class="styled-text" type="text" name="userName_PPPoE" size="27" maxlength="255" id="userName_PPPoE"></td>
+						</tr>
+						<tr>
+							<th>Password:</th>
+							<td><input class="styled-text" type="text" name="password_PPPoE" size="27" maxlength="255" id="password_PPPoE"></td>
+						</tr>
+						<tr>
+							<th>Reconnect Mode:</th>
+							<td>
+							<div class="sbHolder" style="width:200px">
+													
+								
+								<a   class="sbToggle"></a>
+									
+							
+								
+									<select style="height:30px; width:200px; border:none; font-size:inherit; padding: 5px;"  name="reconnectMode_PPPoE" id="reconnectMode_PPPoE" onchange="ChangeReconnectMode(this.value, &#39;PPPoE&#39;)" sb="98148282" style="display:">
+										<option value="ALWAYSON">Always on</option>
+										<option value="ONDEMAND" selected="">On demand</option>
+										<option value="MANUAL">Manual</option>
+									</select>
+									
+									<!--
+									<div id="sbHolder_98148282" class="sbHolder" style="width:200px"><a id="sbToggle_98148282" href="http://192.168.0.1/Internet.html#" class="sbToggle"></a><a id="sbSelector_98148282" href="http://192.168.0.1/Internet.html#" class="sbSelector" style="width:170px">On demand</a><ul id="sbOptions_98148282" class="sbOptions" style="width: 200px; display: none;"><li><a href="http://192.168.0.1/ALWAYSON" rel="ALWAYSON">Always on</a></li><li><a href="http://192.168.0.1/ONDEMAND" rel="ONDEMAND" class="sbFocus">On demand</a></li><li><a href="http://192.168.0.1/MANUAL" rel="MANUAL">Manual</a></li></ul></div>-->
+								</div>
+							</td>
+							<td></td>
+						</tr>
+						<tr id="maxIdleTime_PPPoE_tr">
+							<th>Maximum Idle Time:</th>
+							<td><input class="styled-text" style="width: 120px;" type="text" name="maximumIdleTime_PPPoE" id="maximumIdleTime_PPPoE" value="5" maxlength="5">&nbsp;&nbsp;minutes</td>
+							<td></td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+			<!-------------------- generalBlock_PPTP ---------------------->
+			<div id="generalBlock_PPTP" style="display: none;">
+				<table class="block">
+					<tbody>
+						<tr>
+							<th>PPTP Server IP Address:</th>
+							<td><input class="styled-text" type="text" name="serverIPAddress_PPTP" size="27" maxlength="15" id="serverIPAddress_PPTP" onchange="ReplaceEmpty(this, this.value)"></td>
+						</tr>
+						<tr>
+							<th>Username:</th>
+							<td><input class="styled-text" type="text" name="userName_PPTP" size="27" maxlength="64" id="userName_PPTP"></td>
+						</tr>
+						<tr>
+							<th>Password:</th>
+							<td><input class="styled-text" type="text" name="password_PPTP" size="27" maxlength="64" id="password_PPTP"></td>
+						</tr>
+						<tr>
+							<th>Reconnect Mode:</th>
+							<td>
+							
+							<div class="sbHolder" style="width:200px">
+													
+								
+								<a   class="sbToggle"></a>
+								
+									<select style="height:30px; width:200px; border:none; font-size:inherit; padding: 5px;"  name="reconnectMode_PPTP" id="reconnectMode_PPTP" onchange="ChangeReconnectMode(this.value, &#39;PPTP&#39;)" sb="47589328" style="display: ">
+										<option value="ALWAYSON">Always on</option>
+										<option value="ONDEMAND" selected="">On demand</option>
+										<option value="MANUAL">Manual</option>
+									</select>
+									<!--
+									<div id="sbHolder_47589328" class="sbHolder" style="width:200px"><a id="sbToggle_47589328" href="http://192.168.0.1/Internet.html#" class="sbToggle"></a><a id="sbSelector_47589328" href="http://192.168.0.1/Internet.html#" class="sbSelector" style="width:170px">On demand</a><ul id="sbOptions_47589328" class="sbOptions" style="width: 200px; display: none;"><li><a href="http://192.168.0.1/ALWAYSON" rel="ALWAYSON">Always on</a></li><li><a href="http://192.168.0.1/ONDEMAND" rel="ONDEMAND" class="sbFocus">On demand</a></li><li><a href="http://192.168.0.1/MANUAL" rel="MANUAL">Manual</a></li></ul></div>-->
+								</div>
+							</td>
+							<td></td>
+						</tr>
+						<tr id="maxIdleTime_PPTP_tr">
+							<th>Maximum Idle Time:</th>
+							<td><input class="styled-text" style="width: 120px;" type="text" name="maximumIdleTime_PPTP" id="maximumIdleTime_PPTP" value="5" maxlength="5">&nbsp;&nbsp;minutes</td>
+							<td></td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+			<!-------------------- generalBlock_L2TP ---------------------->
+			<div id="generalBlock_L2TP" style="display: none;">
+				<table class="block">
+					<tbody>
+						<tr>
+							<th>L2TP Server IP Address:</th>
+							<td><input class="styled-text" type="text" name="serverIPAddress_L2TP" size="27" maxlength="15" id="serverIPAddress_L2TP" onchange="ReplaceEmpty(this, this.value)"></td>
+						</tr>
+						<tr>
+							<th>Username:</th>
+							<td><input class="styled-text" type="text" name="userName_L2TP" size="27" maxlength="64" id="userName_L2TP"></td>
+						</tr>
+						<tr>
+							<th>Password:</th>
+							<td><input class="styled-text" type="text" name="password_L2TP" size="27" maxlength="64" id="password_L2TP"></td>
+						</tr>
+						<tr>
+							<th>Reconnect Mode:</th>
+							<td>
+							
+							<div class="sbHolder" style="width:200px">
+													
+								
+								<a   class="sbToggle"></a>
+							
+								<select  style="height:30px; width:200px; border:none; font-size:inherit; padding: 5px;" name="reconnectMode_L2TP" id="reconnectMode_L2TP" onchange="ChangeReconnectMode(this.value, &#39;L2TP&#39;)" sb="38203357" style="display:">
+									<option value="ALWAYSON">Always on</option>
+									<option value="ONDEMAND" selected="">On demand</option>
+									<option value="MANUAL">Manual</option>
+								</select>
+								
+								<!--
+								<div id="sbHolder_38203357" class="sbHolder" style="width:200px"><a id="sbToggle_38203357" href="http://192.168.0.1/Internet.html#" class="sbToggle"></a><a id="sbSelector_38203357" href="http://192.168.0.1/Internet.html#" class="sbSelector" style="width:170px">On demand</a><ul id="sbOptions_38203357" class="sbOptions" style="width: 200px; display: none;"><li><a href="http://192.168.0.1/ALWAYSON" rel="ALWAYSON">Always on</a></li><li><a href="http://192.168.0.1/ONDEMAND" rel="ONDEMAND" class="sbFocus">On demand</a></li><li><a href="http://192.168.0.1/MANUAL" rel="MANUAL">Manual</a></li></ul></div>-->
+							</div>
+							</td>
+							<td></td>
+						</tr>
+						<tr id="maxIdleTime_L2TP_tr">
+							<th>Maximum Idle Time:</th>
+							<td><input class="styled-text" style="width: 120px;" type="text" name="maximumIdleTime_L2TP" size="15" id="maximumIdleTime_L2TP" value="5" maxlength="5">&nbsp;&nbsp; minutes</td>
+							<td></td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+			<!-------------------- generalBlock_DSLite------------------NONE---->
+			<!-----------------------------------Advanced Settings------------------------------------------------->
+			<div class="advButton" onclick="showAdv(&#39;advancedBlock&#39;);">Advanced Settings...</div>
+			<hr>
+			<div id="advancedBlock" style="display: none;">
+				<!-------------------- advancedBlock_staticIP ---------------------->
+				<div id="advancedBlock_staticIP" style="display: none;">
+					<table class="block" border="0">
+						<tbody>
+							<tr>
+								<th>Secondary DNS Server:</th>
+								<td width="200px"><input class="styled-text" type="text" name="secondaryDNSAddress_StaticIP" size="27" maxlength="15" id="secondaryDNSAddress_StaticIP" onchange="ReplaceEmpty(this, this.value)"></td>
+								<td></td>
+							</tr>
+							<tr>
+								<th>MTU:</th>
+								<td>
+									
+									
+							<div class="sbHolder" style="width:200px">
+													
+								
+								<a   class="sbToggle"></a>
+									
+									
+										<select  style="height:30px; width:200px; border:none; font-size:inherit; padding: 5px;" name="mtu_StaticIP" id="mtu_StaticIP" onchange="ChangeMTU(this.value, &#39;StaticIP&#39;)" sb="34811634" style="display:">
+											<option value="AUTO" selected="">Auto</option>
+											<option value="MANUAL">Manual</option>
+										</select>
+										
+										<!--
+										<div id="sbHolder_34811634" class="sbHolder" style="width:200px"><a id="sbToggle_34811634" href="http://192.168.0.1/Internet.html#" class="sbToggle"></a><a id="sbSelector_34811634" href="http://192.168.0.1/Internet.html#" class="sbSelector" style="width:170px">Auto</a><ul id="sbOptions_34811634" class="sbOptions" style="width: 200px; display: none;"><li><a href="http://192.168.0.1/AUTO" rel="AUTO" class="sbFocus">Auto</a></li><li><a href="http://192.168.0.1/MANUAL" rel="MANUAL">Manual</a></li></ul></div>-->
+									</div>
+								</td>
+								<td id="mtu_StaticIP_tr"><input class="styled-text" type="text" name="mtu_StaticIP_Input" size="3" maxlength="5" id="mtu_StaticIP_Input" value="1500" style="display: none;" onchange="ReplaceEmpty(this, this.value)"></td>
+							</tr>
+							<tr id="mac_clone_StaticIP_tr">
+								<th>Mac Address Clone:</th>
+								<td><input class="styled-text" type="text" name="macAddress_StaticIP" size="27" maxlength="17" id="macAddress_StaticIP" onchange="ReplaceEmpty(this, this.value)"></td>
+								<td>
+									
+							<div class="sbHolder" style="width:200px">
+													
+								
+								<a   class="sbToggle"></a>
+										<select style="height:30px; width:200px; border:none; font-size:inherit; padding: 5px;" name="clone_mac_StaticIP" id="clone_mac_StaticIP" onchange="ListMACAddress(this, this.value, &#39;StaticIP&#39;)" sb="26535225" style="display:">
+											<option value="0">&lt;&lt; MAC Address</option>
+										<option value="1">74:D0:2B:0F:4B:C1</option></select>
+										
+										
+										<!--
+										<div id="sbHolder_26535225" class="sbHolder" style="width:200px"><a id="sbToggle_26535225" href="http://192.168.0.1/Internet.html#" class="sbToggle"></a><a id="sbSelector_26535225" href="http://192.168.0.1/Internet.html#" class="sbSelector" style="width:170px">&lt;&lt; MAC Address</a><ul id="sbOptions_26535225" class="sbOptions" style="width: 200px; display: none;"><li><a href="http://192.168.0.1/0" rel="0" class="sbFocus">&lt;&lt; MAC Address</a></li><li><a href="http://192.168.0.1/1" rel="1">74:D0:2B:0F:4B:C1</a></li></ul></div>-->
+									</div>
+								</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+				<!-------------------- advancedBlock_Dynamic IP (DHCP)---------------------->
+				<div id="advancedBlock_DynamicIP" style="display: inline;">
+					<table class="block" border="0">
+						<tbody>
+						<tr>
+							<th>Host Name:</th>
+							<td width="200px"><input class="styled-text" type="text" name="hostName_DynamicIP" size="27" maxlength="25" id="hostName_DynamicIP"></td>
+							<td></td>
+						</tr>
+						<tr>
+							<th>Primary DNS Server:</th>
+							<td colspan="2"><input class="styled-text" type="text" name="primaryDNSAddress_DynamicIP" size="27" maxlength="15" id="primaryDNSAddress_DynamicIP" onchange="ReplaceEmpty(this, this.value)"></td>
+						</tr>
+						<tr>
+							<th>Secondary DNS Server:</th>
+							<td colspan="2"><input class="styled-text" type="text" name="secondaryDNSAddress_DynamicIP" size="27" maxlength="15" id="secondaryDNSAddress_DynamicIP" onchange="ReplaceEmpty(this, this.value)"></td>
+						</tr>
+						<tr>
+							<th>MTU:</th>
+							<td>
+							
+							
+								<div class="sbHolder" style="width:200px">
+													<a   class="sbToggle"></a>
+													
+													
+													<label class="custom-select">
+												<select style="height:30px; width:200px; border:none; font-size:inherit; padding: 5px;" id="mySelect" onchange="myFunction(this.value)" style="display:">
+												
+												
+													<option value="0" >AUTO</option>
+													<option value="1" >Manual</option>
+													
+													
+
+												</select>
+										</label>
+								
+								<!--
+									<select name="mtu_DynamicIP" id="mtu_DynamicIP" onchange="ChangeMTU(this.value, &#39;DynamicIP&#39;)" sb="84386667" style="display: none;">
+										<option value="AUTO">Auto</option>
+										<option value="MANUAL">Manual</option>
+									</select>
+									
+									<!--
+									<div id="sbHolder_84386667" class="sbHolder" style="width:200px"><a id="sbToggle_84386667" href="http://192.168.0.1/Internet.html#" class="sbToggle"></a><a id="sbSelector_84386667" href="http://192.168.0.1/Internet.html#" class="sbSelector" style="width:170px">Auto</a><ul id="sbOptions_84386667" class="sbOptions" style="width: 200px; display: none;"><li><a href="http://192.168.0.1/AUTO" rel="AUTO" class="sbFocus">Auto</a></li><li><a href="http://192.168.0.1/MANUAL" rel="MANUAL">Manual</a></li></ul></div>
+									
+									-->
+								</div>
+							</td>
+							<td id="mtu_DynamicIP_tr"><input class="styled-text" type="text" name="mtu_DynamicIP_Input" size="3" maxlength="5" id="mtu_DynamicIP_Input" value="1500" style="display: none;" onchange="ReplaceEmpty(this, this.value)"></td>
+						</tr>
+						<tr id="mac_clone_DynamicIP_tr" style="display: table-row;">
+							<th>Mac Address Clone:</th>
+							<td><input class="styled-text" type="text" name="macAddress_DynamicIP" size="27" maxlength="17" id="macAddress_DynamicIP" onchange="ReplaceEmpty(this, this.value)"></td>
+							<td>
+							
+							
+							<div class="sbHolder" style="width:200px">
+													<a   class="sbToggle"></a>
+													
+													
+													<label class="custom-select">
+												<select style="height:30px; width:200px; border:none; font-size:inherit; padding: 5px;" id="mySelect" onchange="myFunction()">
+													<option >&lt;&lt; MAC Address</option>
+													<option >74:D0:2B:0F:4B:C1</option>
+													
+													
+
+												</select>
+										</label>
+							<!--
+								<div class="styled-select">
+									<select name="clone_mac_DynamicIP" id="clone_mac_DynamicIP" onchange="ListMACAddress(this, this.value, &#39;DynamicIP&#39;)" sb="86950530" style="display: none;">
+										<option value="0">&lt;&lt; MAC Address</option>
+									<option value="1">74:D0:2B:0F:4B:C1</option></select><div id="sbHolder_86950530" class="sbHolder" style="width:200px"><a id="sbToggle_86950530" href="http://192.168.0.1/Internet.html#" class="sbToggle"></a><a id="sbSelector_86950530" href="http://192.168.0.1/Internet.html#" class="sbSelector" style="width:170px">&lt;&lt; MAC Address</a><ul id="sbOptions_86950530" class="sbOptions" style="width: 200px; display: none;"><li><a href="http://192.168.0.1/0" rel="0" class="sbFocus">&lt;&lt; MAC Address</a></li><li><a href="http://192.168.0.1/1" rel="1">74:D0:2B:0F:4B:C1</a></li></ul></div>
+									
+									-->
+								</div>
+							</td>
+						</tr>
+						</tbody>
+					</table>
+				</div>
+				<!-------------------- advancedBlock_PPPoE  ---------------------->
+				<div id="advancedBlock_PPPoE" style="display: none;">
+					<table class="block" border="0">
+						<tbody>
+							<tr>
+								<th>Address Mode:</th>
+								<td width="200px">
+								
+								
+									<div class="sbHolder" style="width:200px">
+													
+								
+								<a   class="sbToggle"></a>
+										<select style="height:30px; width:200px; border:none; font-size:inherit; padding: 5px;" name="addressMode_PPPoE" id="addressMode_PPPoE" onchange="ChangeAddrMode(this.value, &#39;PPPoE&#39;)" sb="45487832" style="display:">
+											<option value="DYNAMICIP">Dynamic IP</option>
+											<option value="STATICIP">Static IP</option>
+										</select>
+										
+										<!--
+										<div id="sbHolder_45487832" class="sbHolder" style="width:200px"><a id="sbToggle_45487832" href="http://192.168.0.1/Internet.html#" class="sbToggle"></a><a id="sbSelector_45487832" href="http://192.168.0.1/Internet.html#" class="sbSelector" style="width:170px">Dynamic IP</a><ul id="sbOptions_45487832" class="sbOptions" style="width: 200px; display: none;"><li><a href="http://192.168.0.1/DYNAMICIP" rel="DYNAMICIP" class="sbFocus">Dynamic IP</a></li><li><a href="http://192.168.0.1/STATICIP" rel="STATICIP">Static IP</a></li></ul></div>-->
+									</div>
+								</td>
+								<td></td>
+							</tr>
+							<tr id="ipAddress_tr" style="display:none;">
+								<th>IP Address:</th>
+								<td colspan="2"><input class="styled-text" type="text" name="ipAddress_PPPoE" id="ipAddress_PPPoE" size="27" maxlength="15" onchange="ReplaceEmpty(this, this.value)"></td>
+							</tr>
+							<tr>
+								<th>Service Name:</th>
+								<td colspan="2"><input class="styled-text" type="text" name="serviceName_PPPoE" size="27" maxlength="25" id="serviceName_PPPoE"></td>
+							</tr>
+							<tr>
+								<th>Primary DNS Server:</th>
+								<td colspan="2"><input class="styled-text" type="text" name="primaryDNSAddress_PPPoE" size="27" maxlength="15" id="primaryDNSAddress_PPPoE" onchange="ReplaceEmpty(this, this.value)"></td>
+							</tr>
+							<tr>
+								<th>Secondary DNS Server:</th>
+								<td colspan="2"><input class="styled-text" type="text" name="secondaryDNSAddress_PPPoE" size="27" maxlength="15" id="secondaryDNSAddress_PPPoE" onchange="ReplaceEmpty(this, this.value)"></td>
+							</tr>
+							<tr>
+								<th>MTU:</th>
+								<td>
+									<div class="sbHolder" style="width:200px">
+													
+								
+								<a   class="sbToggle"></a>
+										<select style="height:30px; width:200px; border:none; font-size:inherit; padding: 5px;" name="mtu_PPPoE" id="mtu_PPPoE" onchange="ChangeMTU(this.value, &#39;PPPoE&#39;)" sb="63466486" style="display:">
+											<option value="AUTO" selected="">Auto</option>
+											<option value="MANUAL">Manual</option>
+										</select>
+										<!--
+										<div id="sbHolder_63466486" class="sbHolder" style="width:200px"><a id="sbToggle_63466486" href="http://192.168.0.1/Internet.html#" class="sbToggle"></a><a id="sbSelector_63466486" href="http://192.168.0.1/Internet.html#" class="sbSelector" style="width:170px">Auto</a><ul id="sbOptions_63466486" class="sbOptions" style="width: 200px; display: none;"><li><a href="http://192.168.0.1/AUTO" rel="AUTO" class="sbFocus">Auto</a></li><li><a href="http://192.168.0.1/MANUAL" rel="MANUAL">Manual</a></li></ul></div>-->
+									</div>
+								</td><td id="mtu_PPPoE_tr"><input class="styled-text" type="text" name="mtu_PPPoE_Input" size="3" maxlength="5" id="mtu_PPPoE_Input" value="1492" style="display: none;"></td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+				<!-------------------- advancedBlock_Ru_PPPoE_WAN Physical Setting ---------------------->
+				<div id="advancedBlock_Ru_PPPoE" style="display: none;">
+					<table class="block" border="0">
+						<tbody>
+							<tr>
+							<td><div class="title">WAN Physical Settings</div></td>
+							</tr>
+							<tr>
+								<th>Address Mode:</th>
+								<td width="200px">
+									<div class="sbHolder" style="width:200px">
+													
+								
+								<a   class="sbToggle"></a>
+										<select style="height:30px; width:200px; border:none; font-size:inherit; padding: 5px;" name="addressMode_Ru_PPPoE" id="addressMode_Ru_PPPoE" onchange="ChangeAddrMode(this.value, &#39;Ru_PPPoE_WAN&#39;)" sb="22050792" style="display:">
+											<option value="DYNAMICIP">Dynamic IP</option>
+											<option value="STATICIP">Static IP</option>
+										</select>
+										
+										<!--
+										<div id="sbHolder_22050792" class="sbHolder" style="width:200px"><a id="sbToggle_22050792" href="http://192.168.0.1/Internet.html#" class="sbToggle"></a><a id="sbSelector_22050792" href="http://192.168.0.1/Internet.html#" class="sbSelector" style="width:170px">Dynamic IP</a><ul id="sbOptions_22050792" class="sbOptions" style="width: 200px; display: none;"><li><a href="http://192.168.0.1/DYNAMICIP" rel="DYNAMICIP" class="sbFocus">Dynamic IP</a></li><li><a href="http://192.168.0.1/STATICIP" rel="STATICIP">Static IP</a></li></ul></div>-->
+									</div>
+								</td>
+								<td></td>
+							</tr>
+							<tr id="ipAddress_Ru_PPPoE_WAN_tr" style="display: none;">
+								<th>IP Address:</th>
+								<td colspan="2"><input class="styled-text" type="text" name="ipAddress_Ru_PPPoE" size="27" maxlength="15" id="ipAddress_Ru_PPPoE" onchange="ReplaceEmpty(this, this.value)"></td>
+							</tr>
+							<tr id="subnetMask_Ru_PPPoE_WAN_tr" style="display: none;">
+								<th>Subnet Mask:</th>
+								<td colspan="2"><input class="styled-text" type="text" name="subnetMask_Ru_PPPoE" size="27" maxlength="15" id="subnetMask_Ru_PPPoE" onchange="ReplaceEmpty(this, this.value)"></td>
+							</tr>
+							<tr id="gatewayIP_Ru_PPPoE_WAN_tr" style="display: none;">
+								<th>Gateway IP Address:</th>
+								<td colspan="2"><input class="styled-text" type="text" name="gatewayIP_Ru_PPPoE" size="27" maxlength="15" id="gatewayIP_Ru_PPPoE" onchange="ReplaceEmpty(this, this.value)"></td>
+							</tr>
+							<tr id="primaryDNSAddress_Ru_PPPoE_WAN_tr" style="display: none;">
+								<th>Primary DNS Server:</th>
+								<td colspan="2"><input class="styled-text" type="text" name="primaryDNSAddress_Ru_PPPoE" size="27" maxlength="15" id="primaryDNSAddress_Ru_PPPoE" onchange="ReplaceEmpty(this, this.value)"></td>
+							</tr>
+							<tr id="secondaryDNSAddress_Ru_PPPoE_WAN_tr" style="display: none;">
+								<th>Secondary DNS Server:</th>
+								<td colspan="2"><input class="styled-text" type="text" name="secondaryDNSAddress_Ru_PPPoE" size="27" maxlength="15" id="secondaryDNSAddress_Ru_PPPoE" onchange="ReplaceEmpty(this, this.value)"></td>
+							</tr>
+						</tbody>
+					</table>
+				</div>				
+				<!-------------------- advancedBlock_PPTP  ---------------------->
+				<div id="advancedBlock_PPTP" style="display: none;">
+					<table class="block" border="0">
+						<tbody>
+							<tr>
+								<th>Address Mode:</th>
+								<td width="200px">
+									<div class="sbHolder" style="width:200px">
+													
+								
+								<a   class="sbToggle"></a>
+										<select style="height:30px; width:200px; border:none; font-size:inherit; padding: 5px;" name="addressMode_PPTP" id="addressMode_PPTP" onchange="ChangeAddrMode(this.value, &#39;PPTP&#39;)" sb="39415239" style="display:">
+											<option value="DYNAMICIP">Dynamic IP</option>
+											<option value="STATICIP">Static IP</option>
+										</select>
+										<!--
+										<div id="sbHolder_39415239" class="sbHolder" style="width:200px"><a id="sbToggle_39415239" href="http://192.168.0.1/Internet.html#" class="sbToggle"></a><a id="sbSelector_39415239" href="http://192.168.0.1/Internet.html#" class="sbSelector" style="width:170px">Dynamic IP</a><ul id="sbOptions_39415239" class="sbOptions" style="width: 200px; display: none;"><li><a href="http://192.168.0.1/DYNAMICIP" rel="DYNAMICIP" class="sbFocus">Dynamic IP</a></li><li><a href="http://192.168.0.1/STATICIP" rel="STATICIP">Static IP</a></li></ul></div>-->
+									</div>
+								</td>
+								<td></td>
+							</tr>
+							<tr id="ipAddress_PPTP_tr" style="display: none;">
+								<th>PPTP IP Address:</th>
+								<td colspan="2"><input class="styled-text" type="text" name="ipAddress_PPTP" size="27" maxlength="15" id="ipAddress_PPTP" onchange="ReplaceEmpty(this, this.value)"></td>
+							</tr>
+							<tr id="subnetMask_PPTP_tr" style="display: none;">
+								<th>PPTP Subnet Mask:</th>
+								<td colspan="2"><input class="styled-text" type="text" name="subnetMask_PPTP" size="27" maxlength="15" id="subnetMask_PPTP" onchange="ReplaceEmpty(this, this.value)"></td>
+							</tr>
+							<tr id="gatewayIP_PPTP_tr" style="display: none;">
+								<th>PPTP Gateway IP Address:</th>
+								<td colspan="2"><input class="styled-text" type="text" name="gatewayIP_PPTP" size="27" maxlength="15" id="gatewayIP_PPTP" onchange="ReplaceEmpty(this, this.value)"></td>
+							</tr>
+							<tr>
+								<th>Primary DNS Server:</th>
+								<td colspan="2"><input class="styled-text" type="text" name="primaryDNSAddress_PPTP" size="27" maxlength="15" id="primaryDNSAddress_PPTP" onchange="ReplaceEmpty(this, this.value)"></td>
+							</tr>
+							<tr>
+								<th>Secondary DNS Server:</th>
+								<td colspan="2"><input class="styled-text" type="text" name="secondaryDNSAddress_PPTP" size="27" maxlength="15" id="secondaryDNSAddress_PPTP" onchange="ReplaceEmpty(this, this.value)"></td>
+							</tr>
+							<tr>
+								<th>MTU:</th>
+								<td>
+								<div class="sbHolder" style="width:200px">
+													
+								
+								<a   class="sbToggle"></a>
+										<select style="height:30px; width:200px; border:none; font-size:inherit; padding: 5px;" name="mtu_PPTP" id="mtu_PPTP" onchange="ChangeMTU(this.value, &#39;PPTP&#39;)" sb="6821055" style="display:">
+											<option value="AUTO" selected="">Auto</option>
+											<option value="MANUAL">Manual</option>
+										</select>
+										
+										<!--
+										<div id="sbHolder_6821055" class="sbHolder" style="width:200px"><a id="sbToggle_6821055" href="http://192.168.0.1/Internet.html#" class="sbToggle"></a><a id="sbSelector_6821055" href="http://192.168.0.1/Internet.html#" class="sbSelector" style="width:170px">Auto</a><ul id="sbOptions_6821055" class="sbOptions" style="width: 200px; display: none;"><li><a href="http://192.168.0.1/AUTO" rel="AUTO" class="sbFocus">Auto</a></li><li><a href="http://192.168.0.1/MANUAL" rel="MANUAL">Manual</a></li></ul></div>-->
+									</div>
+								</td>
+								<td id="mtu_PPTP_tr"><input class="styled-text" type="text" name="mtu_PPTP_Input" size="3" maxlength="5" id="mtu_PPTP_Input" value="1400" style="display: none;"></td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+				<!-------------------- advancedBlock_L2TP  ---------------------->
+				<div id="advancedBlock_L2TP" style="display: none;">
+					<table class="block" border="0">
+						<tbody>
+							<tr>
+								<th>Address Mode:</th>
+								<td width="200px">
+									<div class="sbHolder" style="width:200px">
+													
+								
+								<a   class="sbToggle"></a>
+										<select style="height:30px; width:200px; border:none; font-size:inherit; padding: 5px;" name="addressMode_L2TP" id="addressMode_L2TP" onchange="ChangeAddrMode(this.value, &#39;L2TP&#39;)" sb="47531553" style="display:">
+											<option value="DYNAMICIP">Dynamic IP</option>
+											<option value="STATICIP">Static IP</option>
+										</select>
+										
+										<!--
+										<div id="sbHolder_47531553" class="sbHolder" style="width:200px"><a id="sbToggle_47531553" href="http://192.168.0.1/Internet.html#" class="sbToggle"></a><a id="sbSelector_47531553" href="http://192.168.0.1/Internet.html#" class="sbSelector" style="width:170px">Dynamic IP</a><ul id="sbOptions_47531553" class="sbOptions" style="width: 200px; display: none;"><li><a href="http://192.168.0.1/DYNAMICIP" rel="DYNAMICIP" class="sbFocus">Dynamic IP</a></li><li><a href="http://192.168.0.1/STATICIP" rel="STATICIP">Static IP</a></li></ul></div>-->
+									</div>
+								</td>
+								<td></td>
+							</tr>
+							<tr id="ipAddress_L2TP_tr" style="display: none;">
+								<th>L2TP IP Address:</th>
+								<td colspan="2"><input class="styled-text" type="text" name="ipAddress_L2TP" size="27" maxlength="15" id="ipAddress_L2TP" onchange="ReplaceEmpty(this, this.value)"></td>
+							</tr>
+							<tr id="subnetMask_L2TP_tr" style="display: none;">
+								<th>L2TP Subnet Mask:</th>
+								<td colspan="2"><input class="styled-text" type="text" name="subnetMask_L2TP" size="27" maxlength="15" id="subnetMask_L2TP" onchange="ReplaceEmpty(this, this.value)"></td>
+							</tr>
+							<tr id="gatewayIP_L2TP_tr" style="display: none;">
+								<th>L2TP Gateway IP Address:</th>
+								<td colspan="2"><input class="styled-text" type="text" name="gatewayIP_L2TP" size="27" maxlength="15" id="gatewayIP_L2TP" onchange="ReplaceEmpty(this, this.value)"></td>
+							</tr>
+							<tr>
+								<th>Primary DNS Server:</th>
+								<td colspan="2"><input class="styled-text" type="text" name="primaryDNSAddress_L2TP" size="27" maxlength="15" id="primaryDNSAddress_L2TP" onchange="ReplaceEmpty(this, this.value)"></td>
+							</tr>
+							<tr>
+								<th>Secondary DNS Server:</th>
+								<td colspan="2"><input class="styled-text" type="text" name="secondaryDNSAddress_L2TP" size="27" maxlength="15" id="secondaryDNSAddress_L2TP" onchange="ReplaceEmpty(this, this.value)"></td>
+							</tr>
+							<tr>
+								<th>MTU:</th>
+								<td>
+									<div class="sbHolder" style="width:200px">
+													
+								
+								<a   class="sbToggle"></a>
+										<select style="height:30px; width:200px; border:none; font-size:inherit; padding: 5px;" name="mtu_L2TP" id="mtu_L2TP" onchange="ChangeMTU(this.value, &#39;L2TP&#39;)" sb="76650538" style="display:">
+											<option value="AUTO" selected="">Auto</option>
+											<option value="MANUAL">Manual</option>
+										</select>
+										
+										<!--
+										<div id="sbHolder_76650538" class="sbHolder" style="width:200px"><a id="sbToggle_76650538" href="http://192.168.0.1/Internet.html#" class="sbToggle"></a><a id="sbSelector_76650538" href="http://192.168.0.1/Internet.html#" class="sbSelector" style="width:170px">Auto</a><ul id="sbOptions_76650538" class="sbOptions" style="width: 200px; display: none;"><li><a href="http://192.168.0.1/AUTO" rel="AUTO" class="sbFocus">Auto</a></li><li><a href="http://192.168.0.1/MANUAL" rel="MANUAL">Manual</a></li></ul></div>-->
+									</div>
+								</td>
+								<td id="mtu_L2TP_tr"><input class="styled-text" type="text" name="mtu_L2TP_Input" size="3" maxlength="5" id="mtu_L2TP_Input" value="1400" style="display: none;"></td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+				<!-------------------- advancedBlock_DS-Lite  ---------------------->
+				<div id="advancedBlock_DSLite" style="display: none;">
+					<table class="block" border="0">
+						<tbody>
+							<tr>
+								<th>DS-Lite Configuration:</th>
+								<td>
+									<div class="sbHolder" style="width:200px">
+													
+								
+								<a   class="sbToggle"></a>
+										<select style="height:30px; width:200px; border:none; font-size:inherit; padding: 5px;" name="configuration_DSLite" id="configuration_DSLite" onchange="ChangeDSLiteConfig(this.value)" sb="26509456" style="display:">
+											<option value="Dhcpv6Option">DS-Lite DHCPv6 Option</option>
+											<option value="Manual">Manual Configuration</option>
+										</select>
+										
+										<!--
+										<div id="sbHolder_26509456" class="sbHolder" style="width:200px"><a id="sbToggle_26509456" href="http://192.168.0.1/Internet.html#" class="sbToggle"></a><a id="sbSelector_26509456" href="http://192.168.0.1/Internet.html#" class="sbSelector" style="width:170px">DS-Lite DHCPv6 Option</a><ul id="sbOptions_26509456" class="sbOptions" style="width: 200px; display: none;"><li><a href="http://192.168.0.1/Dhcpv6Option" rel="Dhcpv6Option" class="sbFocus">DS-Lite DHCPv6 Option</a></li><li><a href="http://192.168.0.1/Manual" rel="Manual">Manual Configuration</a></li></ul></div>-->
+									</div>
+								</td>
+							</tr>
+							<tr id="afterIPv6Address_DSLite_tr" style="display: none;">
+								<th>AFTR IPv6 Address:</th>
+								<td><input class="styled-text" type="text" name="afterIPv6Address_DSLite" size="27" maxlength="39" id="afterIPv6Address_DSLite" onchange="ReplaceEmpty(this, this.value)"></td>
+							</tr>
+							<tr>
+								<th>B4 IPv4 Address:</th>
+								<td>192.0.0.&nbsp;<input class="styled-text" style="width: 50px;" type="text" name="b4IPv4Address_DSLite" size="3" maxlength="3" id="b4IPv4Address_DSLite" onchange="ReplaceEmpty(this, this.value)"></td>
+							</tr>
+							<tr>
+								<th>WAN IPv6 Address:</th>
+								<td><label name="wanIPv6Address_DSLite" id="wanIPv6Address_DSLite">N/A</label></td>
+							</tr>
+							<tr>
+								<th>IPv6 WAN Default Gateway:</th>
+								<td><label name="ipv6WanDefaultGateway_DSLite" id="ipv6WanDefaultGateway_DSLite">N/A</label></td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+			<div id="CreatePopAlertMessage" style="display:none">
+				<div id="AlertPopRect">
+				<div id="AlertPopBody">
+					<table class="myAlertPop_table_b" id="waitSettingFinish" border="0" cellspacing="0" style="display:none">
+						<tbody>
+							<tr>
+								<td><center><div id="Loading_pop_image2"></div></center></td>
+							</tr>
+							<tr>
+								<td><label id="reciprocal_Number"></label></td>
+							</tr>
+							<tr>
+								<td id="dialog_msg_black2">
+									Your changes are being saved.
+								</td>
+							</tr>
+						</tbody>
+					</table>
+					<table class="myAlertPop_table" id="waitDeviceReboot" border="0" cellspacing="0" style="display:none">
+						<tbody>
+							<tr>
+								<td>
+									<center><div id="Loading_pop_image"></div></center>
+								</td>
+							</tr>
+							<tr>
+								<td><label id="reciprocal_Number_Reboot"></label></td>
+							</tr>
+							<tr>
+								<td id="Font_Color_Red"></td>
+							</tr>
+						</tbody>
+					</table>
+					<table class="myAlertPop_table_b" id="SuccessREBOOT" border="0" cellspacing="0" style="display:none">
+						<tbody>
+							<tr>
+								<td>
+								<center><div id="Information_pop_image"></div></center>
+								</td>
+							</tr>
+							<tr>
+								<td>
+									<div id="dialog_msg_black">
+										The new settings have been saved.
+									</div>
+								</td>
+							</tr>
+							<tr>
+								<td>
+									<center>
+										<div id="Confirm_btn" onclick="RedirectToURL()" style="cursor:pointer">
+											OK
+										</div>
+									</center>
+								</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+				</div>
+			</div>
+			<!-- Detect Router Connection, Timmy Add 2013/08/15 -->
+			<div id="DetectRouterConnection" style="display:none"><div class="dialogBox" style="width:616px"><table class="myCreatePop_table" border="0" cellspacing="0" id="RouterConnectionTable"><tbody><tr><td colspan="3"><div class="popTitle">Router Not Found</div></td></tr><tr><td id="save_td" colspan="4"><center><div id="Save_edit_pop_btn" style="cursor:pointer" tabindex="12" onclick="CheckHTMLStatus(&#39;&#39;);">Retry</div></center></td></tr></tbody></table></div></div>
+			<div id="footer">
+				<div id="copyright">COPYRIGHT © 2014 D-Link</div>
+			</div>
+		</div>
+	</div>
+	</form>
+	<script type="text/javascript" charset="utf-8">
+		$(document).ready( function() {
+
+			function check_session(session)
+			{
+				if(session != "PPPoE" && wan_IPv6type == "IPv6_PPPoE" && PppoeNewSession == "SharedWithIPv4")
+					return false;
+				else
+					return true;
+			}
+
+			function check_dslite(session)
+			{
+				if(session == "DSLite" && (wan_IPv6type == "IPv6_IPv6InIPv4Tunnel" || wan_IPv6type == "IPv6_6To4" || wan_IPv6type == "IPv6_6RD" || wan_IPv6type == "IPv6_LinkLocalOnly"))
+					return false;
+				else
+					return true;
+			}
+
+			/* Note: it should return "" if it does not have error check message. */
+			$.validator.addMethod("checkSetValues", function( value, element ) {
+				var elem_id = element.id;
+				var error_msg = "";
+				var connect_type = document.getElementById("connect_type").value;
+
+				/* check session first */
+				if(!check_session(connect_type))
+				{
+					if(elem_id == "value_Session")
+						return I18N("j","IPv6 PPPoE is share with IPv4 PPPoE. Please change IPv6 WAN protocol to PPPoE at first.");
+				}
+				else if(!check_dslite(connect_type))
+				{
+					if(elem_id == "value_Session")
+						return I18N("j","Please choose one IPv6 connection type besides Link-Local Only, 6to4, 6rd, and IPv6 in IPv4 Tunnel !");
+				}
+				else
+				{
+					/* if session is valid, check ipv4 settings */
+					switch(connect_type)
+					{
+						case "STATIC": /* static ip */
+							var staticip = document.getElementById("iPAddress_StaticIP").value;
+							var pristaticdns = document.getElementById("primaryDNSAddress_StaticIP").value;
+							var netmask = document.getElementById("subnetMask_StaticIP").value;
+							var mask = COMM_IPv4MASK2INT(netmask);
+
+							if(elem_id == "iPAddress_StaticIP")
+							{
+
+								if(value == "" || value == null)
+									return I18N("j","Please enter an IP address.");
+								else
+								{
+									if(!COMM_ValidV4Format(value) || !COMM_ValidV4Addr(value))
+										return I18N("j","Please enter a valid IP address. (e.g. 192.168.0.1)");
+
+									var device_mode = document.getElementById("device_mode").value;
+									if(device_mode == "ROUTER" && netmask != "" && (COMM_IPv4NETWORK(value, mask) == COMM_IPv4NETWORK(lan_IPAddr, mask)))
+										return I18N("j", "The network id is the same with LAN.");
+								}
+							}
+
+							if(elem_id=="subnetMask_StaticIP")
+							{
+								if(value == "" || value == null)
+									return I18N("j","Please enter a subnet mask.");
+								else
+								{
+									var mask = COMM_IPv4MASK2INT(value);
+									if(mask <= 0 || mask > 32)
+										return I18N("j","Please enter a valid netmask. (e.g. 255.255.255.0)");
+									if(mask < 8)
+										return I18N("j", "The router would not support the subnet mask which length is less than Class A.");
+								}
+							}
+
+							if(elem_id == "defaultGateway_StaticIP")
+							{
+								if(value == "" || value == null)
+									return I18N("j","Please enter a gateway address.");
+								else
+								{
+									if(netmask != "")
+									{
+										if(!COMM_ValidV4HOST(value, mask))
+											return I18N("j","Please enter a valid IP address. (e.g. 192.168.0.1)");
+
+										if(staticip != "")
+										{
+											if(value == staticip)
+												return I18N("j", "Please enter a valid gateway address. (e.g. 192.168.0.1)");
+
+											if(COMM_IPv4NETWORK(value, mask) != COMM_IPv4NETWORK(staticip, mask))
+												return I18N("j", "The default gateway should be in the same network.");
+										}
+									}
+								}
+							}
+
+							if(elem_id == "primaryDNSAddress_StaticIP")
+							{
+								if(value == "" || value == null)
+									return I18N("j","Please enter a valid IP address. (e.g. 192.168.0.1)");
+								else
+								{
+									if(!COMM_ValidV4Addr(value))
+										return I18N("j","Please enter a valid IP address. (e.g. 192.168.0.1)");
+
+									if(netmask != "" && !COMM_ValidV4HOST(value, mask))
+										return I18N("j","Please enter a valid IP address. (e.g. 192.168.0.1)");
+
+									if(staticip != "" && value == staticip)
+										return I18N("j", "The dns server cannot be equal to the IP address.");
+								}
+							}
+
+							if(elem_id == "secondaryDNSAddress_StaticIP" && value != "")
+							{
+								if(pristaticdns == "" || pristaticdns == null)
+									return I18N("j","Please enter a primary dns server");
+
+								if(!COMM_ValidV4Addr(value))
+									return I18N("j","Please enter a valid IP address. (e.g. 192.168.0.1)");
+
+								if(netmask != "" && !COMM_ValidV4HOST(value, mask))
+									return I18N("j","Please enter a valid IP address. (e.g. 192.168.0.1)");
+							}
+
+							if(elem_id=="mtu_StaticIP_Input" && $("#mtu_StaticIP")[0].value=="MANUAL")
+								if(!COMM_IsInteger(value) || value < 1280 || 1500 < value)
+									return I18N("j", "The MTU value should be 1280 ~ 1500.");
+
+							if(elem_id=="macAddress_StaticIP" && value != "" && (value=="00:00:00:00:00:00" || !COMM_IsMAC(value)))
+								return I18N("j", "Text field contains illegal characters.");
+							break;
+
+						case "DHCP": /* DHCP */
+							var PriDHCPDNS = document.getElementById("primaryDNSAddress_DynamicIP").value;
+
+							if(elem_id == "primaryDNSAddress_DynamicIP" && value != "")
+							{
+								if(!COMM_ValidV4Addr(value))
+									return I18N("j","Please enter a valid IP address. (e.g. 192.168.0.1)");
+							}
+
+							if(elem_id == "secondaryDNSAddress_DynamicIP" && value != "")
+							{
+								if(PriDHCPDNS == "" || PriDHCPDNS == null)
+									return I18N("j","Please enter a primary dns server");
+
+								if(!COMM_ValidV4Addr(value))
+									return I18N("j","Please enter a valid IP address. (e.g. 192.168.0.1)");
+
+								if(value == PriDHCPDNS)
+									return I18N("j","Secondary DNS server should not be the same as Primary DNS server.");
+							}
+
+							if(elem_id=="mtu_DynamicIP_Input" && $("#mtu_DynamicIP")[0].value=="MANUAL")
+								if(!COMM_IsInteger(value) || value < 1280 || 1500 < value)
+									return I18N("j", "The MTU value should be 1280 ~ 1500.");
+
+							if(elem_id=="macAddress_DynamicIP" && value != "" && (value=="00:00:00:00:00:00" || !COMM_IsMAC(value)))
+								return I18N("j", "Text field contains illegal characters.");
+							break;
+
+						case "PPPoE": /* pppoe */
+							var PPPoEStatus = document.getElementById("addressMode_PPPoE").value;
+							var PriPPPoEDNS = document.getElementById("primaryDNSAddress_PPPoE").value;
+
+							if(elem_id == "userName_PPPoE" && (value == "" || value == null))
+								return I18N("j","Please enter a username.");
+
+							if(elem_id == "password_PPPoE" && (value == "" || value == null))
+								return I18N("j","Please enter a password.");
+
+							if(elem_id == "primaryDNSAddress_PPPoE" && value != "")
+							{
+								if(!COMM_ValidV4Addr(value))
+									return I18N("j","Please enter a valid IP address. (e.g. 192.168.0.1)");
+							}
+
+							if(elem_id == "secondaryDNSAddress_PPPoE" && value != "")
+							{
+								if(PriPPPoEDNS == "" || PriPPPoEDNS == null)
+									return I18N("j","Please enter a primary dns server");
+
+								if(!COMM_ValidV4Addr(value))
+									return I18N("j","Please enter a valid IP address. (e.g. 192.168.0.1)");
+
+								if(value == PriPPPoEDNS)
+									return I18N("j","Secondary DNS server should not be the same as Primary DNS server.");
+							}
+
+							if(PPPoEStatus == "STATICIP" && elem_id == "ipAddress_PPPoE")
+							{
+								if(value == "" || value == null)
+									return I18N("j","Please enter an IP address.");
+								else
+								{
+									if(!COMM_ValidV4Format(value) || !COMM_ValidV4Addr(value))
+										return I18N("j","Please enter a valid IP address. (e.g. 192.168.0.1)");
+								}
+							}
+
+							if(elem_id=="mtu_PPPoE_Input" && $("#mtu_PPPoE")[0].value=="MANUAL")
+								if(!COMM_IsInteger(value) || value < 1280 || 1492 < value)
+									return I18N("j", "The MTU value should be 1280 ~ 1492.");
+
+							if(elem_id=="maximumIdleTime_PPPoE" && !COMM_IsDigit(value))
+								return I18N("j", "Please enter a value");
+							break;
+
+						case "PPTP": /* pptp */
+							var PPTPStatus = document.getElementById("addressMode_PPTP").value;
+							var PriPPTPDNS = document.getElementById("primaryDNSAddress_PPTP").value;
+
+							if(elem_id=="serverIPAddress_PPTP")
+							{
+								if(value == "" || value == null)
+									return I18N("j","Please enter an IP address.");
+								else
+								{
+									if(!COMM_ValidV4Format(value) || !COMM_ValidV4Addr(value))
+										return I18N("j","Please enter a valid IP address. (e.g. 192.168.0.1)");
+								}
+							}
+
+							if(elem_id == "userName_PPTP" && (value == "" || value == null))
+								return I18N("j","Please enter a username.");
+
+							if(elem_id == "password_PPTP" && (value == "" || value == null))
+								return I18N("j","Please enter a password.");
+
+							if(PPTPStatus=="STATICIP")
+							{
+								if(elem_id=="ipAddress_PPTP")
+								{
+									if(value == "" || value == null)
+										return I18N("j","Please enter an IP address.");
+									else
+									{
+										if(!COMM_ValidV4Format(value) || !COMM_ValidV4Addr(value))
+											return I18N("j","Please enter a valid IP address. (e.g. 192.168.0.1)");
+									}
+								}
+
+								if(elem_id=="subnetMask_PPTP")
+								{
+									if(value == "" || value == null)
+										return I18N("j","Please enter a subnet mask.");
+									else
+									{
+										var mask = COMM_IPv4MASK2INT(value);
+										if(mask <= 0 || mask > 32)
+											return I18N("j","Please enter a valid netmask. (e.g. 255.255.255.0)");
+										if(mask < 8)
+											return I18N("j", "The router would not support the subnet mask which length is less than Class A.");
+									}
+								}
+
+								if(elem_id=="gatewayIP_PPTP")
+								{
+									if(value == "" || value == null)
+										return I18N("j","Please enter a gateway address.");
+									else
+									{
+										if(!COMM_ValidV4Format(value) || !COMM_ValidV4Addr(value))
+											return I18N("j","Please enter a valid IP address. (e.g. 192.168.0.1)");
+									}
+								}
+
+								if(elem_id=="primaryDNSAddress_PPTP")
+								{
+									if(value == "" || value == null)
+										return I18N("j","Please enter a valid IP address. (e.g. 192.168.0.1)");
+									else
+									{
+										if(!COMM_ValidV4Addr(value))
+											return I18N("j","Please enter a valid IP address. (e.g. 192.168.0.1)");
+									}
+								}
+							}
+							else
+							{
+								if(elem_id=="primaryDNSAddress_PPTP" && value != "")
+								{
+									if(!COMM_ValidV4Addr(value))
+										return I18N("j","Please enter a valid IP address. (e.g. 192.168.0.1)");
+								}
+							}
+
+							if(elem_id=="secondaryDNSAddress_PPTP" && value != "")
+							{
+								if(PriPPTPDNS == "" || PriPPTPDNS == null)
+									return I18N("j","Please enter a primary dns server");
+
+								if(!COMM_ValidV4Addr(value))
+									return I18N("j","Please enter a valid IP address. (e.g. 192.168.0.1)");
+
+								if(value == PriPPTPDNS)
+									return I18N("j","Secondary DNS server should not be the same as Primary DNS server.");
+							}
+
+							if(elem_id=="mtu_PPTP_Input" && $("#mtu_PPTP")[0].value=="MANUAL")
+								if(!COMM_IsInteger(value) || value < 1280 || 1460 < value)
+									return I18N("j", "The MTU value should be 1280 ~ 1460.");
+
+							if(elem_id=="maximumIdleTime_PPTP" && !COMM_IsDigit(value))
+								return I18N("j", "Please enter a value");
+							break;
+						case "L2TP": /* l2tp */
+							var L2TPStatus = document.getElementById("addressMode_L2TP").value;
+							var PriL2TPDNS = document.getElementById("primaryDNSAddress_L2TP").value;
+
+							if(elem_id=="serverIPAddress_L2TP")
+							{
+								if(value == "" || value == null)
+									return I18N("j","Please enter an IP address.");
+								else
+								{
+									if(!COMM_ValidV4Format(value) || !COMM_ValidV4Addr(value))
+										return I18N("j","Please enter a valid IP address. (e.g. 192.168.0.1)");
+								}
+							}
+
+							if(elem_id == "userName_L2TP" && (value == "" || value == null))
+								return I18N("j","Please enter a username.");
+
+							if(elem_id == "password_L2TP" && (value == "" || value == null))
+								return I18N("j","Please enter a password.");
+
+							if(L2TPStatus=="STATICIP")
+							{
+								if(elem_id=="ipAddress_L2TP")
+								{
+									if(value == "" || value == null)
+										return I18N("j","Please enter an IP address.");
+									else
+									{
+										if(!COMM_ValidV4Format(value) || !COMM_ValidV4Addr(value))
+											return I18N("j","Please enter a valid IP address. (e.g. 192.168.0.1)");
+									}
+								}
+
+								if(elem_id=="subnetMask_L2TP")
+								{
+									if(value == "" || value == null)
+										return I18N("j","Please enter a subnet mask.");
+									else
+									{
+										var mask = COMM_IPv4MASK2INT(value);
+										if(mask <= 0 || mask > 32)
+											return I18N("j","Please enter a valid netmask. (e.g. 255.255.255.0)");
+										if(mask < 8)
+											return I18N("j", "The router would not support the subnet mask which length is less than Class A.");
+									}
+								}
+
+								if(elem_id=="gatewayIP_L2TP")
+								{
+									if(value == "" || value == null)
+										return I18N("j","Please enter a gateway address.");
+									else
+									{
+										if(!COMM_ValidV4Format(value) || !COMM_ValidV4Addr(value))
+											return I18N("j","Please enter a valid IP address. (e.g. 192.168.0.1)");
+									}
+								}
+
+								if(elem_id=="primaryDNSAddress_L2TP")
+								{
+									if(value == "" || value == null)
+										return I18N("j","Please enter a valid IP address. (e.g. 192.168.0.1)");
+									else
+									{
+										if(!COMM_ValidV4Addr(value))
+											return I18N("j","Please enter a valid IP address. (e.g. 192.168.0.1)");
+									}
+								}
+							}
+							else
+							{
+								if(elem_id=="primaryDNSAddress_L2TP" && value != "")
+								{
+									if(!COMM_ValidV4Addr(value))
+										return I18N("j","Please enter a valid IP address. (e.g. 192.168.0.1)");
+								}
+							}
+
+							if(elem_id=="secondaryDNSAddress_L2TP" && value != "")
+							{
+								if(PriL2TPDNS == "" || PriL2TPDNS == null)
+									return I18N("j","Please enter a primary dns server");
+
+								if(!COMM_ValidV4Addr(value))
+									return I18N("j","Please enter a valid IP address. (e.g. 192.168.0.1)");
+
+								if(value == PriL2TPDNS)
+									return I18N("j","Secondary DNS server should not be the same as Primary DNS server.");
+							}
+
+							if(elem_id=="mtu_L2TP_Input" && $("#mtu_L2TP")[0].value=="MANUAL")
+								if(!COMM_IsInteger(value) || value < 1280 || 1460 < value)
+									return I18N("j", "The MTU value should be 1280 ~ 1460.");
+
+							if(elem_id=="maximumIdleTime_L2TP" && !COMM_IsDigit(value))
+								return I18N("j", "Please enter a value");
+							break;
+						case "DSLite": /* dslite */
+							var validregex = /^\s*((([0-9A-Fa-f]{1,4}:){7}([0-9A-Fa-f]{1,4}|:))|(([0-9A-Fa-f]{1,4}:){6}(:[0-9A-Fa-f]{1,4}|((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){5}(((:[0-9A-Fa-f]{1,4}){1,2})|:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){4}(((:[0-9A-Fa-f]{1,4}){1,3})|((:[0-9A-Fa-f]{1,4})?:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){3}(((:[0-9A-Fa-f]{1,4}){1,4})|((:[0-9A-Fa-f]{1,4}){0,2}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){2}(((:[0-9A-Fa-f]{1,4}){1,5})|((:[0-9A-Fa-f]{1,4}){0,3}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){1}(((:[0-9A-Fa-f]{1,4}){1,6})|((:[0-9A-Fa-f]{1,4}){0,4}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(:(((:[0-9A-Fa-f]{1,4}){1,7})|((:[0-9A-Fa-f]{1,4}){0,5}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:)))(%.+)?\s*$/;
+							var DSLiteStatus = document.getElementById("configuration_DSLite").value;
+
+							if(DSLiteStatus=="Manual" && elem_id=="afterIPv6Address_DSLite")
+							{
+								if(value=="" || value==null)
+									return I18N("j","Please enter an IPv6 address.");
+								else
+									if(!validregex.test(value))
+										return I18N("j","Please enter a valid IPv6 address. (e.g. 2001::1)");
+							}
+							// Alpha HuanYao
+							if(elem_id=="b4IPv4Address_DSLite")
+							{
+								var b4IPv4Address_DSLite = parseInt(document.getElementById("b4IPv4Address_DSLite").value);
+								if (isNaN(b4IPv4Address_DSLite))
+									return I18N("j","Please enter a valid IP address. (e.g. 192.168.0.1)");
+								if (b4IPv4Address_DSLite >= 255 || b4IPv4Address_DSLite <= 0)
+									return I18N("j","Please enter a valid IP address. (e.g. 192.168.0.1)");
+							}
+							break;
+						
+						case "Ru_PPPoE": /* Rusia PPPoE */
+							var PPPoEStatus = document.getElementById("addressMode_PPPoE").value;
+							var PriPPPoEDNS = document.getElementById("primaryDNSAddress_PPPoE").value;
+							var Ru_PPPoEStatus = document.getElementById("addressMode_Ru_PPPoE").value;
+							var Ru_PriPPPoEDNS = document.getElementById("primaryDNSAddress_Ru_PPPoE").value;
+
+							if(elem_id == "userName_PPPoE" && (value == "" || value == null))
+								return I18N("j","Please enter a username.");
+
+							if(elem_id == "password_PPPoE" && (value == "" || value == null))
+								return I18N("j","Please enter a password.");
+
+							if(elem_id == "primaryDNSAddress_PPPoE" && value != "")
+							{
+								if(!COMM_ValidV4Addr(value))
+									return I18N("j","Please enter a valid IP address. (e.g. 192.168.0.1)");
+							}
+
+							if(elem_id == "secondaryDNSAddress_PPPoE" && value != "")
+							{
+								if(PriPPPoEDNS == "" || PriPPPoEDNS == null)
+									return I18N("j","Please enter a primary dns server");
+
+								if(!COMM_ValidV4Addr(value))
+									return I18N("j","Please enter a valid IP address. (e.g. 192.168.0.1)");
+
+								if(value == PriPPPoEDNS)
+									return I18N("j","Secondary DNS server should not be the same as Primary DNS server.");
+							}
+
+							if(PPPoEStatus == "STATICIP" && elem_id == "ipAddress_PPPoE")
+							{
+								if(value == "" || value == null)
+									return I18N("j","Please enter an IP address.");
+								else
+								{
+									if(!COMM_ValidV4Format(value) || !COMM_ValidV4Addr(value))
+										return I18N("j","Please enter a valid IP address. (e.g. 192.168.0.1)");
+								}
+							}
+
+							if(elem_id=="mtu_PPPoE_Input" && $("#mtu_PPPoE")[0].value=="MANUAL")
+								if(!COMM_IsInteger(value) || value < 1280 || 1492 < value)
+									return I18N("j", "The MTU value should be 1280 ~ 1492.");
+
+							if(elem_id=="maximumIdleTime_PPPoE" && !COMM_IsDigit(value))
+								return I18N("j", "Please enter a value");
+							
+							//WAN Physical Settings	
+							if(Ru_PPPoEStatus=="STATICIP")
+							{
+								if(elem_id=="ipAddress_Ru_PPPoE")
+								{
+									if(value == "" || value == null)
+										return I18N("j","Please enter an IP address.");
+									else
+									{
+										if(!COMM_ValidV4Format(value) || !COMM_ValidV4Addr(value))
+											return I18N("j","Please enter a valid IP address. (e.g. 192.168.0.1)");
+									}
+								}
+
+								if(elem_id=="subnetMask_Ru_PPPoE")
+								{
+									if(value == "" || value == null)
+										return I18N("j","Please enter a subnet mask.");
+									else
+									{
+										var mask = COMM_IPv4MASK2INT(value);
+										if(mask <= 0 || mask > 32)
+											return I18N("j","Please enter a valid netmask. (e.g. 255.255.255.0)");
+										if(mask < 8)
+											return I18N("j", "The router would not support the subnet mask which length is less than Class A.");
+									}
+								}
+
+								if(elem_id=="gatewayIP_Ru_PPPoE")
+								{
+									if(value == "" || value == null)
+										return I18N("j","Please enter a gateway address.");
+									else
+									{
+										if(!COMM_ValidV4Format(value) || !COMM_ValidV4Addr(value))
+											return I18N("j","Please enter a valid IP address. (e.g. 192.168.0.1)");
+									}
+								}
+
+								if(elem_id=="primaryDNSAddress_Ru_PPPoE")
+								{
+									if(value == "" || value == null)
+										return I18N("j","Please enter a valid IP address. (e.g. 192.168.0.1)");
+									else
+									{
+										if(!COMM_ValidV4Addr(value))
+											return I18N("j","Please enter a valid IP address. (e.g. 192.168.0.1)");
+									}
+								}
+								
+								if(elem_id=="secondaryDNSAddress_Ru_PPPoE" && value != "")
+								{
+									if(Ru_PriPPPoEDNS == "" || Ru_PriPPPoEDNS == null)
+										return I18N("j","Please enter a primary dns server");
+	
+									if(!COMM_ValidV4Addr(value))
+										return I18N("j","Please enter a valid IP address. (e.g. 192.168.0.1)");
+	
+									if(value == Ru_PriPPPoEDNS)
+										return I18N("j","Secondary DNS server should not be the same as Primary DNS server.");
+								}
+							}			
+							break;
+
+						case "Ru_PPTP": /* Rusia PPTP */
+							var PPTPStatus = document.getElementById("addressMode_PPTP").value;
+							var PriPPTPDNS = document.getElementById("primaryDNSAddress_PPTP").value;
+
+							if(elem_id=="serverIPAddress_PPTP")
+							{
+								if(value == "" || value == null)
+									return I18N("j","Please enter an IP address.");
+								else
+								{
+									if(!COMM_ValidV4Format(value) || !COMM_ValidV4Addr(value))
+										return I18N("j","Please enter a valid IP address. (e.g. 192.168.0.1)");
+								}
+							}
+
+							if(elem_id == "userName_PPTP" && (value == "" || value == null))
+								return I18N("j","Please enter a username.");
+
+							if(elem_id == "password_PPTP" && (value == "" || value == null))
+								return I18N("j","Please enter a password.");
+
+							if(PPTPStatus=="STATICIP")
+							{
+								if(elem_id=="ipAddress_PPTP")
+								{
+									if(value == "" || value == null)
+										return I18N("j","Please enter an IP address.");
+									else
+									{
+										if(!COMM_ValidV4Format(value) || !COMM_ValidV4Addr(value))
+											return I18N("j","Please enter a valid IP address. (e.g. 192.168.0.1)");
+									}
+								}
+
+								if(elem_id=="subnetMask_PPTP")
+								{
+									if(value == "" || value == null)
+										return I18N("j","Please enter a subnet mask.");
+									else
+									{
+										var mask = COMM_IPv4MASK2INT(value);
+										if(mask <= 0 || mask > 32)
+											return I18N("j","Please enter a valid netmask. (e.g. 255.255.255.0)");
+										if(mask < 8)
+											return I18N("j", "The router would not support the subnet mask which length is less than Class A.");
+									}
+								}
+
+								if(elem_id=="gatewayIP_PPTP")
+								{
+									if(value == "" || value == null)
+										return I18N("j","Please enter a gateway address.");
+									else
+									{
+										if(!COMM_ValidV4Format(value) || !COMM_ValidV4Addr(value))
+											return I18N("j","Please enter a valid IP address. (e.g. 192.168.0.1)");
+									}
+								}
+
+								if(elem_id=="primaryDNSAddress_PPTP")
+								{
+									if(value == "" || value == null)
+										return I18N("j","Please enter a valid IP address. (e.g. 192.168.0.1)");
+									else
+									{
+										if(!COMM_ValidV4Addr(value))
+											return I18N("j","Please enter a valid IP address. (e.g. 192.168.0.1)");
+									}
+								}
+							}
+							else
+							{
+								if(elem_id=="primaryDNSAddress_PPTP" && value != "")
+								{
+									if(!COMM_ValidV4Addr(value))
+										return I18N("j","Please enter a valid IP address. (e.g. 192.168.0.1)");
+								}
+							}
+
+							if(elem_id=="secondaryDNSAddress_PPTP" && value != "")
+							{
+								if(PriPPTPDNS == "" || PriPPTPDNS == null)
+									return I18N("j","Please enter a primary dns server");
+
+								if(!COMM_ValidV4Addr(value))
+									return I18N("j","Please enter a valid IP address. (e.g. 192.168.0.1)");
+
+								if(value == PriPPTPDNS)
+									return I18N("j","Secondary DNS server should not be the same as Primary DNS server.");
+							}
+
+							if(elem_id=="mtu_PPTP_Input" && $("#mtu_PPTP")[0].value=="MANUAL")
+								if(!COMM_IsInteger(value) || value < 1280 || 1460 < value)
+									return I18N("j", "The MTU value should be 1280 ~ 1460.");
+
+							if(elem_id=="maximumIdleTime_PPTP" && !COMM_IsDigit(value))
+								return I18N("j", "Please enter a value");
+							break;
+						
+						case "Ru_L2TP": /* Russia L2TP */
+							var L2TPStatus = document.getElementById("addressMode_L2TP").value;
+							var PriL2TPDNS = document.getElementById("primaryDNSAddress_L2TP").value;
+
+							if(elem_id=="serverIPAddress_L2TP")
+							{
+								if(value == "" || value == null)
+									return I18N("j","Please enter an IP address.");
+								else
+								{
+									if(!COMM_ValidV4Format(value) || !COMM_ValidV4Addr(value))
+										return I18N("j","Please enter a valid IP address. (e.g. 192.168.0.1)");
+								}
+							}
+
+							if(elem_id == "userName_L2TP" && (value == "" || value == null))
+								return I18N("j","Please enter a username.");
+
+							if(elem_id == "password_L2TP" && (value == "" || value == null))
+								return I18N("j","Please enter a password.");
+
+							if(L2TPStatus=="STATICIP")
+							{
+								if(elem_id=="ipAddress_L2TP")
+								{
+									if(value == "" || value == null)
+										return I18N("j","Please enter an IP address.");
+									else
+									{
+										if(!COMM_ValidV4Format(value) || !COMM_ValidV4Addr(value))
+											return I18N("j","Please enter a valid IP address. (e.g. 192.168.0.1)");
+									}
+								}
+
+								if(elem_id=="subnetMask_L2TP")
+								{
+									if(value == "" || value == null)
+										return I18N("j","Please enter a subnet mask.");
+									else
+									{
+										var mask = COMM_IPv4MASK2INT(value);
+										if(mask <= 0 || mask > 32)
+											return I18N("j","Please enter a valid netmask. (e.g. 255.255.255.0)");
+										if(mask < 8)
+											return I18N("j", "The router would not support the subnet mask which length is less than Class A.");
+									}
+								}
+
+								if(elem_id=="gatewayIP_L2TP")
+								{
+									if(value == "" || value == null)
+										return I18N("j","Please enter a gateway address.");
+									else
+									{
+										if(!COMM_ValidV4Format(value) || !COMM_ValidV4Addr(value))
+											return I18N("j","Please enter a valid IP address. (e.g. 192.168.0.1)");
+									}
+								}
+
+								if(elem_id=="primaryDNSAddress_L2TP")
+								{
+									if(value == "" || value == null)
+										return I18N("j","Please enter a valid IP address. (e.g. 192.168.0.1)");
+									else
+									{
+										if(!COMM_ValidV4Addr(value))
+											return I18N("j","Please enter a valid IP address. (e.g. 192.168.0.1)");
+									}
+								}
+							}
+							else
+							{
+								if(elem_id=="primaryDNSAddress_L2TP" && value != "")
+								{
+									if(!COMM_ValidV4Addr(value))
+										return I18N("j","Please enter a valid IP address. (e.g. 192.168.0.1)");
+								}
+							}
+
+							if(elem_id=="secondaryDNSAddress_L2TP" && value != "")
+							{
+								if(PriL2TPDNS == "" || PriL2TPDNS == null)
+									return I18N("j","Please enter a primary dns server");
+
+								if(!COMM_ValidV4Addr(value))
+									return I18N("j","Please enter a valid IP address. (e.g. 192.168.0.1)");
+
+								if(value == PriL2TPDNS)
+									return I18N("j","Secondary DNS server should not be the same as Primary DNS server.");
+							}
+
+							if(elem_id=="mtu_L2TP_Input" && $("#mtu_L2TP")[0].value=="MANUAL")
+								if(!COMM_IsInteger(value) || value < 1280 || 1460 < value)
+									return I18N("j", "The MTU value should be 1280 ~ 1460.");
+
+							if(elem_id=="maximumIdleTime_L2TP" && !COMM_IsDigit(value))
+								return I18N("j", "Please enter a value");
+							break;
+					}
+				}
+
+				return "";
+			}, "");
+
+			$('#internet_form').validate({
+				submitHandler: function(form) {
+					CheckConnectionStatus();
+				}
+			});
+
+			var elements = $("#iPAddress_StaticIP, #subnetMask_StaticIP, #defaultGateway_StaticIP, #primaryDNSAddress_StaticIP, #secondaryDNSAddress_StaticIP, #primaryDNSAddress_DynamicIP, #secondaryDNSAddress_DynamicIP, #userName_PPPoE, #password_PPPoE, #ipAddress_PPPoE, #primaryDNSAddress_PPPoE, #secondaryDNSAddress_PPPoE, #serverIPAddress_PPTP, #userName_PPTP, #password_PPTP, #ipAddress_PPTP, #subnetMask_PPTP, #gatewayIP_PPTP, #primaryDNSAddress_PPTP, #secondaryDNSAddress_PPTP, #serverIPAddress_L2TP, #userName_L2TP, #password_L2TP, #ipAddress_L2TP, #subnetMask_L2TP, #gatewayIP_L2TP, #primaryDNSAddress_L2TP, #secondaryDNSAddress_L2TP, #afterIPv6Address_DSLite, #value_Session, #mtu_StaticIP_Input, #mtu_DynamicIP_Input, #mtu_PPPoE_Input, #mtu_PPTP_Input, #mtu_L2TP_Input, #b4IPv4Address_DSLite, #maximumIdleTime_PPPoE, #maximumIdleTime_PPTP, #maximumIdleTime_L2TP, #macAddress_DynamicIP, #macAddress_StaticIP, #ipAddress_Ru_PPPoE, #subnetMask_Ru_PPPoE, #gatewayIP_Ru_PPPoE, #primaryDNSAddress_Ru_PPPoE, #secondaryDNSAddress_Ru_PPPoE");
+			$.each(elements, function(i, element) {
+				$(this).rules("add", { checkSetValues: true });
+			});
+
+		});
+	</script>
+<!--
+<script type="text/javascript">
+	Load_HTML();
+	Initial();
+	setMenu("menu_Settings");
+	InitMACList();
+	InitWAN();
+	checkTimeout();
+</script>
+
+-->
+</body></html>

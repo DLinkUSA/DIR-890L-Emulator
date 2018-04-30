@@ -1,0 +1,559 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!-- saved from url=(0030)http://192.168.0.1/System.html -->
+<html xmlns="http://www.w3c.org/1999/xhtml" xml:lang="zh_TW" lang="zh_TW"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>D-LINK</title>
+<meta http-equiv="X-UA-Compatible" content="IE=9">
+
+<meta http-equiv="Content-Type" content="text/css">
+<script type="text/javascript" charset="utf-8" src="resources/initialJS.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/comm.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/hmac_md5.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/libajax.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/hnap.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/i18n.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/pagetool.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/menu.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/DetectRouterConnection.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/checkTimeout.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/includeLang.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/AES.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/DeviceConfig.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/initialCSS.js"></script>
+<link rel="stylesheet" type="text/css" href="resources/style_pages.css" media="all">
+<script type="text/javascript" charset="utf-8" src="resources/initialJQ.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/jquery-1.8.2.min.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/jquery.selectbox-0.2_new.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/jquery.stringify.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/initialValidate.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/jquery.validate.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/DetectBrowserVersion.js"></script>
+
+
+<script type="text/javascript">
+	var HNAP = new HNAP_XML();
+	var _ReciprocalNumber = 80;
+	var _ReciprocalFactoryDefaultNumber = 80;
+	var _ReciprocalRebootNumber = 80;
+	function Load_HTML()	{	$("#header").load("header.html");	}
+	function Initial()
+	{
+		initialMenu();
+		initialDetectRouterConnection();
+	}
+	function RCF_Check_btn()
+	{
+		document.getElementById("CreatePopAlertMessage").style.display = "inline";
+		document.getElementById("RCFCheck").style.display = "block";
+	}
+	function Device_RFC()	{	document.forms["ulcfgbin"].submit();	}
+	function Start_reciprocal_Number_RestoreConfiguration()
+	{
+		if (_ReciprocalNumber >= 0)
+		{
+			document.getElementById("reciprocal_Number").innerHTML = "";
+			document.getElementById("reciprocal_Number").innerHTML = _ReciprocalNumber + " " + I18N("j", "Sec");
+			_ReciprocalNumber --;
+			setTimeout("Start_reciprocal_Number_RestoreConfiguration()", 1000);
+		}
+		else
+		{
+			document.getElementById("RCF").style.display = "none";
+			document.getElementById("SuccessRCF").style.display = "block";
+		}
+	}
+	function Device_Reboot_btn()
+	{
+		document.getElementById("CreatePopAlertMessage").style.display = "inline";
+		document.getElementById("REBOOTCheck").style.display = "block";
+	}
+	function Device_Reboot()	{	HNAP.GetXMLAsync("Reboot", null, "GetXML", function(xml)	{	GetResult_1st(xml)	});	}
+	function GetResult_1st(result_xml)	{	if (result_xml != null)	{	HNAP.SetXMLAsync("Reboot", result_xml, function(xml)	{	SetResult_1st(xml);	});	}	}
+	function SetResult_1st(result_xml)
+	{
+		var SetResult = result_xml.Get("RebootResponse/RebootResult");
+		if (SetResult == "OK" || SetResult == "REBOOT")
+		{
+			document.getElementById("REBOOTCheck").style.display = "none";
+			document.getElementById("REBOOT").style.display = "block";
+			Time_GetReciprocalTime = window.clearInterval(Time_GetReciprocalTime);
+			Start_reciprocal_Number_Reboot();
+		}
+	}
+	function Start_reciprocal_Number_Reboot()
+	{
+		if (_ReciprocalRebootNumber >= 0)
+		{
+			document.getElementById("reciprocal_Number_Reboot").innerHTML = "";
+			document.getElementById("reciprocal_Number_Reboot").innerHTML = _ReciprocalRebootNumber + " " + I18N("j", "Sec");
+			_ReciprocalRebootNumber --;
+			setTimeout("Start_reciprocal_Number_Reboot()", 1000);
+		}
+		else
+		{
+			document.getElementById("REBOOT").style.display = "none";
+			document.getElementById("SuccessREBOOT").style.display = "block";
+		}
+	}
+	function SetFactory_Default()
+	{
+		document.getElementById("CreatePopAlertMessage").style.display = "inline";
+		document.getElementById("FACTORYDEFAULTCheck").style.display = "block";
+	}
+	function Device_FDReboot()	{	{	HNAP.GetXMLAsync("SetFactoryDefault", null, "GetXML", function(xml)	{	GetResult_2nd(xml)	});	}	}
+	function GetResult_2nd(result_xml)	{	if (result_xml != null)	{	HNAP.SetXMLAsync("SetFactoryDefault", result_xml, function(xml)	{	SetResult_2nd(xml);	});	}	}
+	function SetResult_2nd(result_xml)
+	{
+		var SetResult = result_xml.Get("SetFactoryDefaultResponse/SetFactoryDefaultResult");
+		if (SetResult == "OK" || SetResult == "REBOOT")
+		{
+			document.getElementById("FACTORYDEFAULTCheck").style.display = "none";
+			document.getElementById("FACTORYDEFAULT").style.display = "block";
+			Time_GetReciprocalTime = window.clearInterval(Time_GetReciprocalTime);
+			Start_reciprocal_Number_FactoryDefault();
+		}
+	}
+	function Start_reciprocal_Number_FactoryDefault()
+	{
+		if (_ReciprocalFactoryDefaultNumber >= 0)
+		{
+			document.getElementById("reciprocal_Number_FactoryDefault").innerHTML = "";
+			document.getElementById("reciprocal_Number_FactoryDefault").innerHTML = _ReciprocalFactoryDefaultNumber + " " + I18N("j", "Sec");
+			_ReciprocalFactoryDefaultNumber --;
+			setTimeout("Start_reciprocal_Number_FactoryDefault()", 1000);
+		}
+		else
+		{
+			sessionStorage.setItem("RedirectUrl", "http://dlinkrouter.local/");
+			document.getElementById("FACTORYDEFAULT").style.display = "none";
+			document.getElementById("SuccessFACTORYDEFAULT").style.display = "block";
+		}
+	}
+	function Body_Onload()
+	{
+		if (COMM_GetURLParameter("RESULT") != "")
+		{
+			switch(COMM_GetURLParameter("RESULT"))
+			{
+				case "FAIL":
+					document.getElementById("CreatePopAlertMessage").style.display = "inline";
+					document.getElementById("FailedRCF").style.display = "block";
+					break;
+				case "SUCCESS":
+					var xml_DeviceReboot = HNAP.GetXML("Reboot");
+					var xml_DeviceRebootResult = HNAP.SetXML("Reboot", xml_DeviceReboot);
+					
+					document.getElementById("CreatePopAlertMessage").style.display = "inline";
+					document.getElementById("RCF").style.display = "block";
+					Start_reciprocal_Number_RestoreConfiguration();
+					break;
+				default:
+					break;
+			}
+		}
+	}
+	function returnToMain()
+	{
+		document.getElementById("CreatePopAlertMessage").style.display = "none";
+		document.getElementById("RCFCheck").style.display = "none";
+		document.getElementById("FailedRCF").style.display = "none";
+		document.getElementById("SuccessRCF").style.display = "none";
+		document.getElementById("REBOOTCheck").style.display = "none";
+		document.getElementById("REBOOT").style.display = "none";
+		document.getElementById("SuccessREBOOT").style.display = "none";
+		document.getElementById("FACTORYDEFAULTCheck").style.display = "none";
+		document.getElementById("FACTORYDEFAULT").style.display = "none";
+		document.getElementById("SuccessFACTORYDEFAULT").style.display = "none";
+	}
+	function returnToMain2()	{	self.location.href="System.html";	}
+	function returnToHome()	{	self.location.href = "Home.html";	}
+
+	function SaveConfiguration()	{	document.forms["dlcfgbin"].submit();	}
+	function ShowUploadButton(id, obj)
+	{
+		document.getElementById(id).value = obj.value.substr(obj.value.lastIndexOf('\\') + 1);
+		document.getElementById(id + "_Button").style.display = "";
+	}
+	function CheckNetworkStatus()
+	{
+		var status = sessionStorage.getItem('networkStatus');
+		if ((status == 1)&&(currentDevice.helpVer != ""))
+		{
+			document.getElementById("Get_Help").style.display = "inline";
+		}
+		else
+		{
+			document.getElementById("Get_Help").style.display = "none";
+		}
+	}
+</script>
+</head>
+
+<body onload="Body_Onload()">
+	<div id="wrapper">
+		<!-------------------- Logo ------------------------->
+		<div id="header"><div>
+	<div style="position:relative; top:37px;">
+		<a href="http://www.dlink.com/" target="_blank">
+			<img id="image_Logo" src="resources/logo_2.png" alt="D-Link" width="102" height="20" border="0">
+		</a>
+	</div>
+	<table id="device_ver" style="position:relative; top:33px; font-size:13px; color:#969696;" border="0">
+		<tbody>
+			<tr>
+				<td style="padding: 0 10px 0 0;"><label id="h_ModelName">DIR-890L</label></td>
+				<td style="padding: 0 10px 0 0;">HW:<label id="h_HWVersion">A1</label></td>
+				<td style="padding: 0 10px 0 0;">FW:<label id="h_FWVersion">1.00</label></td>
+			</tr>
+		</tbody>
+	</table>
+
+</div></div>
+		<!-------------------- Menu ------------------------->
+		<div id="menu"><ul>	<li><a id="menu_Home" href="Home.html">Home</a></li>	
+		
+		<li class="parent" onmouseover="this.className=&quot;parentOn&quot;" onmouseout="this.className=&quot;parent&quot;"><a id="menu_Settings" href="#">Settings</a>		
+		
+		<ul>			
+		
+		<li><a href="Wizard_Manual.html" onclick="return confirmExit()">Wizard</a></li>			
+		<li><a href="Internet.html" onclick="return confirmExit();">Internet</a></li>			
+		<li><a href="WiFi.html" onclick="return confirmExit()">Wireless</a></li>					
+		<li><a href="Network.html" onclick="return confirmExit()">Network</a></li>	
+		<li><a href="SharePort.html" onclick="return confirmExit()">SharePort</a></li>	
+		<li><a href="Mydlink.html" onclick="return confirmExit()">mydlink</a></li>
+		
+		
+		</ul>	</li>	
+		
+		<li class="parent" onmouseover="this.className=&quot;parentOn&quot;" onmouseout="this.className=&quot;parent&quot;"><a id="menu_Advanced" href="#">Features</a>		
+		
+		<ul>		
+
+		<li><a href="QoS.html" onclick="return confirmExit()">QoS Engine</a></li>			
+		<li><a href="Firewall.html" onclick="return confirmExit()">Firewall</a></li>			
+		<li><a href="PortForwarding.html" onclick="return confirmExit()">Port Forwarding</a></li>			
+		<li><a href="WebsiteFilter.html" onclick="return confirmExit()">Website Filter</a></li>			
+		<li><a href="StaticRoute.html" onclick="return confirmExit()">Static Route</a></li>			
+		<li><a href="DynamicDNS.html" onclick="return confirmExit()">Dynamic DNS</a></li>			
+		<li><a href="VPN.html" onclick="return confirmExit()">Quick VPN</a></li>
+
+		</ul>	</li>	
+		
+		<li class="parent" onmouseover="this.className=&quot;parentOn&quot;" onmouseout="this.className=&quot;parent&quot;"><a id="menu_Management" href="#" style="background: url(resources/navigation_bg5.gif?v=20141117210117) 100% 0% no-repeat;">Management</a>		
+		
+		<ul>			
+		
+		<li><a href="Time.html" onclick="return confirmExit()">Time &amp; Schedule</a></li>			
+		<li><a href="SystemLog.html" onclick="return confirmExit()">System Log</a></li>			
+		<li><a href="Admin.html" onclick="return confirmExit()">System Admin</a></li>			
+		<li><a href="UpdateFirmware.html" onclick="return confirmExit()">Upgrade</a></li>			
+		<li><a href="Statistics.html" onclick="return confirmExit()">Statistics</a></li>		
+		
+		</ul>	</li></ul></div>
+		<div id="menu_edge"></div>
+		<!-------------------- Content ---------------------->
+		<div id="content">
+			<!-------------------- info ---------------------->
+	  		<div id="info"> 
+			  <div id="FunctionName">System</div>
+	          <div id="wallimage"><img src="resources/page_System.png" alt="" width="195" height="119"></div>	
+		      <div id="directions">
+				This page lets you save your router's current settings to a file, restore your settings from a file, restore your router to factory default settings, or reboot the device. Please note that restoring the settings to the factory defaults will erase all settings, including any rules you have created.
+	    	  	<label id="Get_Help" onclick="window.open('http://support.dlink.com')" style="cursor: pointer; display: inline; text-decoration: underline;">Click here for help.</label>
+	    	  </div>
+			</div>
+			<!-------------------- funcBar ---------------------->
+			<div id="funcBar">
+				<div id="pagePath">Management &gt;&gt; System</div>
+				<ul id="rightFunc">
+					<li style="display:block"><a href="Admin.html" style="text-decoration:none;"><div id="page_btn" class="linkstyle_1">Admin</div></a></li>
+				</ul>
+			</div>
+			<!----------------- Pop Alert Message ---------------->
+			<div id="CreatePopAlertMessage" style="display:none;">
+				<div id="AlertPopRect">
+					<div id="AlertPopBody">
+						<!---------- Restore Configuration File Check ---------->
+						<div id="RCFCheck" class="popMessage" style="display:none;">
+							<div class="popMessage_icon"></div>
+							<table class="popMessage_infor">
+								<tbody><tr>
+									<td>
+										Are you sure you want to restore configuration file?
+									</td>
+								</tr><tr>
+							</tr></tbody></table>
+							<table class="popMessage_button_table">
+								 <tbody><tr>
+									 <td>
+									 	<div class="popMessage_button" onclick="Device_RFC()">OK</div>
+									 </td>
+									 <td>
+									 	<div class="popMessage_button" onclick="returnToMain()">Cancel</div>
+									 </td>
+								 </tr>
+							</tbody></table>
+						</div>
+
+						<!---------- Restore Configuration File ---------->
+						<div id="RCF" class="popMessage" style="display:none;">
+							<div class="popMessage_icon_loading"></div>
+							<label id="reciprocal_Number" class="popMessage_timer"></label>
+							<table class="popMessage_infor_red">
+								<tbody><tr>
+									<td>
+										Do not close the page or power off the service until the restore configuration file is complete!
+									</td>
+								</tr><tr>
+							</tr></tbody></table>
+						</div>
+						<!---------- Failed - Restore Configuration File ---------->
+						<div id="FailedRCF" class="popMessage" style="display:none;">
+							<div class="popMessage_icon_warning"></div>
+							<table class="popMessage_infor_red" border="0">
+								<tbody><tr>
+									<td>
+										Restore configuration file failed!
+									</td>
+								</tr><tr>
+							</tr></tbody></table>
+							<table class="popMessage_button_table">
+								 <tbody><tr>
+									 <td>
+									 	<center><div class="popMessage_button" onclick="returnToMain2()">OK</div>
+									 	</center>
+									 </td>
+								 </tr>
+							</tbody></table>
+						</div>
+						<!---------- Success - Restore Configuration File ---------->
+						<div id="SuccessRCF" class="popMessage" style="display:none;">
+							<div class="popMessage_icon"></div>
+							<table class="popMessage_infor">
+								<tbody><tr>
+									<td>
+										Restore configuration file success!
+									</td>
+								</tr><tr>
+							</tr></tbody></table>
+							<table class="popMessage_button_table">
+								 <tbody><tr>
+									 <td>
+									 	<center><div class="popMessage_button" onclick="returnToHome()">OK</div></center>
+									 </td>
+								 </tr>
+							</tbody></table>
+						</div>
+
+						<!---------- Confirm Reboot ---------->
+						<div id="REBOOTCheck" class="popMessage" style="display:none;">
+							<div class="popMessage_icon"></div>
+							<table class="popMessage_infor">
+								<tbody><tr>
+									<td>
+										Are you sure you want to restart the device?
+									</td>
+								</tr><tr>
+							</tr></tbody></table>
+							<table class="popMessage_button_table">
+								 <tbody><tr>
+									 <td>
+									 	<div class="popMessage_button" onclick="Device_Reboot()">OK</div>
+									 </td>
+									 <td>
+									 	<div class="popMessage_button" onclick="returnToMain()">Cancel</div>
+									 </td>
+								 </tr>
+							</tbody></table>
+						</div>
+						<!---------- Reboot ------------>
+						<div id="REBOOT" class="popMessage" style="display:none;">
+							<div class="popMessage_icon_loading"></div>
+							<label id="reciprocal_Number_Reboot" class="popMessage_timer"></label>
+							<table class="popMessage_infor_short">
+								<tbody><tr>
+									<td>
+										Rebooting
+									</td>
+								</tr><tr>
+							</tr></tbody></table>
+						</div>
+						<!---------- Success - Reboot ---------->
+						<div id="SuccessREBOOT" class="popMessage" style="display:none;">
+							<div class="popMessage_icon"></div>
+							<table class="popMessage_infor">
+								<tbody><tr>
+									<td>
+										Reboot success!
+									</td>
+								</tr><tr>
+							</tr></tbody></table>
+							<table class="popMessage_button_table">
+								 <tbody><tr>
+									 <td>
+									 	<center><div class="popMessage_button" onclick="returnToHome()">OK</div></center>
+									 </td>
+
+								 </tr>
+							</tbody></table>
+						</div>
+
+						<!---------- Confirm Factory Default ---------->
+						<div id="FACTORYDEFAULTCheck" class="popMessage" style="display:none;">
+							<div class="popMessage_icon"></div>
+							<table class="popMessage_infor">
+								<tbody><tr>
+									<td>
+										Are you sure you want to reset the device to its factory default settings? This will cause current settings to be lost.
+									</td>
+								</tr><tr>
+							</tr></tbody></table>
+							<table class="popMessage_button_table">
+								 <tbody><tr>
+									 <td>
+									 	<div id="Confirm_btn" class="popMessage_button" onclick="Device_FDReboot()">OK</div>
+									 </td>
+									 <td>
+									 	<div id="Confirm_btn" class="popMessage_button" onclick="returnToMain()">Cancel</div>
+									 </td>
+								 </tr>
+							</tbody></table>
+						</div>
+						<!---------- Factory Default ---------->
+						<div id="FACTORYDEFAULT" class="popMessage" style="display:none;">
+							<div class="popMessage_icon_loading"></div>
+							<label id="reciprocal_Number_FactoryDefault" class="popMessage_timer"></label>
+							<table class="popMessage_infor_short">
+								<tbody><tr>
+									<td>
+										Rebooting
+									</td>
+								</tr><tr>
+							</tr></tbody></table>
+						</div>
+
+						<!---------- Success - Factory ---------->
+						<div id="SuccessFACTORYDEFAULT" class="popMessage" style="display:none;">
+							<div class="popMessage_icon"></div>
+							<table class="popMessage_infor">
+								<tbody><tr>
+									<td>
+										Restore to factory default success!
+									</td>
+								</tr><tr>
+							</tr></tbody></table>
+							<table class="popMessage_button_table">
+								 <tbody><tr>
+									 <td>
+									 	<center><div class="popMessage_button" onclick="redirectPage(null)">OK</div></center>
+									 </td>
+
+								 </tr>
+							</tbody></table>
+						</div>
+
+					</div>
+				</div>
+			</div>
+	    	<!-------------------- main -------------------------->
+	     	<div id="main">
+	     		<br>
+				<table class="block" border="0" cellspacing="0">
+				<tbody>
+				 <tr>
+				   	<th>Save Settings To Local Hard Drive:</th>
+				   	<td width="200px">
+			   		<form id="dlcfgbin" action="#" method="post">
+			   			<div class="file-box">
+							<button type="button" class="styled_button_s" style="min-width:200px;" onclick='alert("This feature has been disabled on this emulator.")'>Save</button>
+						</div>
+			 		</form>
+			 		</td>
+				 </tr>
+				 <form id="ulcfgbin" action="#" method="post" enctype="multipart/form-data"></form>
+					 <tr id="First_LSFLHD">
+					   	<th>Load Settings From Local Hard Drive:</th>
+					   	<td>
+					   		<div class="file-box">
+					   			<label for="select_Folder" id="browse_Button" class="trigger-file-input" style="min-width:168px; left:0px">Select File</label>
+					   			<input type="file" name="select_Folder" id="select_Folder" style="display:none" onchange="ShowUploadButton(&#39;upload_File&#39;,this);">
+					   		</div>
+					   	</td>
+					   	<td>
+					   		<input type="text" name="upload_File" id="upload_File" size="40" style="border:0px;height:40px;color:#4598AA;box-shadow:0 0 0" readonly="">
+					   	</td>
+					</tr>
+					<tr id="upload_File_Button" style="display:none">
+						<th></th>
+						<td>
+							<button type="button" class="styled_button_s" style="min-width:200px;" onclick='alert("This feature has been disabled on this emulator.")'">Restore</button>
+								<input type="hidden" name="REPORT_METHOD" value="301">
+								<input type="hidden" name="REPORT" value="System.html">
+						</td>
+					</tr>
+				 
+				 <form id="ulcfgbin2" action="#" method="post" enctype="multipart/form-data"></form>
+				 <tr id="Secondary_LSFLHD" style="display:none">
+				   	<th>Load Settings From Local Hard Drive:</th>
+					<td>
+						<input type="hidden" name="REPORT_METHOD" value="301">
+						<input type="hidden" name="REPORT" value="System.html">
+						<input type="file" id="ulcfg" name="sealpac" size="24">
+					</td>
+					<td>
+						<button type="submit">Restore</button>
+					</td>
+				 </tr>
+				 
+				 <tr>
+				   	<th>Restore To Factory Default Settings:</th>
+				   	<td>
+				   		<div class="file-box">
+							<button type="button" class="styled_button_s" style="min-width:200px;" onclick='alert("This feature has been disabled on this emulator.")'>Restore</button>
+						</div>
+			 		</td>
+				 </tr>
+				 <tr>
+				   	<th>Reboot The Device:</th>
+				   	<td>
+				   		<div class="file-box">
+							<button type="button" class="styled_button_s" style="min-width:200px;" onclick='alert("This feature has been disabled on this emulator.")'>Reboot</button>
+						</div>
+			 		</td>
+				 </tr>
+				</tbody>
+			    </table>
+			</div>
+		</div>
+		<!-- Detect Router Connection, Timmy Add 2013/08/15 -->
+		<div id="DetectRouterConnection" style="display:none"><div class="dialogBox" style="width:616px"><table class="myCreatePop_table" border="0" cellspacing="0" id="RouterConnectionTable"><tbody><tr><td colspan="3"><div class="popTitle">Router Not Found</div></td></tr><tr><td id="save_td" colspan="4"><center><div id="Save_edit_pop_btn" style="cursor:pointer" tabindex="12" onclick="CheckHTMLStatus(&#39;&#39;);">Retry</div></center></td></tr></tbody></table></div></div>
+		<div id="footer">
+			<div id="copyright">COPYRIGHT © 2014 D-Link</div>
+		</div>
+	</div>
+
+<script type="text/javascript">
+	// Detect Browser
+	var GetDBV = DetectBrowserVersion();
+	if (GetDBV[0] == "Microsoft Internet Explorer")
+	{
+		document.getElementById("browse_Button").style.left = "-2px";
+		if (parseInt(GetDBV[1]) < 9)	{	document.getElementById("First_LSFLHD").style.display = "none";	document.getElementById("Secondary_LSFLHD").style.display = "table-row";	}
+	}
+	if (GetDBV[0] == "Firefox")	{	document.getElementById("browse_Button").style.left = "-2px";	}
+	if (GetDBV[0] == "Safari")	{	if (parseInt(GetDBV[1]) < 6)	{	document.getElementById("First_LSFLHD").style.display = "none";	document.getElementById("Secondary_LSFLHD").style.display = "table-row";	}	}
+	if (GetDBV[0] == "Opera")	{	if (parseInt(GetDBV[1]) < 13)	{	document.getElementById("First_LSFLHD").style.display = "none";	document.getElementById("Secondary_LSFLHD").style.display = "table-row";	}	}
+</script>
+
+<!--
+<script type="text/javascript">
+	Load_HTML();
+	Initial();
+	setMenu("menu_Management");
+	CheckNetworkStatus();
+	checkTimeout();
+	if($.browser.mozilla)	{	if (GetDBV[2] == 0)	{	$('.trigger-file-input').click(function() {	$('#select_Folder').click();	});	}	}
+</script>
+
+-->
+</body></html>

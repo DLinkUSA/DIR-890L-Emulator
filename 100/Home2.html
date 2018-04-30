@@ -1,0 +1,2776 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!-- saved from url=(0028)http://192.168.0.1/Home.html -->
+<html xmlns="http://www.w3c.org/1999/xhtml" xml:lang="zh_TW" lang="zh_TW"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<title>D-LINK</title>
+	<meta http-equiv="X-UA-Compatible" content="IE=9">
+	
+	<meta http-equiv="Content-Type" content="text/css">
+	<link rel="stylesheet" type="text/css" href="resources/jquery-ui.min.css" media="all">
+	<link href="resources/jquery.selectbox.css" type="text/css" rel="stylesheet">
+	<link rel="stylesheet" type="text/css" href="resources/style_h.css" media="all">
+	<script type="text/javascript" charset="utf-8" src="resources/initialJQ.js"></script>
+	<script type="text/javascript" charset="utf-8" src="resources/jquery-1.8.2.min.js"></script>
+	<script type="text/javascript" charset="utf-8" src="resources/jquery.selectbox-0.2_new.js"></script>
+	<script type="text/javascript" charset="utf-8" src="resources/jquery.stringify.js"></script>
+	<script type="text/javascript" charset="utf-8" src="resources/initialJS.js"></script>
+	<script type="text/javascript" charset="utf-8" src="resources/comm.js"></script>
+	<script type="text/javascript" charset="utf-8" src="resources/hmac_md5.js"></script>
+	<script type="text/javascript" charset="utf-8" src="resources/libajax.js"></script>
+	<script type="text/javascript" charset="utf-8" src="resources/hnap.js"></script>
+	<script type="text/javascript" charset="utf-8" src="resources/i18n.js"></script>
+	<script type="text/javascript" charset="utf-8" src="resources/pagetool.js"></script>
+	<script type="text/javascript" charset="utf-8" src="resources/menu.js"></script>
+	<script type="text/javascript" charset="utf-8" src="resources/DetectRouterConnection.js"></script>
+	<script type="text/javascript" charset="utf-8" src="resources/checkTimeout.js"></script>
+	<script type="text/javascript" charset="utf-8" src="resources/includeLang.js"></script>
+	<script type="text/javascript" charset="utf-8" src="resources/AES.js"></script>
+	<script type="text/javascript" charset="utf-8" src="resources/DeviceConfig.js"></script>
+	<script type="text/javascript" charset="utf-8" src="resources/ConnectedClients.js"></script>
+	<script type="text/javascript" charset="utf-8" src="resources/jquery-ui.custom.min.js"></script>
+	<script type="text/javascript" charset="utf-8" src="resources/deviceinfo.js"></script>
+	<script type="text/javascript" charset="utf-8" src="resources/features.js"></script>
+	<script type="text/javascript" charset="utf-8" src="resources/SOAPDeviceSettings.js"></script>
+	<script type="text/javascript" charset="utf-8" src="resources/initEnv.js"></script>
+	<script type="text/javascript" charset="utf-8" src="resources/SOAPAction.js"></script>
+	<script type="text/javascript" charset="utf-8" src="resources/SOAPWanSettings.js"></script>
+	<script type="text/javascript" charset="utf-8" src="resources/SOAPIPv6.js"></script>
+	<script type="text/javascript" charset="utf-8" src="resources/SOAPClientInfo.js"></script>
+	<script type="text/javascript" charset="utf-8" src="resources/SOAPWLanRadio.js"></script>
+	<script type="text/javascript" charset="utf-8" src="resources/SOAPNetworkSettings.js"></script>
+	<script>
+		//OnLoad
+		var init = initEnv();
+		$(document).ready( function() {
+			init.done(function()
+			{
+				showModelName();
+			});
+		});
+		$(document).ready(function()	{
+			presetCheckBox("enableReserveIP", true);
+			presetCheckBox("enableAccess", true);
+			
+			$("div.checkbox_on" || "div.checkbox_off").click(function(e)	{
+				var checkboxId =  e.target.id +'_ck';
+				if(e.target.getAttribute("class") == "checkbox_on")
+				{
+					var disable = I18N("j","Disabled");
+					e.target.setAttribute("class", "checkbox_off");
+					e.target.setAttribute("className", "checkbox_off");
+					document.getElementById(e.target.id).innerHTML='<input type="checkbox" name=' + e.target.id + ' id=' + checkboxId + ' checked>'+disable;
+					document.getElementById(checkboxId).checked = false;
+					
+					if (checkboxId == "enableAccess_ck")
+					{
+						document.getElementById("show_Schedule").style.display = "none";
+						buttonStyleChange();
+					}
+					if (checkboxId == "enableReserveIP_ck")
+					{	
+						valueChanged = 1;
+						buttonStyleChange();
+						document.getElementById("show_IPAdrReserve").style.display = "none";
+						document.getElementById("show_IPAdr").style.display = "table-row";						
+					}
+				}
+				else
+				{
+					var enable = I18N("j","Enabled");
+					e.target.setAttribute("class", "checkbox_on");
+					e.target.setAttribute("className", "checkbox_on");
+					document.getElementById(e.target.id).innerHTML='<input type="checkbox" name=' + e.target.id + ' id=' + checkboxId + ' checked="">'+enable;
+					document.getElementById(checkboxId).checked = true;
+					
+					if (checkboxId == "enableAccess_ck")
+					{
+						document.getElementById("show_Schedule").style.display = "table-row";
+						buttonStyleChange();
+					}
+					if (checkboxId == "enableReserveIP_ck")	{
+					valueChanged = 1;	
+					buttonStyleChange();
+					document.getElementById("show_IPAdrReserve").style.display = "table-row";
+					document.getElementById("show_IPAdr").style.display = "none";
+					}
+				}
+			});
+			
+			//#ifdef featureUPNPAV
+			if(currentDevice.featureUPNPAV == false)
+			{
+				$("#usb_2").hide();
+			}
+			//#endif
+			
+			$("#header").load("header.html");
+			initialMenu();
+			initialDetectRouterConnection("Home");
+			setMenu("menu_Home");
+			GetInternetInformation(true);
+			GetUSB_Status(0);
+			Get_ClientInfo();
+			GetSchedule_List();
+			GetRouterInformation();
+			renewWanStatus(true);
+			setInterval("GetUSB_Status(1)",3000);
+			setInterval("renewWanStatus(false)",5000);
+			setInterval("Get_ClientInfo()",6000);
+			iniList();
+			showList("internetInfo");
+			Settings_Link();
+			$( document ).tooltip();
+			LoadMACList();
+			checkTimeout();
+			$(function() {	$("select").change(function () {	buttonStyleChange();	});	});
+		});
+	</script>
+	<script type="text/javascript">
+	var HNAP = new HNAP_XML();
+	var currentState;
+	var GetFlagG = new Boolean();
+	var Time_GetConnectionUpTime;
+	var Time_GetConnectionUpTime_IPv6;
+	var ipv4_connTime = 0;
+	var ipv6_connTime = 0;
+	var Time_GetUSBInformation;
+	var valueChanged = 0;
+	var allText = "";
+	var getInternetStatusDeffered = null;
+	
+	//HNAP data
+	var wanStatus = new SOAPGetWanStatusResponse();
+	var currentInternetStatus = null;
+	var ipv6Status = new SOAPGetIPv6StatusResponse();
+	var wanSettings_cache = new SOAPGetWanSettingsResponse();	//for wan static data cache only
+
+		GetFlagG = false;
+		
+		function iniList()
+		{
+			$("#internetIcon,#routerIcon,#clientIcon,#usbIcon").delay(500).fadeIn(1000);
+			$("#line_wan,#line_ethernet,#line_usb").delay(700).fadeIn(1000);
+			$("#map_info").delay(500).fadeIn(1000);
+		}
+		
+		function showList(element)
+		{
+			var oldState = currentState;
+			currentState = element;
+			if (oldState != currentState)
+			{
+				$("#internetInfo,#routerInfo,#clientInfo,#usbInfo").hide();
+				document.getElementById(currentState).style.display = 'inline';
+				
+				switch(currentState)
+				{
+					case "internetInfo":
+						GetInternetInformation(false);
+						gotoIPv4Info_WAN();
+						break;
+					case "clientInfo":
+						getClientList('Host');
+						break;
+					case "usbInfo":
+						GetSharePortInformation();
+						break;
+				}
+			}
+			createOnlineHelpLink(currentState);
+
+			$(".btn_bg2").attr("class", "btn_bg");
+			$("#"+currentState+'_circle').attr("class", "btn_bg2");
+			
+			click_Statuschanged();
+		}
+		
+		function mouseOverU(obj, status)
+		{
+			switch(status)
+			{
+				case "CONNECTED":		obj.src = "/image/usb.gif";	break;
+				default:				obj.src = "/image/usb_.gif";	break;
+			}
+		}
+		
+		function mouseOutU(obj, status)
+		{
+			switch(status)
+			{
+				case "CONNECTED":		obj.src = "/image/usb.gif";	break;
+				default:				obj.src = "/image/usb_.gif";	break;
+			}
+		}
+		
+		function mouseUnderLine(obj)	{	obj.style.textDecoration = "underline";	}
+		function mouseUnderLineN(obj)	{	obj.style.textDecoration = "none";	}
+		
+		
+		function renewWanStatus(init)
+		{
+			var oldWanStatus = wanStatus.Status;
+			ipv6Status = new SOAPGetIPv6StatusResponse();
+			wanStatus = new SOAPGetWanStatusResponse();
+			var soapActionv6 = new SOAPAction();
+			var soapAction = new SOAPAction();
+			var v6_query = soapActionv6.sendSOAPAction("GetIPv6Status", null, ipv6Status);
+			var wan_query = soapAction.sendSOAPAction("GetWanStatus", null, wanStatus);
+			$.when(v6_query, wan_query).done(function(obj)
+			{
+				//if(init)
+				//{
+				//	GetInternetInformation(true);
+				//}
+			
+				//show topology
+				switch (wanStatus.Status)
+				{
+					case "CONNECTED":	
+						//for better user experience
+						if(init)
+						{
+							if(wanSettings_cache.IPAddress != "")
+							{
+								showTopologyConnected();
+							}
+							else
+							{
+								showTopologyDisconnected(wanStatus.Status);
+							}
+							showRuntimeWanInfo(wanSettings_cache);
+						}
+						if(getInternetStatusDeffered == null)	//don't double trigger
+						{
+								getInternetStatusDeffered = getInternetStatus(true);
+								getInternetStatusDeffered.done(function(connStatus){
+								var oldConnStatus = currentInternetStatus;
+								currentInternetStatus = connStatus;
+								
+								if (connStatus =="OK_CONNECTED")
+								{
+									showTopologyConnected();
+								}
+								else
+								{
+									showTopologyDisconnected(wanStatus.Status);
+								}
+								//trigger
+								if((wanStatus.Status != oldWanStatus)||(currentInternetStatus != oldConnStatus))
+								{		
+									renewWanSettings(wanStatus.Status);
+								}
+									getInternetStatusDeffered = null;
+							});
+						}
+						break;
+					case "CONNECTING":
+					case "LIMITED_CONNECTION":
+					case "DISCONNECTED":
+						//if(ipv6Status.IPv6_Network_Status == "Connected")	//if Internet IPv6 ready
+						//{
+						//	showTopologyConnected();
+						//}
+						//else
+						{
+							showTopologyDisconnected();
+						}
+						//trigger
+						if(wanStatus.Status != oldWanStatus)
+						{		
+							renewWanSettings(wanStatus.Status);
+						}
+						break;
+				}
+				
+				GetConnectionUpTime(true);
+				if(init)
+				{
+					iniList();
+					//IPv6
+					showStaticIPv6Info(ipv6Status);
+				}
+				showRuntimeIPv6Info(ipv6Status);
+			}).fail(function()
+			{
+				if(init)
+				{
+					iniList();
+					showTopologyDisconnected();
+				}
+			});
+		
+		}
+
+		function renewWanSettings(status)
+		{	
+			switch (status)
+			{
+				case "CONNECTED":
+					GetConnectionUpTime(false);
+					GetInternetInformation(false);
+					CheckNewFirmware();	
+					break;
+				case "CONNECTING":
+				case "LIMITED_CONNECTION":
+				case "DISCONNECTED":
+					var wanSettings = new SOAPGetWanSettingsResponse();	//clean all
+					wanSettings.Type = wanSettings_cache.Type;
+					showRuntimeWanInfo(wanSettings);
+					ipv4_connTime = 0;
+					clearInterval(Time_GetConnectionUpTime);
+					runConnUpTime(false);
+					break;
+			}
+		}
+		
+		function getInternetStatus(trigger)
+		{
+			var dtd = $.Deferred();
+			var getCurrentInternetStatus = new SOAPGetCurrentInternetStatus();
+			getCurrentInternetStatus.InternetStatus = trigger;
+			var soapAction = new SOAPAction();
+			soapAction.sendSOAPAction("GetCurrentInternetStatus", getCurrentInternetStatus, null).done(function(obj)
+			{
+				var result = obj.GetCurrentInternetStatusResult;
+
+				if (result =="OK_CONNECTED")
+				{
+					dtd.resolve(result);
+				}
+				else if(result.indexOf("OK_DETECTING_") >= 0)
+				{
+					var sec = parseInt(result.substr(13))*1000;
+					sleep(sec).done(function(){
+						getInternetStatus(false).done(function(str){
+							dtd.resolve(str);
+						});						
+					})
+				}
+				else	//not connected
+				{
+					dtd.resolve(result);
+				}
+			});		
+		
+			return dtd.promise();	//wait job done
+		}
+		
+		function GetInternetInformation(init)
+		{
+			var soapAction = new SOAPAction();
+			var wanSettings = new SOAPGetWanSettingsResponse();
+			var result = soapAction.sendSOAPAction("GetWanSettings", null, wanSettings);
+			result.done(function(obj)
+			{
+				soapAction.copyObject(wanSettings_cache, wanSettings);	//keep wan type and mac				
+				
+				//static info
+				if(init)
+				{
+					$("#index_ShowWanMacAddress").html(wanSettings.MacAddress.toUpperCase());
+					$("#index_ShowConnectionType").html(I18N("j", wanSettings.Type));
+				}
+				else
+				{
+					showRuntimeWanInfo(wanSettings);
+				}
+			});
+		}
+
+		function showRuntimeWanInfo(wanSettings)
+		{
+			var status = wanStatus.Status;
+			var vpnString = "";	//for compatible
+
+			var getIPAddress = wanSettings.IPAddress;
+
+			if(wanSettings.Type == "StaticPPTP" || wanSettings.Type == "DynamicPPTP" || wanSettings.Type == "StaticL2TP" || wanSettings.Type == "DynamicL2TP")
+				getIPAddress = wanSettings.VPNLocalIPAddress;
+
+            if (getIPAddress == "")
+				getIPAddress = I18N("j", "Not Available");
+
+			document.getElementById("index_ShowIPAddress").innerHTML = getIPAddress;
+
+			var getSubnetmask = wanSettings.SubnetMask;			
+
+			if(wanSettings.Type == "StaticPPTP" || wanSettings.Type == "DynamicPPTP" || wanSettings.Type == "StaticL2TP" || wanSettings.Type == "DynamicL2TP")
+                getSubnetmask = wanSettings.VPNLocalSubnetMask;
+                
+			if (getSubnetmask == "")
+				getSubnetmask = I18N("j", "Not Available");
+
+			document.getElementById("index_ShowSubnetMask").innerHTML = getSubnetmask;
+
+			var getDefaultgateway = wanSettings.Gateway;
+
+			if(wanSettings.Type == "StaticPPTP" || wanSettings.Type == "DynamicPPTP" || wanSettings.Type == "StaticL2TP" || wanSettings.Type == "DynamicL2TP")
+			    getDefaultgateway = wanSettings.VPNLocalGateway;
+
+			if (getDefaultgateway == "")
+				getDefaultgateway = I18N("j", "Not Available");
+
+			document.getElementById("index_ShowDefaultGateway").innerHTML = getDefaultgateway;
+
+			
+			var getPridns = wanSettings.RuntimeDNS.Primary;
+			if (getPridns == "")
+			{
+				getPridns = I18N("j", "Not Available");
+			}
+			document.getElementById("index_ShowPrimaryDNS").innerHTML = getPridns;
+			
+			var getSecdns = wanSettings.RuntimeDNS.Secondary;
+			if (getSecdns == "")
+			{
+				getSecdns = I18N("j", "Not Available");
+			}
+			document.getElementById("index_ShowSecondaryDNS").innerHTML = getSecdns;
+			
+			//for compatibility
+			//if((status == "CONNECTED")&&(wanSettings.IPAddress == ""))
+			if((status == "CONNECTED")&&(getIPAddress == ""))
+			{
+				status = "LIMITED_CONNECTION";
+			}
+
+			//connect, disconnect button
+			var btn = $("#RenewRelease_btn");
+			switch (status)
+			{
+				case "CONNECTED":			
+					document.getElementById("index_ShowCableStatus").innerHTML = I18N("j", "Connected");
+					if(currentInternetStatus =="OK_CONNECTED")
+					{
+						document.getElementById("index_ShowNetworkStatus").innerHTML = I18N("j", "Connected");
+					}
+					else if(currentInternetStatus == "OK_NOTCONNECTED")
+					{
+						document.getElementById("index_ShowNetworkStatus").innerHTML = I18N("j", "Limited Connection");	
+					}
+					else	//detecting, show first
+					{
+						document.getElementById("index_ShowNetworkStatus").innerHTML = I18N("j", "Connected");
+					}
+					switch (wanSettings.Type)
+					{
+						case "DHCP":
+							btn.html(I18N("j", "Release IP Address")).css("display", "inline");
+							break;
+						case "DHCPPPPoE":
+						case "StaticPPPoE":
+							btn.html(I18N("j", "Disconnect")).css("display", "inline");	
+							break;
+						case "DynamicPPTP":
+						case "StaticPPTP":
+						case "DynamicL2TP":
+						case "StaticL2TP":
+							if (wanSettings.AutoReconnect == "true")	{
+								btn.hide();
+							}else{
+								btn.html(I18N("j", "Disconnect")).css("display", "inline");
+							}
+							break;
+						case "Static":
+						case "DsLite":
+							btn.hide();
+							break;
+					}
+		
+					btn.attr("class", "styled_button_s").attr("disabled", false)
+					.off("click").click(function(){
+						WANConnectionDisconnect(wanSettings.Type);
+					});
+					break;
+				case "CONNECTING":
+					document.getElementById("index_ShowCableStatus").innerHTML = I18N("j", "Connected");
+					document.getElementById("index_ShowNetworkStatus").innerHTML = I18N("j", "Connecting");
+					if (wanSettings.AutoReconnect == "true"){
+						btn.hide();
+					}else{
+						btn.attr("class", "styled_button_dis").css("display", "inline").attr("disabled", true);
+						btn.html(I18N("j", "Connecting"));
+					}
+					break;
+				case "DISCONNECTED":		
+					document.getElementById("index_ShowCableStatus").innerHTML = I18N("j", "Disconnected");
+					document.getElementById("index_ShowNetworkStatus").innerHTML = I18N("j", "Disconnected");
+					btn.hide();
+					break;
+				case "LIMITED_CONNECTION":	
+					
+					document.getElementById("index_ShowCableStatus").innerHTML = I18N("j", "Connected");
+					document.getElementById("index_ShowNetworkStatus").innerHTML = I18N("j", "Disconnected");
+								
+					switch(wanSettings.Type)
+					{
+						case "DHCP":
+							btn.html(I18N("j", "Renew IP Address")).css("display", "inline");
+							break;
+						case "DHCPPPPoE":
+						case "StaticPPPoE":
+							btn.html(I18N("j", "Connect")).css("display", "inline");	
+							break;
+						case "DynamicPPTP":
+						case "StaticPPTP":
+						case "DynamicL2TP":
+						case "StaticL2TP":
+							if (wanSettings.AutoReconnect == "true")
+							{
+								btn.hide();
+							}else{
+								btn.html(I18N("j", "Connect")).css("display", "inline");
+							}
+							break;
+						default:	//static, dslite
+							btn.hide();
+							break;
+					}
+					btn.attr("class", "styled_button_s").attr("disabled", false)
+					.off("click").click(function(){
+						WANConnectionConnect(wanSettings.Type);
+					});
+					break;
+			}
+		}
+		
+		function GetConnectionUpTime(ipv6)
+		{
+			if(ipv6 == false)
+			{			
+				var connUpTime = new SOAPGetInternetConnUpTimeResponse();
+				var soapAction = new SOAPAction();
+				soapAction.sendSOAPAction("GetInternetConnUpTime", null, connUpTime).done(function(obj)
+				{
+					ipv4_connTime = parseInt(connUpTime.UpTime, 10);
+					clearInterval(Time_GetConnectionUpTime);
+					Time_GetConnectionUpTime = setInterval("runConnUpTime(false)", 1000);
+				});
+			}
+			else
+			{
+				ipv6_connTime = parseInt(ipv6Status.IPv6_ConnectionTime, 10);
+				clearInterval(Time_GetConnectionUpTime_IPv6);
+				Time_GetConnectionUpTime_IPv6 = setInterval("runConnUpTime(true)", 1000);
+			}
+		}
+		
+		function runConnUpTime(ipv6)
+		{
+			var sec = 0;
+			var min = 0;
+			var hour = 0;
+			var day = 0;	
+			var upTime;
+			
+			if(ipv6)
+			{
+				upTime = ipv6_connTime;
+			}
+			else
+			{
+				upTime = ipv4_connTime;
+			}
+			
+			if (upTime > 0)
+			{
+				sec = upTime % 60;
+				min = Math.floor(upTime / 60) % 60;
+				hour = Math.floor(upTime / 3600) % 24;
+				day = Math.floor(upTime / 86400);
+				upTime++;	
+			}
+			var timeString = day + " " + I18N("j", "Day") + " " + hour + " " + I18N("j", "Hour") + " " + min + " " + I18N("j", "Min") + " " + sec + " " + I18N("j", "Sec");
+			
+			if(ipv6)
+			{
+				$("#index_ShowConnectionUpTime_IPv6").html(timeString);
+				ipv6_connTime = upTime;
+			}
+			else
+			{
+				$("#index_ShowConnectionUpTime").html(timeString);
+				ipv4_connTime = upTime;
+			}
+		}
+		
+		function showTopologyConnected()
+		{
+			sessionStorage.setItem('networkStatus', '1');
+			$("#wan_connstat").show();
+			document.getElementById("map_status").className = "map_status_on";
+			document.getElementById("map_title").innerHTML = I18N("j", "Internet Connected");
+			document.getElementById("this_wz").style.display = "none";
+			document.getElementById("goto_Wizard_table").style.display = "none";
+			
+			document.getElementById("internet_image").src = "/image/internet_.gif";
+			document.getElementById("wan_Light").src = "/image/connected.png";
+			document.getElementById("wan_Light").onclick = "";
+			document.getElementById("map_title").onclick = "";
+			document.getElementById("map_title").onmouseover = "";
+			document.getElementById("map_title").onmouseout = "";
+			document.getElementById("wan_Light").style.cursor = "default";
+			document.getElementById("map_title").style.cursor = "default";
+			
+			document.getElementById("index_ShowPrimaryDNS").style.color = "#333333";
+			document.getElementById("alert_Info_PriDNS").style.display = "none";
+			document.getElementById("index_ShowSecondaryDNS").style.color = "#333333";
+			document.getElementById("alert_Info_SecDNS").style.display = "none";		
+		}
+		
+		function showTopologyDisconnected(status)
+		{
+			sessionStorage.setItem('networkStatus', '0');
+			$("#wan_connstat").show();
+			document.getElementById("map_fw_info").style.display = "none";
+			document.getElementById("map_status").className = "map_status_off";
+			document.getElementById("map_title").innerHTML = I18N("j", "Internet Disconnected");
+			document.getElementById("this_wz").style.display = "table-row";
+			document.getElementById("goto_Wizard_table").style.display = "inline-table";
+			document.getElementById("internet_image").src = "/image/internet.gif";
+			//document.getElementById("wan_connstat").style.display = "inline";
+			document.getElementById("wan_Light").src = "/image/disconnected.png";
+			document.getElementById("wan_Light").onclick = function()	{	self.location.href = "Wizard_Manual.html";	};
+			document.getElementById("map_title").onclick = function()	{	self.location.href = "Wizard_Manual.html";	};
+			document.getElementById("map_title").onmouseover = function ()	{	mouseUnderLine(this)	};
+			document.getElementById("map_title").onmouseout = function ()	{	mouseUnderLineN(this)	};
+			document.getElementById("wan_Light").style.cursor = "pointer";
+			document.getElementById("map_title").style.cursor = "pointer";		
+			
+			if(status == "DISCONNECTED")
+			{
+				document.getElementById("index_ShowPrimaryDNS").style.color = "#333333";
+				document.getElementById("index_ShowSecondaryDNS").style.color = "#333333";
+				document.getElementById("alert_Info_PriDNS").style.display = "none";
+				document.getElementById("alert_Info_SecDNS").style.display = "none";
+			}
+			else
+			{
+				//document.getElementById("index_ShowIPAddress").innerHTML = I18N("j", "Not Available");
+			}
+		}
+		
+		function GetSchedule_List()
+		{
+			var xml_GetScheduleList = HNAP.GetXML("GetScheduleSettings");
+			tmpXML_ScheduleList = xml_GetScheduleList;
+			var schedule = document.getElementById("schedule");
+			var schedule_cnt = xml_GetScheduleList.Get("GetScheduleSettingsResponse/ScheduleInfoLists#");
+			tmpXML_ScheduleCnt = schedule_cnt;
+			for (var j = 1; j <= schedule_cnt; j++)
+			{
+				var list = decode_char_text(xml_GetScheduleList.Get("GetScheduleSettingsResponse/ScheduleInfoLists:" + j + "/ScheduleName"));
+				schedule.options.add(new Option(list, list));
+			}
+			$("#schedule").selectbox();
+		}
+		
+		function GetXML_ClientList()
+		{
+			if (currentState != "clientInfo")
+			{
+				HNAP.GetXMLAsync("GetClientInfo", null, "GetValue", function(xml)	{	GetResult_GCI(xml)	});
+			}
+		}
+		function GetResult_GCI(result_xml)
+		{
+			var GetResult_GCI = result_xml.Get("GetClientInfoResponse/GetClientInfoResult");
+			if (GetResult_GCI == "OK")
+			{
+				var ClientNumber = result_xml.Get("GetClientInfoResponse/ClientInfoLists/ClientInfo#");
+				document.getElementById("Total_ConnectedClients").innerHTML = ClientNumber;
+			}
+			else	{	/* ignore */	}
+		}
+		
+		function showModelName()
+		{
+			var modelInfo = JSON.parse(sessionStorage.getItem('modelInfomation'));
+			document.getElementById("modelName").innerHTML = modelInfo.modelName;
+			document.getElementById("modelName2").innerHTML = modelInfo.modelName;
+		}
+		
+		function CheckNewFirmware()
+		{
+			var CurrentFW = sessionStorage.getItem('currentFWVersion');
+			var NewFW = sessionStorage.getItem('newFWVersion');
+			if (parseFloat(NewFW) > parseFloat(CurrentFW))
+			{
+				if (wanStatus.Status != "CONNECTED")
+				{
+					if (sessionStorage.getItem('hasNewFirmware') != "ignore")
+					{
+						document.getElementById("map_fw_info").innerHTML = I18N("j", "New firmware available") + "!";
+						document.getElementById("map_fw_info").href = "UpdateFirmware.html";
+						document.getElementById("CreatePopAlertMessage2").style.display = "inline";
+					}
+					else
+					{
+						document.getElementById("map_fw_info").innerHTML = I18N("j", "New firmware available") + "!";
+						document.getElementById("map_fw_info").href = "UpdateFirmware.html";
+					}
+				}
+				else
+				{
+					document.getElementById("map_fw_info").style.display = "none";	
+				}
+			}
+		}
+		
+		function ignore_UpgradeFW()
+		{
+			document.getElementById("CreatePopAlertMessage2").style.display = "none";
+			sessionStorage.setItem('hasNewFirmware', 'ignore');
+		}
+		
+		function goto_UpgradeFW()
+		{
+			sessionStorage.setItem('hasNewFirmware', 'true');
+			self.location.href = "UpdateFirmware.html";
+		}
+		
+		function GetRouterInformation()
+		{
+			var get_5g = true;
+			var get_5g_2 = false;
+			var result_smartconnect = null;
+
+			//router lan info
+			var getRouterLanSettingsResponse = new SOAPGetRouterLanSettingsResponse();
+			var soapAction = new SOAPAction();
+			soapAction.sendSOAPAction("GetRouterLanSettings", null, getRouterLanSettingsResponse)
+			.done(function(obj){
+				showRouterInfo(getRouterLanSettingsResponse);
+			});
+
+			//wireless
+			//#ifdef featureSmartConnect
+			if(currentDevice.featureSmartConnect)
+			{
+				var getSmartconnectSettingsResponse = new SOAPGetSmartconnectSettingsResponse();
+				var soapAction2 = new SOAPAction();
+				result_smartconnect = soapAction2.sendSOAPAction("GetSmartconnectSettings", null, getSmartconnectSettingsResponse);
+			}
+
+			$.when(result_smartconnect).done(function(obj){
+				//#ifdef featureSmartConnect
+				if(currentDevice.featureSmartConnect)
+				{
+					if(obj.Enabled == "true")	//get 2.4GHz only
+					{
+						get_5g = false;
+						$("#Wi-Fi_5, #Wi-Fi_5_2").css("display", "none");
+						$("#Wi-Fi_24_show").html(I18N("j", "Wi-Fi"));
+						$("#Wi-Fi_24_Guest_show").html(I18N("j", "Guest Zone"));
+					}
+					else
+					{
+						get_5g_2 = true;
+						$("#Wi-Fi_5, #Wi-Fi_5_2").css("display", "block");
+					}
+				}
+
+				//for DIR880L bug
+				$.when(get_wireless("RADIO_2.4GHz"))
+				.then(function(){
+					return $.when(get_wireless("RADIO_2.4GHz_Guest"));
+				})
+				.then(function(){
+					if(get_5g)
+						return $.when(get_wireless("RADIO_5GHz"));
+				})
+				.then(function(){
+					if(get_5g)
+						return $.when(get_wireless("RADIO_5GHz_Guest"));
+				})
+				.then(function(){
+					if(get_5g_2)
+						return $.when(get_wireless("RADIO_5GHz_2"));
+				})
+				.then(function(){
+					if(get_5g_2)
+						return $.when(get_wireless("RADIO_5GHz_2_Guest"));
+				});
+				/*
+				get_wireless("RADIO_2.4GHz");
+				get_wireless("RADIO_2.4GHz_Guest");
+				
+				if(get_5g)
+				{
+					get_wireless("RADIO_5GHz");
+					get_wireless("RADIO_5GHz_Guest");
+				}
+				if(get_5g_2)
+				{
+					get_wireless("RADIO_5GHz_2");
+					get_wireless("RADIO_5GHz_2_Guest");
+				}
+				*/
+			});
+		}
+		
+		function get_wireless(radioID)
+		{
+			var getWLanRadioSettings = new SOAPGetWLanRadioSettings();
+			var getWLanRadioSecurity = new SOAPGetWLanRadioSecurity();
+			var setting = new SOAPGetWLanRadioSettingsResponse();
+			var security = new SOAPGetWLanRadioSecurityResponse();
+			var radioStr;
+
+			switch(radioID)
+			{
+				case "RADIO_2.4GHz":
+					radioStr = "24G";
+					break;
+				case "RADIO_5GHz":
+					radioStr = "5G";
+					break;
+				case "RADIO_5GHz_2":
+					radioStr = "5G_2";
+					break;
+				case "RADIO_2.4GHz_Guest":
+				case "RADIO_2.4G_Guest":
+					radioStr = "24G_Guest";
+					break;
+				case "RADIO_5GHz_Guest":
+				case "RADIO_5G_Guest":
+					radioStr = "5G_Guest";
+					break;
+				case "RADIO_5GHz_2_Guest":
+					radioStr = "5G_2_Guest";
+					break;		
+			}
+
+			getWLanRadioSettings.RadioID = radioID;
+			var soapAction = new SOAPAction();
+			var result = soapAction.sendSOAPAction("GetWLanRadioSettings", getWLanRadioSettings, setting);
+
+			getWLanRadioSecurity.RadioID = radioID;
+			var soapAction2 = new SOAPAction();
+			var result_security = soapAction2.sendSOAPAction("GetWLanRadioSecurity", getWLanRadioSecurity, security);
+
+			var deferred = $.Deferred();
+			$.when(result, result_security)
+			.done(function(obj){
+				deferred.resolve();
+
+				show_wireless_info(radioStr, setting, security);
+			})
+			.fail(function(obj){
+				deferred.resolve();
+			});
+			return deferred.promise();
+		}
+
+		function show_wireless_info(radioID, settingObj, securityObj)
+		{
+			var status;
+			if((settingObj.Enabled == "false")||(settingObj.RadioEnabled == "false"))
+			{
+				status = I18N("j", "Disabled");
+
+				if(settingObj.Enabled == "false")
+				{
+					$("#index_ShowStatus_" + radioID).html(status);
+					$("#index_ShowSSID_" + radioID).html(I18N("j", "Not Available"));
+					$("#index_ShowPassword_" + radioID).html(I18N("j", "Not Available"));
+					return;
+				}
+			}
+			else
+			{
+				status = I18N("j", "Enabled");
+
+				if(radioID.indexOf("Guest") > 0)
+				{
+					$("#Wi-Fi_"+radioID).css("display", "block");
+					document.getElementById("goto_GuestZone").style.display = "";
+					showClientTypeBtn("guest", true);
+				}
+			}
+
+			$("#index_ShowStatus_" + radioID).html(status);
+			$("#index_ShowSSID_" + radioID).html(HTMLEncode(settingObj.SSID)).attr("title", settingObj.SSID);
+			$("#index_ShowPassword_" + radioID).html(HTMLEncode(securityObj.Key));
+
+			if (securityObj.Enabled == "false")
+			{
+				$("#index_ShowPassword_" + radioID).html('"' + I18N("j", "Unsecured") + '"')
+				.attr("class", "alertInfo_label")
+				.css({'cursor':'pointer', 'color':'#ff801a'})
+				.click(function(){
+					self.location.href = "WiFi.html";
+				});
+				$("#alert_Info_"+radioID).css("display", "inline");
+			}
+			else
+			{
+				$("#index_ShowPassword_" + radioID).html(HTMLEncode(securityObj.Key)).attr("title", securityObj.Key);
+			}
+
+		}
+
+		function showRouterInfo(routerInfo)
+		{
+			$("#index_ShowRouterIPAddress").html(routerInfo.RouterIPAddress);
+			$("#index_Show_MacAddress").html(routerInfo.RouterMACAddress.toUpperCase());
+			$("#index_Show_SubnetMask").html(routerInfo.RouterSubnetMask);
+		}
+		
+		function showClientTypeBtn(type, enable)
+		{
+			var hostBtn = $("#v4_v6_client_btn .client_type_host");
+			var guestBtn = $("#v4_v6_client_btn .client_type_guest");
+			var blockBtn = $("#v4_v6_client_btn .client_type_blocked");
+			var css = "none";
+			
+			if(enable)
+			{
+				css = "block";
+			}
+
+			if(type == "guest")
+			{
+				guestBtn.css("display", css);
+			}
+			else if(type == "block")
+			{
+				blockBtn.css("display", css);
+			}
+			
+			//host
+			if((blockBtn.css("display") != "none")||(guestBtn.css("display") != "none"))
+			{
+				hostBtn.css("display", "block");
+			}
+			else
+			{
+				hostBtn.css("display", "none");
+			}
+		}
+		
+		function gotoIPv4Info_WAN()
+		{
+			document.getElementById("internet_1").style.display = "block";
+			document.getElementById("internet_2").style.display = "block";
+			document.getElementById("goto_internet_v4").style.display = "block";
+			document.getElementById("goto_internet_v6").style.display = "none";
+			document.getElementById("internet_3").style.display = "none";
+			document.getElementById("internet_4").style.display = "none";
+			$("#v4_btn_WAN").attr("class", "v4v6_linkstyle_1");
+			$("#v6_btn_WAN").attr("class", "v4v6_linkstyle_2");
+		}
+
+		function WANConnectionDisconnect(type)
+		{
+			$("#RenewRelease_btn").attr("class", "styled_button_dis").attr("disabled", true);
+			click_Statuschanged();
+			var renewType = "";
+			var renewWanConnection = new SOAPRenewWanConnection();
+			var soapAction = new SOAPAction();
+			soapAction.timeout = 5000;
+			switch (type)
+			{
+				case "DHCP":
+					renewType = "DHCPRelease";
+					break;
+				case "DHCPPPPoE":
+				case "StaticPPPoE":
+					renewType = "PPPoEDisconnect";
+					break;
+				case "DynamicPPTP":
+				case "StaticPPTP":
+					renewType = "PPTPDisconnect";
+					break;
+				case "DynamicL2TP":
+				case "StaticL2TP":
+					renewType = "L2TPDisconnect";
+					break;
+			}
+			renewWanConnection.Action = renewType;
+			var result = soapAction.sendSOAPAction("RenewWanConnection", renewWanConnection, null);
+			result.done(function(obj)
+			{
+			})
+			.fail(function()
+			{
+				$("#RenewRelease_btn").attr("class", "styled_button_s").attr("disabled", false);
+			});
+		}
+
+		function WANConnectionConnect(type)
+		{
+			$("#RenewRelease_btn").attr("class", "styled_button_dis").attr("disabled", true);
+			var renewType = "";
+			click_Statuschanged();
+			var renewWanConnection = new SOAPRenewWanConnection();
+			var soapAction = new SOAPAction();
+			soapAction.timeout = 5000;
+			
+			switch (type)
+			{
+				case "DHCP":
+					renewType = "DHCPRenew";
+					break;
+				case "DHCPPPPoE":
+				case "StaticPPPoE":
+					renewType = "PPPoEConnect";
+					break;
+				case "DynamicPPTP":
+				case "StaticPPTP":
+					renewType = "PPTPConnect";
+					break;
+				case "DynamicL2TP":
+				case "StaticL2TP":
+					renewType = "L2TPConnect";
+					break;
+			}
+			renewWanConnection.Action = renewType;
+			var result = soapAction.sendSOAPAction("RenewWanConnection", renewWanConnection, null);
+			result.done(function(obj)
+			{
+			})
+			.fail(function()
+			{
+				$("#RenewRelease_btn").attr("class", "styled_button_s").attr("disabled", false);
+			});
+		}
+
+		function GetSharePortInformation()
+		{
+			//#ifdef featureUPNPAV
+			if(currentDevice.featureUPNPAV)
+			{
+				var xml_GetDLNA = HNAP.GetXML("GetDLNA");
+				var getDLNAStatus = xml_GetDLNA.Get("GetDLNAResponse/Enabled");
+				var getDLNAServiceName = xml_GetDLNA.Get("GetDLNAResponse/DeviceName");
+				
+				switch (getDLNAStatus)
+				{
+					case "true":	document.getElementById("dlna_Status").innerHTML = I18N("j", "Enabled");	break;
+					case "false":	document.getElementById("dlna_Status").innerHTML = I18N("j", "Disabled");	break;
+				}
+				document.getElementById("dlna_ServiceName").innerHTML = getDLNAServiceName;
+			}
+			var xml_GetSharePortInformation = HNAP.GetXML("GetUSBStorageSettings");
+			var getSharePortStatus = xml_GetSharePortInformation.Get("GetUSBStorageSettingsResponse/Enabled");
+			
+			switch (getSharePortStatus)
+			{
+				case "true":	document.getElementById("shareport_Status").innerHTML = I18N("j", "Enabled");
+								break;
+				case "false":	document.getElementById("shareport_Status").innerHTML = I18N("j", "Disabled");
+								break;
+			}
+			
+			var xml_GetSambaStatus = HNAP.GetXML("GetSMBStatus");
+			var getSambaStatus = xml_GetSambaStatus.Get("GetSMBStatusResponse/Enabled");
+			
+			switch (getSambaStatus)
+			{
+				case "true":	document.getElementById("samba_Status").innerHTML = I18N("j", "Enabled");
+								break;
+				case "false":	document.getElementById("samba_Status").innerHTML = I18N("j", "Disabled");
+								break;
+			}
+			if (GetFlagG == false)
+			{
+				if (getDLNAStatus == "false" && getSharePortStatus == "false" && getSambaStatus == "false")
+				{
+					document.getElementById("dlna_Status").style.color = "#ff801a";
+					document.getElementById("dlna_Status").style.cursor = "pointer";
+					document.getElementById("dlna_Status").onclick = function()	{	self.location.href = "SharePort.html";	};
+					document.getElementById("alert_Info_DLNA").style.display = "inline";
+					document.getElementById("alert_Info_DLNA").onclick = function()	{	self.location.href = "SharePort.html";	};
+					document.getElementById("shareport_Status").style.color = "#ff801a";
+					document.getElementById("shareport_Status").style.cursor = "pointer";
+					document.getElementById("shareport_Status").onclick = function()	{	self.location.href = "SharePort.html";	};
+					document.getElementById("alert_Info_Shareport").style.display = "inline";
+					document.getElementById("alert_Info_Shareport").onclick = function()	{	self.location.href = "SharePort.html";	};
+					document.getElementById("samba_Status").style.color = "#ff801a";
+					document.getElementById("samba_Status").style.cursor = "pointer";
+					document.getElementById("samba_Status").onclick = function()	{	self.location.href = "SharePort.html";	};
+					document.getElementById("alert_Info_Samba").style.display = "inline";
+					document.getElementById("alert_Info_Samba").onclick = function()	{	self.location.href = "SharePort.html";	};
+				}
+				else
+				{
+					document.getElementById("dlna_Status").style.color = "#333333";
+					document.getElementById("shareport_Status").style.color = "#333333";
+					document.getElementById("samba_Status").style.color = "#333333";
+					document.getElementById("dlna_Status").style.cursor = "default";
+					document.getElementById("shareport_Status").style.cursor = "default";
+					document.getElementById("samba_Status").style.cursor = "default";
+					document.getElementById("dlna_Status").onclick = function()	{};
+					document.getElementById("shareport_Status").onclick = function()	{};
+					document.getElementById("samba_Status").onclick = function()	{};
+					document.getElementById("alert_Info_DLNA").style.display = "none";
+					document.getElementById("alert_Info_Shareport").style.display = "none";
+					document.getElementById("alert_Info_Samba").style.display = "none";
+				}
+			}
+			else
+			{
+				document.getElementById("dlna_Status").style.color = "#333333";
+				document.getElementById("shareport_Status").style.color = "#333333";
+				document.getElementById("samba_Status").style.color = "#333333";
+				document.getElementById("dlna_Status").style.cursor = "default";
+				document.getElementById("shareport_Status").style.cursor = "default";
+				document.getElementById("samba_Status").style.cursor = "default";
+				document.getElementById("dlna_Status").onclick = function()	{};
+				document.getElementById("shareport_Status").onclick = function()	{};
+				document.getElementById("samba_Status").onclick = function()	{};
+				document.getElementById("alert_Info_DLNA").style.display = "none";
+				document.getElementById("alert_Info_Shareport").style.display = "none";
+				document.getElementById("alert_Info_Samba").style.display = "none";
+			}
+		}
+		
+		function GetUSB_Status(val)
+		{
+			if (val == 0)
+			{
+				var xml_GetUsbDeviceInfo = HNAP.GetXML("GetUSBStorageDevice");
+				var usb_Device = xml_GetUsbDeviceInfo.Get("GetUSBStorageDeviceResponse/StorageDeviceInfoLists/StorageDevice#");
+				if (usb_Device > 0)
+				{
+					var status = "CONNECTED";
+					document.getElementById("usb_image").src = "/image/usb.gif";
+					document.getElementById("usb_image").onmouseover = function () { mouseOverU(this, status) };
+					document.getElementById("usb_image").onmouseout = function () { mouseOutU(this, status) };
+				}
+				else
+				{
+					var status = "DISCONNECTED";
+					document.getElementById("usb_image").src = "/image/usb_.gif";
+					document.getElementById("usb_image").onmouseover = function () { mouseOverU(this, status) };
+					document.getElementById("usb_image").onmouseout = function () { mouseOutU(this, status) };
+				}
+				if (usb_Device >= 2)	{	usb_Device = 2;	}
+				switch (usb_Device)
+				{
+					case 0:
+						document.getElementById("index_USBDeviceName").innerHTML = I18N("j", "Not Available");
+						document.getElementById("usbDeviceSpace_Status").style.display = "none";
+						document.getElementById("usbDeviceSpace_Information").style.display = "none";
+						document.getElementById("usbDeviceSpace_PercentValue").style.display = "none";
+						document.getElementById("usbport_2").style.display = "none";
+						document.getElementById("USB_wording").style.display = "inline";
+						document.getElementById("USBPort_icon").style.display = "inline";
+						GetFlagG = true;
+						break;
+					case 1:
+						document.getElementById("USB_wording").style.display = "none";
+						document.getElementById("USBPort_icon").style.display = "none";
+						document.getElementById("usbDeviceSpace_Status").style.display = "block";
+						document.getElementById("usbDeviceSpace_Information").style.display = "block";
+						document.getElementById("usbDeviceSpace_PercentValue").style.display = "block";
+						var getDeviceName = xml_GetUsbDeviceInfo.Get("GetUSBStorageDeviceResponse/StorageDeviceInfoLists/StorageDevice:1/Device");
+						var getDeviceTotalSpace = xml_GetUsbDeviceInfo.Get("GetUSBStorageDeviceResponse/StorageDeviceInfoLists/StorageDevice:1/TotalSpace");
+						var getDeviceFreeSpace = xml_GetUsbDeviceInfo.Get("GetUSBStorageDeviceResponse/StorageDeviceInfoLists/StorageDevice:1/FreeSpace");
+						var TotalSpaceUnit = "MB";
+						var FreeSpaceUnit = "MB";
+						var CurrentTotalSpace = getDeviceTotalSpace;
+						var CurrentFreeSpace = getDeviceFreeSpace;
+						
+						document.getElementById("index_USBDeviceName").innerHTML = getDeviceName;
+						
+						if (getDeviceTotalSpace >= 1024)
+						{
+							CurrentTotalSpace = parseFloat(CurrentTotalSpace / 1024).toFixed(2);
+							TotalSpaceUnit = "GB";
+							if (getDeviceTotalSpace >= 1048576)	{	CurrentTotalSpace = parseFloat(CurrentTotalSpace / 1024).toFixed(2);	TotalSpaceUnit = "TB";	}
+						}
+						
+						if (getDeviceFreeSpace >= 1024)
+						{
+							CurrentFreeSpace = parseFloat(CurrentFreeSpace / 1024).toFixed(2);
+							FreeSpaceUnit = "GB";
+							if (getDeviceFreeSpace >= 1048576)	{	CurrentFreeSpace = parseFloat(CurrentFreeSpace / 1024).toFixed(2);	FreeSpaceUnit = "TB";	}
+						}
+						
+						document.getElementById("index_USBDeviceTotalSpace").innerHTML = CurrentTotalSpace + TotalSpaceUnit;
+						document.getElementById("index_USBDeviceFreeSpace").innerHTML = CurrentFreeSpace + FreeSpaceUnit;
+						UsbDevice_getSpace = parseInt(((getDeviceTotalSpace - getDeviceFreeSpace) / getDeviceTotalSpace) * 300);
+						
+						if ((getDeviceTotalSpace - getDeviceFreeSpace) >= (getDeviceTotalSpace * 0.9))
+						{
+							document.getElementById("usb_progressBar").style.border = "1px solid red";
+							document.getElementById("usb_DeviceSpace").style.background = "red";
+						}
+						else
+						{
+							document.getElementById("usb_progressBar").style.border = "1px solid #4598aa";
+							document.getElementById("usb_DeviceSpace").style.background = "#4598aa";
+						}
+						document.getElementById("usb_DeviceSpace").style.width = UsbDevice_getSpace + "px";
+						document.getElementById("percent_Value").innerHTML = parseInt(UsbDevice_getSpace / 3) + "%";
+						if (UsbDevice_getSpace / 3 >= 90)
+						{
+							document.getElementById("percent_Value").style.color = "#FFF";
+						}
+						else	{	document.getElementById("percent_Value").style.color = "#000";	}
+						
+						document.getElementById("usbport_2").style.display = "none";
+						GetFlagG = false;
+						break;
+					case 2:
+						document.getElementById("USB_wording").style.display = "none";
+						document.getElementById("USBPort_icon").style.display = "none";
+						document.getElementById("usbDeviceSpace_Status").style.display = "block";
+						document.getElementById("usbDeviceSpace_Information").style.display = "block";
+						document.getElementById("usbDeviceSpace_PercentValue").style.display = "block";
+						var getDeviceName = xml_GetUsbDeviceInfo.Get("GetUSBStorageDeviceResponse/StorageDeviceInfoLists/StorageDevice:1/Device");
+						var getDeviceTotalSpace = xml_GetUsbDeviceInfo.Get("GetUSBStorageDeviceResponse/StorageDeviceInfoLists/StorageDevice:1/TotalSpace");
+						var getDeviceFreeSpace = xml_GetUsbDeviceInfo.Get("GetUSBStorageDeviceResponse/StorageDeviceInfoLists/StorageDevice:1/FreeSpace");
+						var getDeviceName2 = xml_GetUsbDeviceInfo.Get("GetUSBStorageDeviceResponse/StorageDeviceInfoLists/StorageDevice:2/Device");
+						var getDeviceTotalSpace2 = xml_GetUsbDeviceInfo.Get("GetUSBStorageDeviceResponse/StorageDeviceInfoLists/StorageDevice:2/TotalSpace");
+						var getDeviceFreeSpace2 = xml_GetUsbDeviceInfo.Get("GetUSBStorageDeviceResponse/StorageDeviceInfoLists/StorageDevice:2/FreeSpace");
+						var TotalSpaceUnit = "MB";
+						var FreeSpaceUnit = "MB";
+						var TotalSpaceUnit2 = "MB";
+						var FreeSpaceUnit2 = "MB";
+						var CurrentTotalSpace = getDeviceTotalSpace;
+						var CurrentFreeSpace = getDeviceFreeSpace;
+						var CurrentTotalSpace2 = getDeviceTotalSpace2;
+						var CurrentFreeSpace2 = getDeviceFreeSpace2;
+						
+						document.getElementById("index_USBDeviceName").innerHTML = getDeviceName;
+						document.getElementById("index_USBDeviceName2").innerHTML = getDeviceName2;
+						
+						if (getDeviceTotalSpace >= 1024)
+						{
+							CurrentTotalSpace = parseFloat(CurrentTotalSpace / 1024).toFixed(2);
+							TotalSpaceUnit = "GB";
+							if (getDeviceTotalSpace >= 1048576)	{	CurrentTotalSpace = parseFloat(CurrentTotalSpace / 1024).toFixed(2);	TotalSpaceUnit = "TB";	}
+						}
+						
+						if (getDeviceFreeSpace >= 1024)
+						{
+							CurrentFreeSpace = parseFloat(CurrentFreeSpace / 1024).toFixed(2);
+							FreeSpaceUnit = "GB";
+							if (getDeviceFreeSpace >= 1048576)	{	CurrentFreeSpace = parseFloat(CurrentFreeSpace / 1024).toFixed(2);	FreeSpaceUnit = "TB";	}
+						}
+						
+						if (getDeviceTotalSpace2 >= 1024)
+						{
+							CurrentTotalSpace2 = parseFloat(CurrentTotalSpace2 / 1024).toFixed(2);
+							TotalSpaceUnit2 = "GB";
+							if (getDeviceTotalSpace2 >= 1048576)	{	CurrentTotalSpace2 = parseFloat(CurrentTotalSpace2 / 1024).toFixed(2);	TotalSpaceUnit2 = "TB";	}
+						}
+						
+						if (getDeviceFreeSpace2 >= 1024)
+						{
+							CurrentFreeSpace2 = parseFloat(CurrentFreeSpace2 / 1024).toFixed(2);
+							FreeSpaceUnit2 = "GB";
+							if (getDeviceFreeSpace2 >= 1048576)	{	CurrentFreeSpace2 = parseFloat(CurrentFreeSpace2 / 1024).toFixed(2);	FreeSpaceUnit2 = "TB";	}
+						}
+						document.getElementById("index_USBDeviceTotalSpace").innerHTML = CurrentTotalSpace + TotalSpaceUnit;
+						document.getElementById("index_USBDeviceFreeSpace").innerHTML = CurrentFreeSpace + FreeSpaceUnit;
+						document.getElementById("index_USBDeviceTotalSpace2").innerHTML = CurrentTotalSpace2 + TotalSpaceUnit2;
+						document.getElementById("index_USBDeviceFreeSpace2").innerHTML = CurrentFreeSpace2 + FreeSpaceUnit2;
+						UsbDevice_getSpace = parseInt(((getDeviceTotalSpace - getDeviceFreeSpace) / getDeviceTotalSpace) * 300);
+						UsbDevice_getSpace2 = parseInt(((getDeviceTotalSpace2 - getDeviceFreeSpace2) / getDeviceTotalSpace2) * 300);
+						if ((getDeviceTotalSpace - getDeviceFreeSpace) >= (getDeviceTotalSpace * 0.9))
+						{
+							document.getElementById("usb_progressBar").style.border = "1px solid red";
+							document.getElementById("usb_DeviceSpace").style.background = "red";
+						}
+						else
+						{
+							document.getElementById("usb_progressBar").style.border = "1px solid #4598aa";
+							document.getElementById("usb_DeviceSpace").style.background = "#4598aa";
+						}
+						
+						if ((getDeviceTotalSpace2 - getDeviceFreeSpace2) >= (getDeviceTotalSpace2 * 0.9))
+						{
+							document.getElementById("usb_progressBar2").style.border = "1px solid red";
+							document.getElementById("usb_DeviceSpace2").style.background = "red";
+						}
+						else
+						{
+							document.getElementById("usb_progressBar2").style.border = "1px solid #4598aa";
+							document.getElementById("usb_DeviceSpace2").style.background = "#4598aa";
+						}
+						document.getElementById("usb_DeviceSpace").style.width = UsbDevice_getSpace + "px";
+						document.getElementById("percent_Value").innerHTML = parseInt(UsbDevice_getSpace / 3) + "%";
+						document.getElementById("usb_DeviceSpace2").style.width = UsbDevice_getSpace2 + "px";
+						document.getElementById("percent_Value2").innerHTML = parseInt(UsbDevice_getSpace2 / 3) + "%";
+						if (UsbDevice_getSpace / 3 >= 90)
+						{
+							document.getElementById("percent_Value").style.color = "#FFF";
+						}
+						else	{	document.getElementById("percent_Value").style.color = "#000";	}
+						
+						if (UsbDevice_getSpace2 / 3 >= 90)
+						{
+							document.getElementById("percent_Value2").style.color = "#FFF";
+						}
+						else	{	document.getElementById("percent_Value2").style.color = "#000";	}
+						
+						GetFlagG = false;
+						break;
+					default:
+						document.getElementById("index_USBDeviceName").innerHTML = I18N("j", "Not Available");
+						document.getElementById("usbDeviceSpace_Status").style.display = "none";
+						document.getElementById("usbDeviceSpace_Information").style.display = "none";
+						document.getElementById("usbDeviceSpace_PercentValue").style.display = "none";
+						document.getElementById("usbport_2").style.display = "none";
+						document.getElementById("USB_wording").style.display = "inline";
+						document.getElementById("USBPort_icon").style.display = "inline";
+						GetFlagG = true;
+						break;
+				}
+			}
+			else	{	HNAP.GetXMLAsync("GetUSBStorageDevice", null, "GetValue", function(xml)	{	GetResult_GUSBS(xml)	});	}
+		}
+		function GetResult_GUSBS(result_xml)
+		{
+			var GetResult_GUSBS = result_xml.Get("GetUSBStorageDeviceResponse/GetUSBStorageDeviceResult");
+			if (GetResult_GUSBS == "OK")
+			{
+				var usb_Device = result_xml.Get("GetUSBStorageDeviceResponse/StorageDeviceInfoLists/StorageDevice#");
+				if (usb_Device > 0)
+				{
+					var status = "CONNECTED";
+					document.getElementById("usb_image").src = "/image/usb.gif";
+					document.getElementById("usb_image").onmouseover = function () { mouseOverU(this, status) };
+					document.getElementById("usb_image").onmouseout = function () { mouseOutU(this, status) };
+				}
+				else
+				{
+					var status = "DISCONNECTED";
+					document.getElementById("usb_image").src = "/image/usb_.gif";
+					document.getElementById("usb_image").onmouseover = function () { mouseOverU(this, status) };
+					document.getElementById("usb_image").onmouseout = function () { mouseOutU(this, status) };
+				}
+				if (usb_Device >= 2)	{	usb_Device = 2;	}
+				switch (usb_Device)
+				{
+					case 0:
+						document.getElementById("index_USBDeviceName").innerHTML = I18N("j", "Not Available");
+						document.getElementById("usbDeviceSpace_Status").style.display = "none";
+						document.getElementById("usbDeviceSpace_Information").style.display = "none";
+						document.getElementById("usbDeviceSpace_PercentValue").style.display = "none";
+						document.getElementById("usbport_2").style.display = "none";
+						document.getElementById("USB_wording").style.display = "inline";
+						document.getElementById("USBPort_icon").style.display = "inline";
+						GetFlagG = true;
+						break;
+					case 1:
+						document.getElementById("USB_wording").style.display = "none";
+						document.getElementById("USBPort_icon").style.display = "none";
+						document.getElementById("usbDeviceSpace_Status").style.display = "block";
+						document.getElementById("usbDeviceSpace_Information").style.display = "block";
+						document.getElementById("usbDeviceSpace_PercentValue").style.display = "block";
+						var getDeviceName = result_xml.Get("GetUSBStorageDeviceResponse/StorageDeviceInfoLists/StorageDevice:1/Device");
+						var getDeviceTotalSpace = result_xml.Get("GetUSBStorageDeviceResponse/StorageDeviceInfoLists/StorageDevice:1/TotalSpace");
+						var getDeviceFreeSpace = result_xml.Get("GetUSBStorageDeviceResponse/StorageDeviceInfoLists/StorageDevice:1/FreeSpace");
+						var TotalSpaceUnit = "MB";
+						var FreeSpaceUnit = "MB";
+						var CurrentTotalSpace = getDeviceTotalSpace;
+						var CurrentFreeSpace = getDeviceFreeSpace;
+						
+						document.getElementById("index_USBDeviceName").innerHTML = getDeviceName;
+						
+						if (getDeviceTotalSpace >= 1024)
+						{
+							CurrentTotalSpace = parseFloat(CurrentTotalSpace / 1024).toFixed(2);
+							TotalSpaceUnit = "GB";
+							if (getDeviceTotalSpace >= 1048576)	{	CurrentTotalSpace = parseFloat(CurrentTotalSpace / 1024).toFixed(2);	TotalSpaceUnit = "TB";	}
+						}
+						
+						if (getDeviceFreeSpace >= 1024)
+						{
+							CurrentFreeSpace = parseFloat(CurrentFreeSpace / 1024).toFixed(2);
+							FreeSpaceUnit = "GB";
+							if (getDeviceFreeSpace >= 1048576)	{	CurrentFreeSpace = parseFloat(CurrentFreeSpace / 1024).toFixed(2);	FreeSpaceUnit = "TB";	}
+						}
+						
+						document.getElementById("index_USBDeviceTotalSpace").innerHTML = CurrentTotalSpace + TotalSpaceUnit;
+						document.getElementById("index_USBDeviceFreeSpace").innerHTML = CurrentFreeSpace + FreeSpaceUnit;
+						UsbDevice_getSpace = parseInt(((getDeviceTotalSpace - getDeviceFreeSpace) / getDeviceTotalSpace) * 300);
+						
+						if ((getDeviceTotalSpace - getDeviceFreeSpace) >= (getDeviceTotalSpace * 0.9))
+						{
+							document.getElementById("usb_progressBar").style.border = "1px solid red";
+							document.getElementById("usb_DeviceSpace").style.background = "red";
+						}
+						else
+						{
+							document.getElementById("usb_progressBar").style.border = "1px solid #4598aa";
+							document.getElementById("usb_DeviceSpace").style.background = "#4598aa";
+						}
+						document.getElementById("usb_DeviceSpace").style.width = UsbDevice_getSpace + "px";
+						document.getElementById("percent_Value").innerHTML = parseInt(UsbDevice_getSpace / 3) + "%";
+						if (UsbDevice_getSpace / 3 >= 90)
+						{
+							document.getElementById("percent_Value").style.color = "#FFF";
+						}
+						else	{	document.getElementById("percent_Value").style.color = "#000";	}
+						
+						document.getElementById("usbport_2").style.display = "none";
+						GetFlagG = false;
+						break;
+					case 2:
+						document.getElementById("USB_wording").style.display = "none";
+						document.getElementById("USBPort_icon").style.display = "none";
+						document.getElementById("usbport_2").style.display = "table-row";
+						document.getElementById("usbDeviceSpace_Status").style.display = "block";
+						document.getElementById("usbDeviceSpace_Information").style.display = "block";
+						document.getElementById("usbDeviceSpace_PercentValue").style.display = "block";
+						var getDeviceName = result_xml.Get("GetUSBStorageDeviceResponse/StorageDeviceInfoLists/StorageDevice:1/Device");
+						var getDeviceTotalSpace = result_xml.Get("GetUSBStorageDeviceResponse/StorageDeviceInfoLists/StorageDevice:1/TotalSpace");
+						var getDeviceFreeSpace = result_xml.Get("GetUSBStorageDeviceResponse/StorageDeviceInfoLists/StorageDevice:1/FreeSpace");
+						var getDeviceName2 = result_xml.Get("GetUSBStorageDeviceResponse/StorageDeviceInfoLists/StorageDevice:2/Device");
+						var getDeviceTotalSpace2 = result_xml.Get("GetUSBStorageDeviceResponse/StorageDeviceInfoLists/StorageDevice:2/TotalSpace");
+						var getDeviceFreeSpace2 = result_xml.Get("GetUSBStorageDeviceResponse/StorageDeviceInfoLists/StorageDevice:2/FreeSpace");
+						var TotalSpaceUnit = "MB";
+						var FreeSpaceUnit = "MB";
+						var TotalSpaceUnit2 = "MB";
+						var FreeSpaceUnit2 = "MB";
+						var CurrentTotalSpace = getDeviceTotalSpace;
+						var CurrentFreeSpace = getDeviceFreeSpace;
+						var CurrentTotalSpace2 = getDeviceTotalSpace2;
+						var CurrentFreeSpace2 = getDeviceFreeSpace2;
+						
+						document.getElementById("index_USBDeviceName").innerHTML = getDeviceName;
+						document.getElementById("index_USBDeviceName2").innerHTML = getDeviceName2;
+						
+						if (getDeviceTotalSpace >= 1024)
+						{
+							CurrentTotalSpace = parseFloat(CurrentTotalSpace / 1024).toFixed(2);
+							TotalSpaceUnit = "GB";
+							if (getDeviceTotalSpace >= 1048576)	{	CurrentTotalSpace = parseFloat(CurrentTotalSpace / 1024).toFixed(2);	TotalSpaceUnit = "TB";	}
+						}
+						
+						if (getDeviceFreeSpace >= 1024)
+						{
+							CurrentFreeSpace = parseFloat(CurrentFreeSpace / 1024).toFixed(2);
+							FreeSpaceUnit = "GB";
+							if (getDeviceFreeSpace >= 1048576)	{	CurrentFreeSpace = parseFloat(CurrentFreeSpace / 1024).toFixed(2);	FreeSpaceUnit = "TB";	}
+						}
+						
+						if (getDeviceTotalSpace2 >= 1024)
+						{
+							CurrentTotalSpace2 = parseFloat(CurrentTotalSpace2 / 1024).toFixed(2);
+							TotalSpaceUnit2 = "GB";
+							if (getDeviceTotalSpace2 >= 1048576)	{	CurrentTotalSpace2 = parseFloat(CurrentTotalSpace2 / 1024).toFixed(2);	TotalSpaceUnit2 = "TB";	}
+						}
+						
+						if (getDeviceFreeSpace2 >= 1024)
+						{
+							CurrentFreeSpace2 = parseFloat(CurrentFreeSpace2 / 1024).toFixed(2);
+							FreeSpaceUnit2 = "GB";
+							if (getDeviceFreeSpace2 >= 1048576)	{	CurrentFreeSpace2 = parseFloat(CurrentFreeSpace2 / 1024).toFixed(2);	FreeSpaceUnit2 = "TB";	}
+						}
+						document.getElementById("index_USBDeviceTotalSpace").innerHTML = CurrentTotalSpace + TotalSpaceUnit;
+						document.getElementById("index_USBDeviceFreeSpace").innerHTML = CurrentFreeSpace + FreeSpaceUnit;
+						document.getElementById("index_USBDeviceTotalSpace2").innerHTML = CurrentTotalSpace2 + TotalSpaceUnit2;
+						document.getElementById("index_USBDeviceFreeSpace2").innerHTML = CurrentFreeSpace2 + FreeSpaceUnit2;
+						UsbDevice_getSpace = parseInt(((getDeviceTotalSpace - getDeviceFreeSpace) / getDeviceTotalSpace) * 300);
+						UsbDevice_getSpace2 = parseInt(((getDeviceTotalSpace2 - getDeviceFreeSpace2) / getDeviceTotalSpace2) * 300);
+						if ((getDeviceTotalSpace - getDeviceFreeSpace) >= (getDeviceTotalSpace * 0.9))
+						{
+							document.getElementById("usb_progressBar").style.border = "1px solid red";
+							document.getElementById("usb_DeviceSpace").style.background = "red";
+						}
+						else
+						{
+							document.getElementById("usb_progressBar").style.border = "1px solid #4598aa";
+							document.getElementById("usb_DeviceSpace").style.background = "#4598aa";
+						}
+						
+						if ((getDeviceTotalSpace2 - getDeviceFreeSpace2) >= (getDeviceTotalSpace2 * 0.9))
+						{
+							document.getElementById("usb_progressBar2").style.border = "1px solid red";
+							document.getElementById("usb_DeviceSpace2").style.background = "red";
+						}
+						else
+						{
+							document.getElementById("usb_progressBar2").style.border = "1px solid #4598aa";
+							document.getElementById("usb_DeviceSpace2").style.background = "#4598aa";
+						}
+						document.getElementById("usb_DeviceSpace").style.width = UsbDevice_getSpace + "px";
+						document.getElementById("percent_Value").innerHTML = parseInt(UsbDevice_getSpace / 3) + "%";
+						document.getElementById("usb_DeviceSpace2").style.width = UsbDevice_getSpace2 + "px";
+						document.getElementById("percent_Value2").innerHTML = parseInt(UsbDevice_getSpace2 / 3) + "%";
+						if (UsbDevice_getSpace / 3 >= 90)
+						{
+							document.getElementById("percent_Value").style.color = "#FFF";
+						}
+						else	{	document.getElementById("percent_Value").style.color = "#000";	}
+						
+						if (UsbDevice_getSpace2 / 3 >= 90)
+						{
+							document.getElementById("percent_Value2").style.color = "#FFF";
+						}
+						else	{	document.getElementById("percent_Value2").style.color = "#000";	}
+						
+						GetFlagG = false;
+						break;
+					default:
+						document.getElementById("index_USBDeviceName").innerHTML = I18N("j", "Not Available");
+						document.getElementById("usbDeviceSpace_Status").style.display = "none";
+						document.getElementById("usbDeviceSpace_Information").style.display = "none";
+						document.getElementById("usbDeviceSpace_PercentValue").style.display = "none";
+						document.getElementById("usbport_2").style.display = "none";
+						document.getElementById("USB_wording").style.display = "inline";
+						document.getElementById("USBPort_icon").style.display = "inline";
+						GetFlagG = true;
+						break;
+				}
+			}
+			else	{	/* ignore */	}
+		}
+		function gotoIPv6Info_WAN()
+		{
+			document.getElementById("internet_1").style.display = "none";
+			document.getElementById("internet_2").style.display = "none";
+			document.getElementById("goto_internet_v4").style.display = "none";
+			document.getElementById("goto_internet_v6").style.display = "block";
+			document.getElementById("internet_3").style.display = "block";
+			document.getElementById("internet_4").style.display = "block";
+			$("#v4_btn_WAN").attr("class", "v4v6_linkstyle_2");
+			$("#v6_btn_WAN").attr("class", "v4v6_linkstyle_1");
+		}
+		
+		function showStaticIPv6Info(ipv6Status)
+		{
+			var wanType_element = $("#Connection_Type_IPv6");
+	
+			//wan
+			switch (ipv6Status.IPv6_ConnectionType.toUpperCase())
+			{
+				case "IPV6_AUTODETECTION":
+					wanType_element.html(I18N("j", "Auto Detection"));					
+					break;
+				case "IPV6_STATIC":
+					wanType_element.html(I18N("j", "Static IPv6"));
+					break;
+				case "IPV6_AUTOCONFIGURATION":
+					wanType_element.html(I18N("j", "Auto Configuration (SLAAC/DHCPv6)"));
+					break;
+				case "IPV6_PPPOE":
+					wanType_element.html(I18N("j", "PPPoE"));
+					break;
+				case "IPV6_IPV6INIPV4TUNNEL":
+					wanType_element.html(I18N("j", "IPv6 in IPv4 Tunnel"));
+					break;
+				case "IPV6_6TO4":
+					wanType_element.html(I18N("j", "6to4"));
+					break;
+				case "IPV6_6RD":
+					wanType_element.html(I18N("j", "6rd"));
+					break;
+				case "IPV6_LINKLOCALONLY":
+					wanType_element.html(I18N("j", "Local Connectivity Only"));
+					break;
+			}
+			
+			//lan
+			var ipv6_LanLinkLocalAddress = ipv6Status.IPv6_LanLinkLocalAddress.toUpperCase();
+			ipv6_LanLinkLocalAddress = ipv6_LanLinkLocalAddress.replace("/64", "");
+			$("#lan_IPv6_Link_Local_Address").html(ipv6_LanLinkLocalAddress).attr("title", ipv6_LanLinkLocalAddress);
+		}
+		
+		function showRuntimeIPv6Info(ipv6Status)
+		{
+			var ipv6_type = ipv6Status.IPv6_ConnectionType.toUpperCase();
+			var ipv6_NetworkStatus = ipv6Status.IPv6_Network_Status.toUpperCase();
+			var ipv6_PppoeSession = ipv6Status.IPv6_PppoeNewSession;
+			var wanip_element = $("#wan_IPv6_Address");
+			var gateway_element = $("#wan_IPv6_DefaultGateway");
+			var pri_dns_element = $("#primary_IPv6_Dns_Server");
+			var sec_dns_element = $("#secondary_IPv6_Dns_Server");
+			var btn = $("#RenewReleaseIPv6_btn");
+					
+			document.getElementById("IPv6_NetworkStatus").innerHTML = I18N("j", ipv6Status.IPv6_Network_Status);
+			
+			switch(ipv6_NetworkStatus)
+			{
+				case "CONNECTED":
+					if(ipv6_type == "IPV6_LINKLOCALONLY")
+					{
+						wanip_element.html(I18N("j", "Not Available"));
+						gateway_element.html(I18N("j", "Not Available"));
+						pri_dns_element.html(I18N("j", "Not Available"));
+						sec_dns_element.html(I18N("j", "Not Available"));
+						break;
+					}
+				
+					var ipv6_WanAddress = ipv6Status.IPv6_WanAddress.string[0];
+					if ((typeof(ipv6_WanAddress) == "undefined")||(ipv6_WanAddress == ""))
+					{
+						if((ipv6_type == "IPV6_6RD")||(ipv6_type == "IPV6_AUTODETECTION"))
+						{
+							wanip_element.html(I18N("j", "None"));
+						}
+						else
+						{
+							wanip_element.html(I18N("j", "Not Available"));
+						}	
+					}
+					else
+					{
+						ipv6_WanAddress = ipv6_WanAddress.toUpperCase();
+						wanip_element.html(ipv6_WanAddress).attr("title", ipv6_WanAddress);
+					}
+					
+					var ipv6_Gateway = ipv6Status.IPv6_DefaultGateway;
+					if ((ipv6_Gateway == "")||(ipv6_Gateway == "0:0:0:0:0:0:0:0"))
+					{
+						gateway_element.html(I18N("j", "Not Available"));
+					}
+					else
+					{
+						ipv6_Gateway = ipv6_Gateway.toUpperCase();
+						gateway_element.html(ipv6_Gateway).attr("title", ipv6_Gateway);
+					}
+
+					var ipv6_PrimaryDNSServer = ipv6Status.IPv6_PrimaryDNS;
+					if ((ipv6_PrimaryDNSServer == "")||(ipv6_PrimaryDNSServer == "0:0:0:0:0:0:0:0"))
+					{
+						pri_dns_element.html(I18N("j", "Not Available"));
+					}
+					else
+					{
+						ipv6_PrimaryDNSServer = ipv6_PrimaryDNSServer.toUpperCase();
+						pri_dns_element.html(ipv6_PrimaryDNSServer).attr("title", ipv6_PrimaryDNSServer);
+					}
+
+					var ipv6_SecondaryDNSServer = ipv6Status.IPv6_SecondaryDNS;
+					if ((ipv6_SecondaryDNSServer == "")||(ipv6_SecondaryDNSServer == "0:0:0:0:0:0:0:0"))
+					{
+						sec_dns_element.html(I18N("j", "Not Available"));				
+					}
+					else
+					{
+						ipv6_SecondaryDNSServer = ipv6_SecondaryDNSServer.toUpperCase();
+						sec_dns_element.html(ipv6_SecondaryDNSServer).attr("title", ipv6_SecondaryDNSServer);
+					}
+
+					//button
+					switch (ipv6_type)
+					{
+						case "IPV6_AUTOCONFIGURATION":
+							btn.show().html(I18N("j", "Release"));
+							break;
+						case "IPV6_PPPOE":
+							if(ipv6_PppoeSession == "SharedWithIPv4")
+							{
+								btn.hide();
+							}
+							else
+							{
+								btn.show().html(I18N("j", "Disconnect"));
+							}
+							break;
+						default:
+							btn.hide();
+							break;
+					}
+					btn.attr("class", "styled_button_s").attr("disabled", false)
+					.off("click").click(function(){
+						WANConnectionDisconnectIPv6(ipv6_type);
+					});
+
+					break;
+				case "CONNECTING":
+					btn.attr("class", "styled_button_dis").attr("disabled", true);
+					break;
+				case "DISCONNECTED":
+					wanip_element.html(I18N("j", "Not Available"));
+					gateway_element.html(I18N("j", "Not Available"));
+					pri_dns_element.html(I18N("j", "Not Available"));
+					sec_dns_element.html(I18N("j", "Not Available"));
+
+					//button
+					switch (ipv6_type)
+					{
+						case "IPV6_AUTOCONFIGURATION":
+							btn.show().html(I18N("j", "Renew"));
+							break;
+						case "IPV6_PPPOE":
+							if(ipv6_PppoeSession == "SharedWithIPv4")
+							{
+								btn.hide();
+							}
+							else
+							{
+								btn.show().html(I18N("j", "Connect"));
+							}
+							break;
+						default:
+							btn.hide();
+							break;
+					}
+					btn.attr("class", "styled_button_s").attr("disabled", false)
+					.off("click").click(function(){
+						WANConnectionConnectIPv6(ipv6_type);
+					});
+					break;
+			}
+			//lan
+			switch (ipv6_type)
+			{
+				case "IPV6_STATIC":
+				case "IPV6_6TO4":
+				case "IPV6_LINKLOCALONLY":
+					$("#pd_enable").hide();
+					$("#inabdp").hide();
+					break;
+				default:
+					$("#pd_enable").show();
+					if(ipv6Status.IPv6_DhcpPd.toLowerCase() == "enable")
+					{
+						$("#dhcp_Pd").html(I18N("j", "Enabled"));
+						$("#inabdp").show();
+					}
+					else
+					{
+						$("#dhcp_Pd").html(I18N("j", "Disabled"));
+						$("#inabdp").hide();
+					}
+
+					var ipv6_pdPrefix = ipv6Status.IPv6_DhcpPdPrefix.string[0];
+					if((typeof(ipv6_pdPrefix) == "undefined")|| (ipv6_pdPrefix == ""))
+					{
+						$("#dhcp_Pd_IP").html(I18N("j", "Not Available"));
+					}
+					else
+					{
+						ipv6_pdPrefix = ipv6_pdPrefix.toUpperCase();
+						$("#dhcp_Pd_IP").html(ipv6_pdPrefix).attr("title", ipv6_pdPrefix);
+					}
+					break;
+			};
+			var ipv6_lanAddress = ipv6Status.IPv6_LanAddress.string[0];
+			if ((typeof(ipv6_lanAddress) == "undefined")|| (ipv6_lanAddress == ""))
+			{
+				$("#lan_IPv6_Address").html(I18N("j", "Not Available"));
+			}
+			else
+			{
+				ipv6_lanAddress = ipv6_lanAddress.toUpperCase();				
+				$("#lan_IPv6_Address").html(ipv6_lanAddress).attr("title", ipv6_lanAddress);
+			}
+		}
+		
+		function WANConnectionDisconnectIPv6(type)
+		{
+			$("#RenewReleaseIPv6_btn").attr("class", "styled_button_dis").attr("disabled", true);
+			click_Statuschanged();
+			var renewType = "";
+			var renewWanConnection = new SOAPRenewIPv6WanConnection();
+			var soapAction = new SOAPAction();
+			soapAction.timeout = 5000;
+			switch (type)
+			{
+				case "IPV6_AUTOCONFIGURATION":
+					renewType = "DHCPv6Release";
+					break;
+				case "IPV6_PPPOE":
+					renewType = "PPPoEDisconnect";
+					break;
+			}
+			renewWanConnection.Action = renewType;
+			var result = soapAction.sendSOAPAction("RenewIPv6WanConnection", renewWanConnection, null);
+			result.done(function(obj)
+			{
+			})
+			.fail(function()
+			{
+				$("#RenewReleaseIPv6_btn").attr("class", "styled_button_s").attr("disabled", false);
+			});
+		}
+		
+		function WANConnectionConnectIPv6(type)
+		{
+			$("#RenewReleaseIPv6_btn").attr("class", "styled_button_dis").attr("disabled", true);
+			click_Statuschanged();
+			var renewType = "";
+			var renewWanConnection = new SOAPRenewIPv6WanConnection();
+			var soapAction = new SOAPAction();
+			soapAction.timeout = 5000;
+			switch (type)
+			{
+				case "IPV6_AUTOCONFIGURATION":
+					renewType = "DHCPv6Renew";
+					break;
+				case "IPV6_PPPOE":
+					renewType = "PPPoEConnect";
+					break;
+			}
+			renewWanConnection.Action = renewType;
+			var result = soapAction.sendSOAPAction("RenewIPv6WanConnection", renewWanConnection, null);
+			result.done(function(obj)
+			{
+			})
+			.fail(function()
+			{
+				$("#RenewReleaseIPv6_btn").attr("class", "styled_button_s").attr("disabled", false);
+			});
+		}
+		
+		function click_Statuschanged()
+		{
+			checkFlag = true;
+			GetClickTime();
+		}
+		
+		function Settings_Link()
+		{
+			//document.getElementById("settings_Network").onclick = function()		{	self.location.href = "Network.html";	};
+			document.getElementById("settings_Internet").onclick = function()		{	self.location.href = "Internet.html";	};
+			document.getElementById("settings_Internet_IPv6").onclick = function()	{	self.location.href = "Internet_IPv6.html";	};
+			//document.getElementById("settings_WiFi").onclick = function()			{	self.location.href = "WiFi.html";	};
+			//document.getElementById("settings_GuestZone").onclick = function()		{	self.location.href = "GuestZone.html";	};
+			document.getElementById("settings_SharePort").onclick = function()		{	self.location.href = "SharePort.html";	};
+			document.getElementById("settings_Wizard").onclick = function()			{	self.location.href = "Wizard_Manual.html";	};
+		}
+		
+		function buttonStyleChange()
+		{
+			$("#check_btn").attr("class", "styled_button_s").attr("disabled", false);
+		}
+		function checkUpdate()	{	valueChanged = 1;	}
+		function LoadMACList()
+		{
+			$.ajax({
+				url: "/js/MacList.js",
+				type: "GET",
+				dataType: "html",
+				success: function(data) {
+					allText = data;
+				},
+			});
+		}
+
+		function createOnlineHelpLink(element)
+		{
+			//hide help link for  most models
+			if(currentDevice.helpVer == "")
+			{
+				$("#help").hide();
+				return;
+			}
+		
+			//DIR880 only
+			var str;
+			switch(element)
+			{
+				case "internetInfo":
+						str = 'Home > Internet';
+					break;
+				case "routerInfo":
+					str = 'Router info';
+					break;
+				case "clientInfo":
+					str = 'Connected Clients';
+					break;
+				case "usbInfo":
+					str = 'USB Device';
+					break;
+			}
+		
+			$("#Get_Help").off('click').click(function(){
+				showOnlineHelp(str);
+			});
+		}
+
+	</script>
+	
+	<style>
+		#internetInfo 	{	display: none;	}
+		#routerInfo 	{	display: none;	}
+		#usbInfo 		{	display: none;	}
+		#clientInfo		{	display: none;	}
+		.progressBar	{	background-color: #fff;	height: 30px;	width: 300px;	border: 1px solid #4598aa;	color: #222;	}
+		.progressBar .bar	{	background-color: #4598aa;	height: 30px;	width: 0px;	}
+	</style>
+</head>
+
+<body>
+	<div id="wrapper">
+		<div id="header"><div>
+	<div style="position:relative; top:37px;">
+		<a href="http://www.dlink.com/" target="_blank">
+			<img id="image_Logo" src="resources/logo_2.png" alt="D-Link" width="102" height="20" border="0">
+		</a>
+	</div>
+	<table id="device_ver" style="position:relative; top:33px; font-size:13px; color:#969696;" border="0">
+		<tbody>
+			<tr>
+				<td style="padding: 0 10px 0 0;"><label id="h_ModelName">DIR-890L</label></td>
+				<td style="padding: 0 10px 0 0;">HW:<label id="h_HWVersion">A1</label></td>
+				<td style="padding: 0 10px 0 0;">FW:<label id="h_FWVersion">1.00</label></td>
+			</tr>
+		</tbody>
+	</table>
+
+</div></div>
+		<div id="menu"><ul>	<li><a id="menu_Home" href="Home.html" style="background: url(resources/navigation_bg5.gif?v=20141117210117) 100% 0% no-repeat;">Home</a></li>	<li class="parent" onmouseover="this.className=&quot;parentOn&quot;" onmouseout="this.className=&quot;parent&quot;">
+		<a id="menu_Settings" href="Home.html#">Settings</a>		
+		
+		<ul>
+		
+		<li><a href="Wizard_Manual.html" onclick="return confirmExit()">Wizard</a></li>			
+		<li><a href="Internet.html" onclick="return confirmExit();">Internet</a></li>			
+		<li><a href="WiFi.html" onclick="return confirmExit()">Wireless</a></li>					
+		<li><a href="Network.html" onclick="return confirmExit()">Network</a></li>	
+		<li><a href="SharePort.html" onclick="return confirmExit()">SharePort</a></li>	
+		<li><a href="Mydlink.html" onclick="return confirmExit()">mydlink</a></li>
+		
+		
+		
+		
+		</ul>	</li>	
+		
+		
+		<li class="parent" onmouseover="this.className=&quot;parentOn&quot;" onmouseout="this.className=&quot;parent&quot;"><a id="menu_Advanced" href="Home.html#">Features</a>		
+		
+		<ul>			
+		
+		<li><a href="QoS.html" onclick="return confirmExit()">QoS Engine</a></li>			
+		<li><a href="Firewall.html" onclick="return confirmExit()">Firewall</a></li>			
+		<li><a href="PortForwarding.html" onclick="return confirmExit()">Port Forwarding</a></li>			
+		<li><a href="WebsiteFilter.html" onclick="return confirmExit()">Website Filter</a></li>			
+		<li><a href="StaticRoute.html" onclick="return confirmExit()">Static Route</a></li>			
+		<li><a href="DynamicDNS.html" onclick="return confirmExit()">Dynamic DNS</a></li>			
+		<li><a href="VPN.html" onclick="return confirmExit()">Quick VPN</a></li>
+
+
+		</ul>	</li>	
+		
+		
+		<li class="parent" onmouseover="this.className=&quot;parentOn&quot;" onmouseout="this.className=&quot;parent&quot;"><a id="menu_Management" href="Home.html#">Management</a>		
+		
+		<ul>			
+		<li><a href="Time.html" onclick="return confirmExit()">Time &amp; Schedule</a></li>			
+		<li><a href="SystemLog.html" onclick="return confirmExit()">System Log</a></li>			
+		<li><a href="Admin.html" onclick="return confirmExit()">System Admin</a></li>			
+		<li><a href="UpdateFirmware.html" onclick="return confirmExit()">Upgrade</a></li>			
+		<li><a href="Statistics.html" onclick="return confirmExit()">Statistics</a></li>		
+		
+		</ul>	
+		
+		
+		</li></ul>
+		
+		
+		</div>
+		
+		<div id="menu_edge"></div>
+		<div id="menu_edge2"></div>
+		<div id="content_Wizard"></div>
+		<div id="content">
+			<div id="map_wording">
+				<ul>
+					<li id="map_status" class="map_status_on"></li>&nbsp;&nbsp;
+					<li id="map_title" style="cursor: default;">Internet Connected</li>
+				</ul>
+			</div>
+			<div id="map_info">
+				<table>
+					<tbody><tr>
+						<td>Click on any item in the diagram for more information.
+						</td>
+					</tr>
+					<tr>
+						<td><div id="map_fw_info"></div></td>
+					</tr>
+				</tbody></table>
+			</div>
+			
+			<div id="map">
+				<div id="internetIcon" onmousedown="showList(&#39;internetInfo&#39;);return false;">
+					<div class="IconName">Internet</div>
+					<div id="internetInfo_circle" class="btn_bg"><img class="image_icon" id="internet_image" src="resources/internet_.gif" width="60" height="60"></div>
+				</div>
+				
+				<div id="routerIcon" onmousedown="showList(&#39;routerInfo&#39;);return false;">
+					<div class="IconName"><label id="modelName">DIR-890L</label></div>
+					<div id="routerInfo_circle" class="btn_bg"><img class="image_icon" src="resources/router.gif" width="60" height="60"></div>
+				</div>
+				<div id="clientIcon" onmousedown="showList(&#39;clientInfo&#39;);return false;">
+					<div class="IconName_clients">Connected Clients:&nbsp;<label id="Total_ConnectedClients" style="color:#4598aa">1</label></div>
+					<div id="clientInfo_circle" class="btn_bg2"><img class="image_icon" id="client_image" src="resources/wifiClient_.gif" width="60" height="60"></div>
+				</div>
+				<div id="usbIcon" onmousedown="showList(&#39;usbInfo&#39;);return false;">
+					<div class="IconName">USB Device</div>
+					<div id="usbInfo_circle" class="btn_bg"><img class="image_icon" id="usb_image" src="resources/usb_.gif" width="60" height="60"></div>
+				</div>
+				
+				<div id="line_wan">
+					<div class="IconName"></div>
+					<img id="wan_Line" src="resources/line2.png" alt="" width="250" height="18">
+				</div>
+				<div id="wan_connstat" style="">
+					<div class="IconName"></div>
+					<img id="wan_Light" src="resources/connected.png" alt="" width="35" height="35" style="cursor: default;">
+				</div>
+				<div id="line_ethernet">
+					<div class="IconName"></div>
+					<img src="resources/line3.png" alt="" width="212" height="102">
+				</div>
+				<div id="line_wifi" style="display:none">
+					<div class="IconName"></div>
+					<img src="resources/line2.png" alt="" width="250" height="18">
+				</div>
+				<div id="line_usb">
+					<div class="IconName"></div>
+					<img src="resources/line1.png" alt="" width="212" height="102">
+				</div>
+			</div>
+			
+			<div id="this_wz" style="display: none;"></div>
+			<table id="goto_Wizard_table" style="display: none;">
+				<tbody><tr><td><center><button class="goto_Wizard" id="settings_Wizard">Click to repair</button></center></td>
+			</tr></tbody></table>
+			
+			<img id="w_this" src="resources/w_this.png" alt="" width="27" height="13" style="display:none">
+			
+			<div id="noneInfo">&nbsp;</div>
+			<div id="routerInfo" style="display: none;">
+				<div class="infor_titleArea">
+					<div id="infor_title"><label id="modelName2">DIR-890L</label></div>
+					</div>
+					
+					<div class="infor">
+						<img src="resources/footer.png" alt="" width="868" height="2" class="thisline">
+					<table>
+						<tbody><tr height="120">
+							<td valign="top">
+						<div id="infor_LAN">
+							<table class="inforTableTitle" border="0">
+								<tbody>
+									<tr>
+										<td><img src="resources/network_icon.png" alt="" width="28" height="28"></td>
+										<th>IPv4 Network</th>
+									</tr>
+								</tbody>
+							</table>
+							<table class="myTable_index" border="0">
+								<tbody>
+									<tr>
+										<th>MAC Address:</th>
+										<td><label id="index_Show_MacAddress">F8:E9:03:B9:8A:FC</label></td>
+									</tr>
+									<tr>
+										<th>Router IP Address:</th>
+										<td><label id="index_ShowRouterIPAddress">192.168.0.1</label></td>
+									</tr>
+									<tr>
+										<th>Subnet Mask:</th>
+										<td><label id="index_Show_SubnetMask">255.255.255.0</label></td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+							</td>
+							<td valign="top">
+								<div id="Wi-Fi_24">
+									<table class="inforTableTitle" border="0">
+										<tbody>
+											<tr>
+												<td><img src="resources/wireless_icon.png" alt="" width="28" height="28"></td>
+												<th id="Wi-Fi_24_show">Wi-Fi</th>
+											</tr>
+										</tbody>
+									</table>
+									<table class="myTable_index_wifi" border="0">
+										<tbody>
+											<tr>
+												<th>Status:</th>
+												<td><label id="index_ShowStatus_24G">Enabled</label></td>
+											</tr>
+											<tr id="ssid_24">
+												<th>Wi-Fi Name (SSID):</th>
+												<td><label id="index_ShowSSID_24G" title="dlink-8AFC">dlink-8AFC</label></td>
+											</tr>
+											<tr id="password_24">
+												<th>Password:</th>
+												<td>
+													<label id="index_ShowPassword_24G" class="gerneral_Info_label" title="qqqqqqqq">qqqqqqqq</label>
+													<a href="WiFi.html"><div id="alert_Info_24G" class="alertInfo" style="display:none"><img src="resources/warning_s.png" style="border:0"></div></a>
+												</td>
+											</tr>
+										</tbody>
+									</table>
+								</div>
+							</td>
+						</tr>
+						<tr>
+							<td valign="top">
+						<div id="infor_LAN_ipv6">
+							<table class="inforTableTitle" border="0">
+								<tbody>
+									<tr>
+										<td><img src="resources/network_icon.png" alt="" width="28" height="28"></td>
+										<th>IPv6 Network</th>
+									</tr>
+								</tbody>
+							</table>
+							<table class="myTable_index_ipv6_lan" border="0">
+								<tbody>
+									<tr id="lilla">
+										<th>Link-Local Address:</th>
+										<td style=""><label id="lan_IPv6_Link_Local_Address" title="FE80::FAE9:3FF:FEB9:8AFC">FE80::FAE9:3FF:FEB9:8AFC</label></td>
+									</tr>
+									<tr id="lia">
+										<th>Router IPv6 Address:</th>
+										<td style=""><label id="lan_IPv6_Address" title="/">/</label></td>
+									</tr>
+									<tr id="pd_enable">
+										<th>DHCP-PD:</th>
+										<td><label id="dhcp_Pd">Enabled</label></td>
+									</tr>
+									<tr id="inabdp" style="">
+										<th>Assigned Prefix:</th>
+										<td><label id="dhcp_Pd_IP">Not Available</label></td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+										</td>
+							<td valign="top">
+						<div id="Wi-Fi_5" style="display: none;">
+							<table class="inforTableTitle" border="0">
+								<tbody>
+									<tr>
+										<td><img src="resources/wireless_icon.png" alt="" width="28" height="28"></td>
+										<th>Wi-Fi 5GHz</th>
+									</tr>
+								</tbody>
+							</table>
+							<table class="myTable_index_wifi" border="0">
+								<tbody>
+									<tr>
+										<th>Status:</th>
+										<td><label id="index_ShowStatus_5G">Not Available</label></td>
+									</tr>
+									<tr>
+										<th>Wi-Fi Name (SSID):</th>
+										<td><label id="index_ShowSSID_5G">Not Available</label></td>
+									</tr>
+									<tr>
+										<th>Password:</th>
+										<td>
+											<label id="index_ShowPassword_5G" class="gerneral_Info_label">Not Available</label>
+											<a href="WiFi.html"><div id="alert_Info_5G" class="alertInfo" style="display:none"><img src="resources/warning_s.png" style="border:0"></div></a>
+										</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+							</td>
+						</tr>
+						<tr>
+							<td valign="top">
+								<div id="goto_Network" class="goto" style="margin-left: 250px;">	
+									<table cellpadding="0" cellspacing="0">
+										<tbody><tr><th><a href="Network.html" style="cursor:pointer; color:#4598aa; text-decoration: none">Go to settings</a></th>
+										<td><a href="Network.html" style="cursor:pointer"><div class="goto_icon"><img src="resources/gotosettings.png" alt="" width="23" height="23"></div></a></td>
+									</tr></tbody></table>				
+								</div>
+							</td>
+							<td valign="top">
+								<div id="Wi-Fi_5_2" style="margin-bottom: 10px; display: none;">
+							<table class="inforTableTitle" border="0">
+								<tbody>
+									<tr>
+										<td><img src="resources/wireless_icon.png" alt="" width="28" height="28"></td>
+										<th>Wi-Fi 5GHz Secondary</th>
+									</tr>
+								</tbody>
+							</table>
+							<table class="myTable_index_wifi" border="0">
+								<tbody>
+									<tr>
+										<th>Status:</th>
+										<td><label id="index_ShowStatus_5G_2">Not Available</label></td>
+									</tr>
+									<tr>
+										<th>Wi-Fi Name (SSID):</th>
+										<td><label id="index_ShowSSID_5G_2">Not Available</label></td>
+									</tr>
+									<tr>
+										<th>Password:</th>
+										<td>
+											<label id="index_ShowPassword_5G_2" class="gerneral_Info_label">Not Available</label>
+													<a href="WiFi.html"><div id="alert_Info_5G_2" class="alertInfo" style="display:none"><img src="resources/warning_s.png" style="border:0"></div></a>
+										</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+								<div id="goto_wifi_24" class="goto" style="margin-left: 130px;">
+								<table cellpadding="0" cellspacing="0">
+										<tbody><tr><th><a href="WiFi.html" style="cursor:pointer; color:#4598aa; text-decoration: none">Go to settings</a></th>
+										<td><a href="WiFi.html" style="cursor:pointer"><div class="goto_icon"><img src="resources/gotosettings.png" alt="" width="23" height="23"></div></a></td>
+								</tr></tbody></table>
+							</div>
+							</td>
+						</tr>
+						<tr>
+							<td valign="top">
+							</td>
+							<td valign="top">
+						<div id="Wi-Fi_24G_Guest" style="display:none;">
+							<table class="inforTableTitle" border="0">
+								<tbody>
+									<tr>
+										<td><img src="resources/guestzone_icon.png" alt="" width="28" height="28"></td>
+												<th id="Wi-Fi_24_Guest_show">Guest Zone</th>
+									</tr>
+								</tbody>
+							</table>
+							<table class="myTable_index_wifi" border="0">
+								<tbody>
+									<tr>
+										<th>Status:</th>
+										<td><label id="index_ShowStatus_24G_Guest">Disabled</label></td>
+									</tr>
+									<tr>
+										<th>Wi-Fi Name (SSID):</th>
+										<td><label id="index_ShowSSID_24G_Guest">Not Available</label></td>
+									</tr>
+									<tr>
+										<th>Password:</th>
+										<td><label id="index_ShowPassword_24G_Guest">Not Available</label></td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+							</td>
+						</tr>
+						<tr>
+							<td valign="top">
+							</td>
+							<td valign="top">
+						<div id="Wi-Fi_5G_Guest" style="display:none;">
+							<table class="inforTableTitle" border="0">
+								<tbody>
+									<tr>
+										<td><img src="resources/guestzone_icon.png" alt="" width="28" height="28"></td>
+										<th>Guest Zone 5GHz</th>
+									</tr>
+								</tbody>
+							</table>
+							<table class="myTable_index_wifi" border="0">
+								<tbody>
+									<tr>
+										<th>Status:</th>
+										<td><label id="index_ShowStatus_5G_Guest">Not Available</label></td>
+									</tr>
+									<tr>
+										<th>Wi-Fi Name (SSID):</th>
+										<td><label id="index_ShowSSID_5G_Guest">Not Available</label></td>
+									</tr>
+									<tr>
+										<th>Password:</th>
+										<td><label id="index_ShowPassword_5G_Guest">Not Available</label></td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+							</td>
+						</tr>
+						<tr>
+							<td valign="top">
+							</td>
+							<td valign="top">
+								<div id="Wi-Fi_5G_2_Guest" style="display:none">
+							<table class="inforTableTitle" border="0">
+								<tbody>
+									<tr>
+										<td><img src="resources/guestzone_icon.png" alt="" width="28" height="28"></td>
+										<th>Guest Zone 5GHz Secondary</th>
+									</tr>
+								</tbody>
+							</table>
+							<table class="myTable_index_wifi" border="0">
+								<tbody>
+									<tr>
+										<th>Status:</th>
+										<td><label id="index_ShowStatus_5G_2_Guest">Not Available</label></td>
+									</tr>
+									<tr>
+										<th>Wi-Fi Name (SSID):</th>
+										<td><label id="index_ShowSSID_5G_2_Guest">Not Available</label></td>
+									</tr>
+									<tr>
+										<th>Password:</th>
+										<td><label id="index_ShowPassword_5G_2_Guest">Not Available</label></td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+							</td>
+						</tr>
+						<tr>
+							<td valign="top">
+							</td>
+							<td valign="top">
+								<div id="goto_GuestZone" class="goto" style="margin-left: 130px; display:none;">
+								<table cellpadding="0" cellspacing="0">
+										<tbody><tr><th><a href="GuestZone.html" style="cursor:pointer; color:#4598aa; text-decoration: none">Go to settings</a></th>
+										<td><a href="GuestZone.html" style="cursor:pointer"><div class="goto_icon"><img src="resources/gotosettings.png" alt="" width="23" height="23"></div></a></td>
+								</tr></tbody></table>
+						
+				</div>
+							</td>
+						</tr>
+					</tbody></table>
+				</div>
+			</div>
+			<!-------------------- internetInfo ---------------------->
+			<div id="internetInfo" style="display: none;">
+				<div class="infor_titleArea">
+					<div id="infor_title">Internet</div>
+				</div>
+				<div class="infor">
+					<img src="resources/footer.png" alt="" width="868" height="2" class="thisline">
+					<ul id="v4_v6_btn">
+						<li style="display:block"><div id="v6_btn_WAN" class="v4v6_linkstyle_2" onclick="gotoIPv6Info_WAN();click_Statuschanged();">IPv6</div></li>
+						<li style="display:block"><div class="v4v6_linkstyle_1">&nbsp; / &nbsp;</div></li>
+						<li style="display:block"><div id="v4_btn_WAN" class="v4v6_linkstyle_1" onclick="gotoIPv4Info_WAN();click_Statuschanged();">IPv4</div></li>
+					</ul>
+					<div id="internet_1" style="display: block;">
+						<table class="myTable_index" border="0" style="line-height:25px;">
+							<tbody>
+								<tr>
+									<th>Cable Status:</th>
+									<td><label id="index_ShowCableStatus">Connected</label></td>
+								</tr>
+								<tr>
+									<th>Connection Type:</th>
+									<td><label id="index_ShowConnectionType">Dynamic IP (DHCP)</label></td>
+								</tr>
+								<tr>
+									<th>Network Status:</th>
+									<td><label id="index_ShowNetworkStatus">Connected</label></td>
+								</tr>
+								<tr>
+									<th>Connection Uptime:</th>
+									<td><label id="index_ShowConnectionUpTime">0 Day 0 Hour 24 Min 58 Sec</label></td>
+								</tr>
+							</tbody>
+						</table>
+						<div id="RenewRelease" style="display:inline;">
+						<table style="width:350px; margin:10px 0 0 0" border="0">
+							<tbody>
+								<tr>
+									<td colspan="2"><center><button onclick='alert("This feature has been disabled on this emulator.")'  type="button" class="styled_button_s" id="RenewRelease_btn" style="display: inline;">Release IP Address</button></center></td>
+								</tr>
+							</tbody>
+						</table></div>
+					</div>
+					<div id="internet_2" style="display: block;">
+						<table class="myTable_index" border="0" style="line-height:25px;">
+							<tbody>
+								<tr>
+									<th>MAC Address:</th>
+									<td><label id="index_ShowWanMacAddress">F8:E9:03:B9:8B:01</label></td>
+								</tr>
+								<tr>
+									<th>IP Address:</th>
+									<td><label id="index_ShowIPAddress">172.16.10.49</label></td>
+								</tr>
+								<tr>
+									<th>Subnet Mask:</th>
+									<td><label id="index_ShowSubnetMask">255.255.255.0</label></td>
+								</tr>
+								<tr>
+									<th>Default Gateway:</th>
+									<td><label id="index_ShowDefaultGateway">172.16.10.1</label></td>
+								</tr>
+								<tr>
+									<th>Primary DNS Server:</th>
+									<td><label id="index_ShowPrimaryDNS" class="alertInfo_label" style="color: rgb(51, 51, 51);">172.16.9.3</label><div id="alert_Info_PriDNS" class="alertInfo" style="display: none;"></div></td>
+								</tr>
+								<tr>
+									<th>Secondary DNS Server:</th>
+									<td><label id="index_ShowSecondaryDNS" class="alertInfo_label" style="color: rgb(51, 51, 51);">8.8.8.8</label><div id="alert_Info_SecDNS" class="alertInfo" style="display: none;"></div></td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+					<div id="internet_3" style="display: none;">
+						<table class="myTable_index" border="0" style="line-height:25px;">
+							<tbody>
+								<tr>
+									<th>Connection Type:</th>
+									<td><label id="Connection_Type_IPv6">Auto Detection</label></td>
+								</tr>
+								<tr>
+									<th>Network Status:</th>
+									<td><label id="IPv6_NetworkStatus">Connected</label></td>
+								</tr>
+								<tr>
+									<th>Connection Uptime:</th>
+									<td><label id="index_ShowConnectionUpTime_IPv6">0 Day 0 Hour 25 Min 14 Sec</label></td>
+								</tr>
+							</tbody>
+						</table>
+						<table style="width:330px; margin:10px 0 0 0" border="0">
+							<tbody>
+								<tr>
+									<td colspan="2"><center><button type="button" class="styled_button_s" id="RenewReleaseIPv6_btn" style="display: none;"></button></center></td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+					<a id="settings_Internet" style="cursor:pointer">
+						<div id="goto_internet_v4" class="goto" style="display: block;">
+							<table cellpadding="0" cellspacing="0" border="0">
+								<tbody><tr>
+								
+								<th onclick="location.href='Internet.html'"> Go to settings</th>
+								
+								
+								<td><div class="goto_icon"><img src="resources/gotosettings.png" alt="" width="23" height="23"></div></td>
+							</tr></tbody></table>
+						</div>
+					</a>
+					
+					<div id="internet_4" style="display: none;">
+						<table class="myTable_index_ipv6" border="0" style="line-height:25px;">
+							<tbody>
+								<tr>
+									<th>WAN IPv6 Address:</th>
+									<td><label id="wan_IPv6_Address" title="FE80::FAE9:3FF:FEB9:8B01">FE80::FAE9:3FF:FEB9:8B01</label></td>
+								</tr>
+								<tr>
+									<th>Default Gateway:</th>
+									<td><label id="wan_IPv6_DefaultGateway">Not Available</label></td>
+								</tr>
+								<tr>
+									<th>Primary DNS Server:</th>
+									<td><label id="primary_IPv6_Dns_Server">Not Available</label></td>
+								</tr>
+								<tr>
+									<th>Secondary DNS Server:</th>
+									<td><label id="secondary_IPv6_Dns_Server">Not Available</label></td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+					<a id="settings_Internet_IPv6" style="cursor:pointer">
+						<div id="goto_internet_v6" class="goto" style="display: none;">
+							<table cellpadding="0" cellspacing="0" border="0">
+								
+								
+							<tbody><tr>
+							
+							<th onclick="location.href='Internet_IPv6.html'">Go to settings</th>
+								
+								<td><div class="goto_icon"><img src="resources/gotosettings.png" alt="" width="23" height="23"></div></td>
+							</tr></tbody></table>
+						</div>
+					</a>
+				</div>
+			</div>
+			<!-------------------- Client Info ---------------------->
+			<div id="clientInfo" style="display: inline;">
+				<div class="infor_titleArea">
+					<div id="infor_title">Connected Clients</div>
+				</div>
+				<div class="infor">
+					<img src="resources/footer.png" alt="" width="868" height="2" class="thisline">
+					<ul id="v4_v6_client_btn">
+						<li style="display: none;" class="client_type_blocked"><div id="client_btn_Blocked" class="v4v6_linkstyle_2" onclick="getClientList(&#39;Blocked&#39;);click_Statuschanged();">Parental Control</div></li>
+						<li style="display: none;" class="client_type_blocked"><div class="v4v6_linkstyle_1">&nbsp; / &nbsp;</div></li>
+						<li style="display:none" class="client_type_guest"><div id="client_btn_Guest" class="v4v6_linkstyle_2" onclick="getClientList(&#39;Guest&#39;);click_Statuschanged();">Guest</div></li>
+						<li style="display:none" class="client_type_guest"><div class="v4v6_linkstyle_1">&nbsp; / &nbsp;</div></li>
+						<li style="display: none;" class="client_type_host"><div id="client_btn_Host" class="v4v6_linkstyle_1" onclick="getClientList(&#39;Host&#39;);click_Statuschanged();">Host</div></li>
+					</ul>
+					<div>
+						Click on the "Pencil" icon to manage devices access or change device name.<br>
+						You can block a device from accessing your network completely.
+					</div>
+					<br>
+					<div id="Client_Info" style="display: none;">
+						<center></center><table style="width:900px">
+							<tbody>
+								<tr><td style="color:#7d7d7d; text-align:center;">There are no devices available</td>
+							</tr></tbody>
+						</table>
+					</div>
+					<div id="Client_Group" style="display: table-row;">
+						<table class="block" border="0" ondragstart="return false" onselectstart="return false" width="900px">
+							<tbody id="Client_items"><tr><td><div class="client_Tag" style="cursor:default"><div class="link_IconE_Allow"></div><div class="client_Info"><div class="client_Name">TS-Windows-8PC</div><div class="client_EditImage" onclick="editData(0)" style="cursor:pointer"></div><div class="client_Vender">ASUS</div><div class="client_IPv4Address">192.168.0.193</div><div class="client_IPv6Address" id="IPv6Address_Client_0" title=""></div><div class="client_Access">Parental Control: <font color="#000000">Disabled</font></div></div></div></td></tr></tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+			<!-------------------- SharePort Info ---------------------->
+			<div id="usbInfo" style="display: none;">
+				<div class="infor_titleArea">
+					<div id="infor_title">USB Device</div>
+				</div>
+				<div class="infor" style="height:250px">
+					<img src="resources/footer.png" alt="" width="868" height="2" class="thisline">
+					<img id="USBPort_icon" style="display: inline;" src="resources/USBport_none2.png" alt="" width="230" height="193">
+
+					<div id="USB_wording" style="display: inline;">No USB device detected</div>
+
+					<div id="usb_1">
+						<div id="usbport_1">
+						<table class="inforTableTitle" border="0">
+							<tbody>
+								<tr>
+									<td><img src="resources/usb_Icon.png" alt="" width="28" height="28"></td>
+										<th>USB Port:</th>
+										<td><div><label id="index_USBDeviceName">Not Available</label></div></td>
+								</tr>
+							</tbody>
+						</table>
+						<table class="myTable_index_usb" border="0" id="usbDeviceSpace_Information" style="display: none;">
+							<tbody>
+								<tr>
+									<th>Available Space:</th>
+									<td><label id="index_USBDeviceFreeSpace">Not Available</label></td>
+								</tr>
+								<tr>
+									<th>Total Space:</th>
+									<td><label id="index_USBDeviceTotalSpace">Not Available</label></td>
+								</tr>
+							</tbody>
+						</table>
+						<table class="myTable_index" border="0" id="usbDeviceSpace_Status" style="display: none;">
+							<tbody>
+								<tr>
+									<td>
+										<div class="progressBar" id="usb_progressBar">
+											<div class="bar" id="usb_DeviceSpace"></div>
+										</div>
+									</td>
+								</tr>
+							</tbody>
+						</table>
+							<table class="myTable_index" border="0" id="usbDeviceSpace_PercentValue" style="display: none;">
+							<tbody>
+								<tr>
+										<td><div><label id="percent_Value"></label></div></td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+						<div id="usbport_2" style="display: none;">
+							<table class="inforTableTitle" border="0">
+								<tbody>
+									<tr>
+										<td><img src="resources/usb_Icon.png" alt="" width="28" height="28"></td>
+										<th>USB Port:</th>
+										<td><label id="index_USBDeviceName2">Not Available</label></td>
+									</tr>
+								</tbody>
+							</table>
+							<table class="myTable_index_usb" border="0" id="usbDeviceSpace_Information">
+								<tbody>
+									<tr>
+										<th>Available Space:</th>
+										<td><label id="index_USBDeviceFreeSpace2">Not Available</label></td>
+									</tr>
+									<tr>
+										<th>Total Space:</th>
+										<td><label id="index_USBDeviceTotalSpace2">Not Available</label></td>
+									</tr>
+								</tbody>
+							</table>
+							<table class="myTable_index" border="0" id="usbDeviceSpace_Status">
+								<tbody>
+									<tr>
+										<td>
+											<div class="progressBar" id="usb_progressBar2">
+												<div class="bar" id="usb_DeviceSpace2"></div>
+											</div>
+										</td>
+								</tr>
+							</tbody>
+						</table>
+						<table class="myTable_index" border="0" id="usbDeviceSpace_PercentValue2">
+							<tbody>
+								<tr>
+									<td><div><label id="percent_Value2"></label></div></td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+
+					</div>
+					<div id="usb_2">
+						<table class="inforTableTitle" border="0">
+							<tbody>
+								<tr>
+									<td><img src="resources/dlna_Icon.png" alt="" width="28" height="28"></td>
+									<th>DLNA Media Server</th>
+								</tr>
+							</tbody>
+						</table>
+						<table class="myTable_index" border="0">
+							<tbody>
+								<tr>
+									<th>Status:</th>
+									<td>
+										<label id="dlna_Status" class="alertInfo_label">Disabled</label>
+										<div id="alert_Info_DLNA" class="alertInfo" style="display:none"></div>
+									</td>
+								</tr>
+								<tr>
+									<th>Service Name:</th>
+									<td><label id="dlna_ServiceName">Not Available</label></td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+					<div id="usb_3">
+						<table class="inforTableTitle" border="0">
+							<tbody>
+								<tr>
+									<td><img src="resources/sharePort_icon.png" alt="" width="28" height="28"></td>
+									<th>SharePort</th>
+								</tr>
+							</tbody>
+						</table>
+						<table class="myTable_index" border="0" style="line-height:25px;">
+							<tbody>
+								<tr>
+									<th>Status:</th>
+									<td>
+										<label id="shareport_Status" class="alertInfo_label">Disabled</label>
+										<div id="alert_Info_Shareport" class="alertInfo" style="display:none"></div>
+									</td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+					<div id="usb_4">
+						<table class="inforTableTitle" border="0">
+							<tbody>
+								<tr>
+									<td><img src="resources/SAMBA_icon.png" alt="" width="28" height="28"></td>
+									<th>Windows File Sharing</th>
+								</tr>
+							</tbody>
+						</table>
+						<table class="myTable_index" border="0">
+							<tbody>
+								<tr>
+									<th>Status:</th>
+									<td>
+										<label id="samba_Status" class="alertInfo_label">Disabled</label>
+										<div id="alert_Info_Samba" class="alertInfo" style="display:none"></div>
+									</td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+					<a id="settings_SharePort" style="cursor:pointer">
+						<div id="goto_SharePort" class="goto">
+							<table cellpadding="0" cellspacing="0" border="0">
+								<tbody><tr><th>Go to settings</th>
+								<td><div class="goto_icon"><img src="resources/gotosettings.png" alt="" width="23" height="23"></div></td>
+							</tr></tbody></table>
+						</div>
+					</a>
+				</div>
+			</div>
+		</div>
+		<div id="CreatePopAlertMessage2" style="display:none">
+			<div id="AlertPopRect">
+			<div id="AlertPopBody">
+				<table class="myAlertPop_table_b" id="FirmwareUpgrade" border="0" cellspacing="0">
+					<tbody>
+						<tr>
+							<td colspan="2">
+								<center><div id="Information_pop_image"></div></center>
+							</td>
+						</tr>
+						<tr>
+							<td colspan="2">
+								<div id="dialog_msg_black">A new firmware is available! Do you want to download and upgrade the firmware?</div>
+							</td>
+						</tr>
+						<tr>
+							<td>
+								<div id="Confirm_btn" onclick="ignore_UpgradeFW()" style="cursor:pointer">Ignore</div>
+							</td>
+							<td>
+								<div id="Confirm_btn" onclick="goto_UpgradeFW()" style="cursor:pointer">Apply</div>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+			</div>
+		</div>
+		<div id="editPop" style="display:none">
+			<div id="dialogBox" style="width:500px">
+				<div id="closeCreatePopBtn" onclick="clearCreateRulePOP()" style="cursor:pointer"></div>
+				<table class="myCreatePop_table" border="0" cellspacing="0">
+					<tbody>
+						<tr>
+							<td colspan="3"><div class="popTitle">Edit Rule</div></td>
+						</tr>
+						<tr>
+							<th>Name:</th>
+							<td><input class="styled-text" type="text" name="client_Name" size="15" id="client_Name" maxlength="20" onchange="checkUpdate();this.value=this.value.replace(/[^a-zA-Z0-9-_ ]/g,&#39;&#39;);" onkeydown="buttonStyleChange();"></td>
+						</tr>
+						<tr id="show_Vendor">
+							<th>Vendor:</th>
+							<td><label id="client_Vendor">Unknown Vendor</label></td>
+						</tr>
+						<tr id="show_MACAddress">
+							<th>MAC Address:</th>
+							<td><label id="client_MACAddress"></label></td>
+						</tr>
+						<tr id="show_IPAdrReserve">
+							<th>IP Address (Reserved):</th>
+							<td><input class="styled-text" type="text" name="client_IPAdrReserve" size="15" id="client_IPAdrReserve" onchange="checkUpdate();" onkeydown="buttonStyleChange();"></td>
+							<td><label id="IPAdrReserve_Info" style="color:#FF0000"></label></td><td>
+						</td></tr>
+						<tr id="show_IPAdr">
+							<th>IP Address:</th>
+							<td><label id="client_IPAdr">IP Address</label></td>
+						</tr>
+						<tr id="show_ReserveIP" onmousedown="return false">
+							<th>Reserve IP:</th>
+							<td><div id="enableReserveIP" class="checkbox_on"><input type="checkbox" name="enableReserveIP" id="enableReserveIP_ck" checked="">Enabled</div></td>
+						</tr>
+						<tr onmousedown="return false">
+							<th>Parental Control:</th>
+							<td><div id="enableAccess" class="checkbox_on"><input type="checkbox" name="enableAccess" id="enableAccess_ck" checked="">Enabled</div></td>
+						</tr>
+						<tr id="show_Schedule">
+							<th class="linkstyle_1"><a href="Schedule.html">Schedule</a>:</th>
+							<td>
+								<div class="styled-select">
+									<select name="schedule" id="schedule" sb="40823765" style="display:">
+										<option value="Always" selected="">Always OFF</option>
+									</select>
+									<!--
+									<div id="sbHolder_40823765" class="sbHolder" style="width:200px"><a id="sbToggle_40823765" href="http://192.168.0.1/Home.html#" class="sbToggle"></a><a id="sbSelector_40823765" href="http://192.168.0.1/Home.html#" class="sbSelector" style="width:170px">Always OFF</a><ul id="sbOptions_40823765" class="sbOptions" style="width: 200px; display: none;"><li class="last"><a href="http://192.168.0.1/Always" rel="Always" class="sbFocus">Always OFF</a></li></ul></div>-->
+								</div>
+							</td>
+						</tr>
+						<tr>
+							<td id="save_td" colspan="4">
+								<center><button type="button" id="check_btn" class="styled_button_dis" disabled="">Save</button></center>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+		<div id="DetectRouterConnection" style="display:none"><div id="dialogBox" style="width:616px"><table class="myCreatePop_table" border="0" cellspacing="0" id="RouterConnectionTable"><tbody><tr><td colspan="3"><div class="popTitle">Router Not Found</div></td></tr><tr><td id="save_td" colspan="4"><center><div id="Save_edit_pop_btn" style="cursor:pointer" tabindex="12" onclick="CheckHTMLStatus(&#39;&#39;);">Retry</div></center></td></tr></tbody></table></div></div>
+		<div id="footer_login" border="0"> <!-- COPYRIGHT &copy; 2013 D-Link -->
+			<div id="copyright">COPYRIGHT © 2014 D-Link</div>
+			<!--<div id="copyright">COPYRIGHT &copy; <script>var Y=new Date(); document.write(Y.getFullYear());</script> D-Link </div>-->
+			<div id="help" style="display: none;"><label id="Get_Help" style="cursor:pointer;text-Decoration:underline">Get Help</label></div>
+		</div>
+		<br>
+	</div>
+
+</body></html>

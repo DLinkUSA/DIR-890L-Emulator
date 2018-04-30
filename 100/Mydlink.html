@@ -1,0 +1,490 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!-- saved from url=(0031)http://192.168.0.1/Mydlink.html -->
+<html xmlns="http://www.w3c.org/1999/xhtml" xml:lang="zh_TW" lang="zh_TW"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>D-LINK</title>
+<meta http-equiv="X-UA-Compatible" content="IE=9">
+
+<meta http-equiv="Content-Type" content="text/css">
+<link href="resources/jquery.selectbox.css" type="text/css" rel="stylesheet">
+<script type="text/javascript" charset="utf-8" src="resources/initialJS.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/comm.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/hmac_md5.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/libajax.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/hnap.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/i18n.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/pagetool.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/menu.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/DetectRouterConnection.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/checkTimeout.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/includeLang.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/AES.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/DeviceConfig.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/initialCSS.js"></script>
+<link rel="stylesheet" type="text/css" href="resources/style_pages.css" media="all">
+<script type="text/javascript" charset="utf-8" src="resources/initialJQ.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/jquery-1.8.2.min.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/jquery.selectbox-0.2_new.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/jquery.stringify.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/SOAPAction.js"></script>
+<script type="text/javascript" charset="utf-8" src="resources/SOAPMyDLink.js"></script>
+
+
+<script>
+$(document).ready(function(){
+
+	//jquery
+	$("div.checkbox_on" || "div.checkbox_off").click(function(e) {
+	 var checkboxId =  e.target.id +'_ck';	 
+		if(e.target.getAttribute("class") == "checkbox_on") {
+			var disable = I18N("j","Disabled");
+			e.target.setAttribute("class", "checkbox_off");
+			e.target.setAttribute("className", "checkbox_off");
+			document.getElementById(e.target.id).innerHTML='<input type="checkbox" name=' + e.target.id + ' id=' + checkboxId + ' checked>'+disable;
+			document.getElementById(checkboxId).checked=false;
+		}
+		else {
+			var enable = I18N("j","Enabled");
+			e.target.setAttribute("class", "checkbox_on");
+			e.target.setAttribute("className", "checkbox_on");
+			document.getElementById(e.target.id).innerHTML='<input type="checkbox" name=' + e.target.id + ' id=' + checkboxId + ' checked="">'+enable;
+			document.getElementById(checkboxId).checked=true;
+		}
+	});
+	
+	GetXML();
+});
+</script>
+
+<script type="text/javascript">
+	
+	var sendXML;
+	var getResponse;
+	var Post_SetMyDLinkSettingsXML;
+	
+	var HNAP = new HNAP_XML();
+	
+	function Load_HTML()
+	{ 
+		$("#header").load("header.html");
+	}
+	
+	function Initial()
+	{
+		initialMenu();
+		initialDetectRouterConnection();
+	}
+	
+	function GetXML()
+	{
+		HNAP.GetXMLAsync("GetMyDLinkSettings", null, "GetValue", function(xml)	{	GetResult_1st(xml)	});
+	}
+	function GetResult_1st(result_xml)
+	{
+		if (result_xml != null)
+		{
+			var GetRegisterEMail = result_xml.Get("GetMyDLinkSettingsResponse/Email");
+			var GetRegisterAccountStatus = result_xml.Get("GetMyDLinkSettingsResponse/AccountStatus");
+			if (GetRegisterAccountStatus == "true")
+			{
+				document.getElementById("signUp_Button").style.display = "none";
+				document.getElementById("signIn_Button").style.display = "none";
+				document.getElementById("mydlink_Service").innerHTML = I18N("j", "Registered");
+				document.getElementById("mydlink_Account").innerHTML = GetRegisterEMail;
+				document.getElementById("My_Dlink_Service").style.display = "table-row";
+				document.getElementById("My_Dlink_Account").style.display = "table-row";
+				document.getElementById("Select_Yes").style.display = "none";
+				document.getElementById("Select_No").style.display = "none";
+				document.getElementById("M_Account").style.display = "none";
+				document.getElementById("M_UserPassword").style.display = "none";
+				document.getElementById("First_Name").style.display = "none";
+				document.getElementById("Last_Name").style.display = "none";
+				document.getElementById("Mydlink_TermsAndConditions").style.display = "none";
+			}
+			else
+			{
+				document.getElementById("signUp_Button").style.display = "inline";
+				document.getElementById("signIn_Button").style.display = "none";
+				document.getElementById("My_Dlink_Service").style.display = "none";
+				document.getElementById("My_Dlink_Account").style.display = "none";
+				document.getElementById("Select_Yes").style.display = "table-row";
+				document.getElementById("Select_No").style.display = "table-row";
+				document.getElementById("M_Account").style.display = "table-row";
+				document.getElementById("M_UserPassword").style.display = "table-row";
+				document.getElementById("First_Name").style.display = "table-row";
+				document.getElementById("Last_Name").style.display = "table-row";
+				document.getElementById("Mydlink_TermsAndConditions").style.display = "table-row";
+			}
+			CheckNetworkStatus();
+			document.getElementById("main").style.display = "inline";
+		}
+		else	{	if (DebugMode == 1)	{	alert("[!!GetXML Error!!] Function: GetResult_1st");	}	}
+	}
+	
+	function mydlinkAccount(answer)
+	{
+		if (answer == "yes" && document.getElementById('cb_yes').getAttribute('class') == 'unclick')
+		{
+			$("#cb_yes").attr("class", "clicked");
+			$("#cb_no").attr("class", "unclick");
+			document.getElementById("signUp_Button").style.display = "none";
+			document.getElementById("signIn_Button").style.display = "inline";
+			document.getElementById("M_Account").style.display = "table-row";
+			document.getElementById("M_UserPassword").style.display = "table-row";
+			document.getElementById("First_Name").style.display = "none";
+			document.getElementById("Last_Name").style.display = "none";
+			document.getElementById("Mydlink_TermsAndConditions").style.display = "none";
+		}
+		else if (answer == "no" && document.getElementById('cb_no').getAttribute('class') == 'unclick')
+		{
+			$("#cb_yes").attr("class", "unclick");
+			$("#cb_no").attr("class", "clicked");
+			document.getElementById("signUp_Button").style.display = "inline";
+			document.getElementById("signIn_Button").style.display = "none";
+			document.getElementById("M_Account").style.display = "table-row";
+			document.getElementById("M_UserPassword").style.display = "table-row";
+			document.getElementById("First_Name").style.display = "table-row";
+			document.getElementById("Last_Name").style.display = "table-row";
+			document.getElementById("Mydlink_TermsAndConditions").style.display = "table-row";
+		}
+	}
+	
+	function SetMyDlinkRegister()
+	{
+		if(document.getElementById("option1").checked)
+		{
+			if (document.getElementById("user_Account").value == "" || document.getElementById("user_Password").value == "")
+			{
+				document.getElementById("MyDLink_description").innerHTML = I18N("j" ,"Please enter your e-mail address and mydlink password.");
+			}
+			else
+			{
+				document.getElementById("signUp_Button").style.display = "none";
+				document.getElementById("signUp_Button_d").style.display = "table-row";
+				document.getElementById("MyDLink_description").innerHTML = "";
+				document.getElementById("show_loadingImageDefault").style.display = "table-row";
+				HNAP.GetXMLAsync("SetMyDLinkSettings", null, "GetXML", function(xml)	{	SetResult_1st(xml)	});
+			}
+		}
+		else	{	document.getElementById("MyDLink_description").innerHTML = I18N("j" ,"You must accept the terms and conditions to continue.");	}
+	}
+	function SetResult_1st(result_xml)
+	{
+		if (result_xml != null)
+		{
+			result_xml.Set("SetMyDLinkSettings/Enabled", "true");
+			result_xml.Set("SetMyDLinkSettings/Email", document.getElementById("user_Account").value);
+			result_xml.Set("SetMyDLinkSettings/Password", document.getElementById("user_Password").value);
+			result_xml.Set("SetMyDLinkSettings/LastName", document.getElementById("user_LastName").value);
+			result_xml.Set("SetMyDLinkSettings/FirstName", document.getElementById("user_FirstName").value);
+			result_xml.Set("SetMyDLinkSettings/DeviceUserName", "");
+			result_xml.Set("SetMyDLinkSettings/DevicePassword", "");
+			result_xml.Set("SetMyDLinkSettings/AccountStatus", "false");
+			// Send HNAP to DUT
+			HNAP.SetXMLAsync("SetMyDLinkSettings", result_xml, function(xml)	{	SetResult_2nd(xml);	});
+		}
+		else	{	if (DebugMode == 1)	{	alert("[!!SetXML Error!!] Function: SetResult_1st");	}	}
+	}
+	function SetResult_2nd(result_xml)
+	{
+		var SetResult_2nd = result_xml.Get("SetMyDLinkSettingsResponse/SetMyDLinkSettingsResult");
+		if (SetResult_2nd == "OK")	{	HNAP.GetXMLAsync("SetMyDLinkSettings", null, "GetXML", function(xml)	{	SetResult_3rd(xml)	});	}
+		else
+		{
+			document.getElementById("MyDLink_description").innerHTML = SetResult_2nd;
+			document.getElementById("show_loadingImageDefault").style.display = "none";
+			document.getElementById("signUp_Button").style.display = "table-row";
+			document.getElementById("signUp_Button_d").style.display = "none";
+		}
+	}
+	
+	function SetResult_3rd(result_xml)
+	{
+		if (result_xml != null)
+		{
+			result_xml.Set("SetMyDLinkSettings/Enabled", "true");
+			result_xml.Set("SetMyDLinkSettings/Email", document.getElementById("user_Account").value);
+			result_xml.Set("SetMyDLinkSettings/Password", document.getElementById("user_Password").value);
+			result_xml.Set("SetMyDLinkSettings/LastName", "");
+			result_xml.Set("SetMyDLinkSettings/FirstName", "");
+			result_xml.Set("SetMyDLinkSettings/DeviceUserName", "");
+			result_xml.Set("SetMyDLinkSettings/DevicePassword", "");
+			result_xml.Set("SetMyDLinkSettings/AccountStatus", "true");
+			// Send HNAP to DUT
+			HNAP.SetXMLAsync("SetMyDLinkSettings", result_xml, function(xml)	{	SetResult_4th(xml);	});
+		}
+		else	{	if (DebugMode == 1)	{	alert("[!!SetXML Error!!] Function: SetResult_3rd");	}	}
+	}
+	
+	function SetResult_4th(result_xml)
+	{
+		var SetResult_4th = result_xml.Get("SetMyDLinkSettingsResponse/SetMyDLinkSettingsResult");
+		if (SetResult_4th == "OK")
+		{
+			window.open("http://www.mydlink.com/", "_blank");
+			window.location.reload();
+		}
+		else
+		{
+			var split_ErrorMessage = SetResult_4th.split("]");
+			var split_FinalErrorMessage = split_ErrorMessage[split_ErrorMessage.length - 1];
+			document.getElementById("MyDLink_description").innerHTML = split_FinalErrorMessage;
+			document.getElementById("show_loadingImageDefault").style.display = "none";
+		}
+	}
+	
+	function SetDeviceRegister_a()
+	{
+		if (document.getElementById("user_Account").value == "" || document.getElementById("user_Password").value == "")
+		{
+			document.getElementById("MyDLink_description").innerHTML = I18N("j", "Email or password field is required.");
+		}
+		else
+		{
+			document.getElementById("signIn_Button").style.display = "none";
+			document.getElementById("signIn_Button_d").style.display = "table-row";
+			document.getElementById("MyDLink_description").innerHTML = "";
+			document.getElementById("show_loadingImageDefault").style.display = "table-row";
+			HNAP.GetXMLAsync("SetMyDLinkSettings", null, "GetXML", function(xml)	{	SetResult_5th(xml)	});
+		}
+	}
+	function SetResult_5th(result_xml)
+	{
+		if (result_xml != null)
+		{
+			result_xml.Set("SetMyDLinkSettings/Enabled", "true");
+			result_xml.Set("SetMyDLinkSettings/Email", document.getElementById("user_Account").value);
+			result_xml.Set("SetMyDLinkSettings/Password", document.getElementById("user_Password").value);
+			result_xml.Set("SetMyDLinkSettings/LastName", "");
+			result_xml.Set("SetMyDLinkSettings/FirstName", "");
+			result_xml.Set("SetMyDLinkSettings/DeviceUserName", "");
+			result_xml.Set("SetMyDLinkSettings/DevicePassword", "");
+			result_xml.Set("SetMyDLinkSettings/AccountStatus", "true");
+			// Send HNAP to DUT
+			HNAP.SetXMLAsync("SetMyDLinkSettings", result_xml, function(xml)	{	SetResult_6th(xml);	});
+		}
+		else	{	if (DebugMode == 1)	{	alert("[!!SetXML Error!!] Function: SetResult_5th");	}	}
+	}
+	
+	function SetResult_6th(result_xml)
+	{
+		var SetResult_6th = result_xml.Get("SetMyDLinkSettingsResponse/SetMyDLinkSettingsResult");
+		if (SetResult_6th == "OK")
+		{
+			window.open("http://www.mydlink.com/", "_blank");
+			window.location.reload();
+		}
+		else
+		{
+			var split_ErrorMessage = SetResult_6th.split("]");
+			var split_FinalErrorMessage = split_ErrorMessage[split_ErrorMessage.length - 1];
+			document.getElementById("MyDLink_description").innerHTML = split_FinalErrorMessage;
+			document.getElementById("show_loadingImageDefault").style.display = "none";
+			document.getElementById("signIn_Button").style.display = "table-row";
+			document.getElementById("signIn_Button_d").style.display = "none";
+		}
+	}
+	function changeButtonStatus()	{	if(document.getElementById("option1").checked)	{	document.getElementById("MyDLink_description").innerHTML = "";	}	}
+	function CheckNetworkStatus()
+	{
+		var status = sessionStorage.getItem('networkStatus');
+		if ((status == 1)&&(currentDevice.helpVer != ""))
+		{
+			document.getElementById("Get_Help").style.display = "inline";
+		}
+		else
+		{
+			document.getElementById("Get_Help").style.display = "none";
+		}
+	}
+	function mouseClick(obj)	{	window.open("http://support.dlink.com/");	}
+</script>
+<script language="JavaScript">
+	// 2013/09/23 Timmy Modify
+	$(function() {
+		$("select").change(function () {	save_button_changed();	});
+		$("input").keydown(function () {	save_button_changed();	});
+	});
+	function save_button_changed()
+	{
+		document.getElementById("Save_Disable_btn").style.display = "none";
+		document.getElementById("Save_btn").style.display = "block";
+		changeFlag = true;
+		checkFlag = true;
+		GetClickTime();
+	}
+</script>
+
+</head>
+
+<body>
+	
+	<div id="wrapper">
+		<!-------------------- Logo ------------------------->
+		<div id="header"><div>
+	<div style="position:relative; top:37px;">
+		<a href="http://www.dlink.com/" target="_blank">
+			<img id="image_Logo" src="resources/logo_2.png" alt="D-Link" width="102" height="20" border="0">
+		</a>
+	</div>
+	<table id="device_ver" style="position:relative; top:33px; font-size:13px; color:#969696;" border="0">
+		<tbody>
+			<tr>
+				<td style="padding: 0 10px 0 0;"><label id="h_ModelName">DIR-890L</label></td>
+				<td style="padding: 0 10px 0 0;">HW:<label id="h_HWVersion">A1</label></td>
+				<td style="padding: 0 10px 0 0;">FW:<label id="h_FWVersion">1.00</label></td>
+			</tr>
+		</tbody>
+	</table>
+
+</div></div>
+		<!-------------------- Menu ------------------------->
+		<div id="menu"><ul>	<li><a id="menu_Home" href="Home.html">Home</a></li>	
+		
+		<li class="parent" onmouseover="this.className=&quot;parentOn&quot;" onmouseout="this.className=&quot;parent&quot;">
+		
+		<a id="menu_Settings" href="#" style="background: url(resources/navigation_bg5.gif?v=20141117210117) 100% 0% no-repeat;">Settings</a>		
+		<ul>			
+		<li><a href="Wizard_Manual.html" onclick="return confirmExit()">Wizard</a></li>			
+		<li><a href="Internet.html" onclick="return confirmExit();">Internet</a></li>	
+		<li><a href="WiFi.html" onclick="return confirmExit()">Wireless</a></li>			
+		
+		<li><a href="Network.html" onclick="return confirmExit()">Network</a></li>			
+		
+		<li><a href="SharePort.html" onclick="return confirmExit()">SharePort</a></li>	
+		<li><a href="Mydlink.html" onclick="return confirmExit()">mydlink</a></li>
+		
+		
+		
+		</ul>	</li>	
+		
+		
+		
+		<li class="parent" onmouseover="this.className=&quot;parentOn&quot;" onmouseout="this.className=&quot;parent&quot;"><a id="menu_Advanced" href="#">Features</a>		
+		
+		<ul>
+		
+		<li><a href="QoS.html" onclick="return confirmExit()">QoS Engine</a></li>			
+		<li><a href="Firewall.html" onclick="return confirmExit()">Firewall</a></li>			
+		<li><a href="PortForwarding.html" onclick="return confirmExit()">Port Forwarding</a></li>			
+		<li><a href="WebsiteFilter.html" onclick="return confirmExit()">Website Filter</a></li>			
+		<li><a href="StaticRoute.html" onclick="return confirmExit()">Static Route</a></li>			
+		<li><a href="DynamicDNS.html" onclick="return confirmExit()">Dynamic DNS</a></li>			
+		<li><a href="VPN.html" onclick="return confirmExit()">Quick VPN</a></li>	
+		
+		
+		</ul>	</li>	
+		
+		<li class="parent" onmouseover="this.className=&quot;parentOn&quot;" onmouseout="this.className=&quot;parent&quot;">
+		<a id="menu_Management" href="#">Management</a>	
+
+		<ul>		
+
+		<li><a href="Time.html" onclick="return confirmExit()">Time &amp; Schedule</a></li>			
+		<li><a href="SystemLog.html" onclick="return confirmExit()">System Log</a></li>			
+		<li><a href="Admin.html" onclick="return confirmExit()">System Admin</a></li>			
+		<li><a href="UpdateFirmware.html" onclick="return confirmExit()">Upgrade</a></li>			
+		<li><a href="Statistics.html" onclick="return confirmExit()">Statistics</a></li>		
+		
+
+		</ul>	</li></ul></div>
+		
+		<div id="menu_edge"></div>
+		<!-------------------- Content ---------------------->
+		<div id="content">
+			<!-------------------- info ---------------------->	
+	  		<div id="info">
+				<div id="FunctionName">mydlink</div>
+				<div id="wallimage"><img src="resources/pageIcon_mydlink.png" alt="" width="195" height="119"></div>
+		        <div id="directions">
+					Creating a mydlink account and registering your router with mydlink will allow you to remotely montior and manage your network on your smartphone or tablet, as well as through the secure web portal. It also allows you to plug in a USB drive and access the stored files from anywhere in the world through iOS and Android apps as well as the web browser on your computer.
+					<label id="Get_Help" onclick="window.open('http://support.dlink.com')" style="cursor: pointer; display: inline; text-decoration: underline;">Click here for help.</label>
+				</div>
+        	</div>
+	     	<!-------------------- funcBar ---------------------->
+		     <div id="funcBar">		
+				<div id="pagePath">Settings &gt;&gt; mydlink</div>
+				<ul id="rightFunc">
+					<li id="signUp_Button" style="display: inline;"><div id="Save_btn" onclick='alert("This feature has been disabled on this emulator.")' style="cursor:pointer">Sign Up</div></li> 
+					<li id="signIn_Button" style="display: none;"><div id="Save_btn" onclick='alert("This feature has been disabled on this emulator.")' style="cursor:pointer">Sign In</div></li>
+					<li id="signUp_Button_d" style="display:none"><div id="Save_Disable_btn">Sign Up</div></li>
+					<li id="signIn_Button_d" style="display:none"><div id="Save_Disable_btn">Sign In</div></li>
+				</ul>
+			</div>
+	     	<!-------------------- main ---------------------->
+	     	<div id="main" style="display: inline;">
+				<table class="block" border="0" style="margin: 10px 0 0 0;">
+					<tbody>
+						<tr>
+							<td colspan="3"><div class="title">mydlink Registration</div></td>
+						</tr>
+						<tr id="My_Dlink_Service" style="display: none;">
+							<th>mydlink Service:</th>
+							<td colspan="2"><label id="mydlink_Service">Not Available</label></td>
+						</tr>
+						<tr id="My_Dlink_Account" style="display: none;">
+							<th>mydlink Account:</th>
+							<td colspan="2"><label id="mydlink_Account">Not Available</label></td>
+						</tr>
+						<tr>
+							<td colspan="3"></td>
+						</tr>
+						<tr id="Select_Yes" style="display: table-row;">
+							<th>Do you have an existing mydlink account?</th>
+							<td style="width:10px;"><div id="cb_yes" class="unclick" onclick="mydlinkAccount(&#39;yes&#39;);"></div></td>
+							<td style="font-weight:bold;">Yes, I have a mydlink account.</td>
+						</tr>
+						<tr id="Select_No" style="display: table-row;">
+							<th></th>
+							<td style="width:10px;"><div id="cb_no" class="clicked" onclick="mydlinkAccount(&#39;no&#39;);"></div></td>
+							<td style="font-weight:bold;">No, I want to create a new mydlink account.</td>
+						</tr>
+						<tr id="M_Account" style="display: table-row;">
+							<th>E-mail Address (Account Name):</th>
+							<td colspan="2"><input class="styled-text" type="text" name="user_Account" size="30" maxlength="255" id="user_Account"></td>
+						</tr>
+						<tr id="M_UserPassword" style="display: table-row;">
+							<th>Password:</th>
+							<td colspan="2"><input class="styled-text" type="password" name="user_Password" size="30" maxlength="255" id="user_Password"></td>
+						</tr>
+						<tr id="First_Name" style="display: table-row;">
+							<th>First Name:</th>
+							<td colspan="2"><input class="styled-text" type="text" name="user_FirstName" size="30" maxlength="255" id="user_FirstName"></td>
+						</tr>
+						<tr id="Last_Name" style="display: table-row;">
+							<th>Last Name:</th>
+							<td colspan="2"><input class="styled-text" type="text" name="user_LastName" size="30" maxlength="255" id="user_LastName"></td>
+						</tr>
+						<tr id="Mydlink_TermsAndConditions" style="display: table-row;">
+							<th></th>
+							<td><input type="checkbox" name="option1" id="option1" value="mydlinkTermsAndConditions" onclick="changeButtonStatus()"></td>
+							<td class="linkstyle_1">I accept the mydlink <a href="https://www.mydlink.com/termsOfUse" target="_blank">terms and conditions.</a></td>
+						</tr>
+						<tr>
+							<td colspan="3">
+								<center><label id="MyDLink_description" style="color:#FF0000;word-wrap:break-word;overflow:hidden;"></label></center>
+							</td>
+						</tr>
+						<tr id="show_loadingImageDefault" style="display:none;">
+							<td colspan="3" style="text-align: center;">
+								<img src="resources/loading.gif" alt="" width="62" height="62">
+							</td>
+						</tr>
+					</tbody>
+			    </table>
+			</div>
+		</div>
+		<!-- Detect Router Connection, Timmy Add 2013/08/15 -->
+		<div id="DetectRouterConnection" style="display:none"><div class="dialogBox" style="width:616px"><table class="myCreatePop_table" border="0" cellspacing="0" id="RouterConnectionTable"><tbody><tr><td colspan="3"><div class="popTitle">Router Not Found</div></td></tr><tr><td id="save_td" colspan="4"><center><div id="Save_edit_pop_btn" style="cursor:pointer" tabindex="12" onclick="CheckHTMLStatus(&#39;&#39;);">Retry</div></center></td></tr></tbody></table></div></div>
+		<div id="footer">
+			<div id="copyright">COPYRIGHT © 2014 D-Link</div>
+		</div>
+	</div>
+<!--
+<script type="text/javascript">
+	Load_HTML();
+	Initial();
+	setMenu("menu_Settings");
+	checkTimeout();
+</script>
+-->
+</body></html>
